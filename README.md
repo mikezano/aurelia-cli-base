@@ -6,4 +6,7 @@
 npm install -g npm
 
 # Issues with node / npm installing
+Make sure latest node is installed
 https://github.com/aurelia/cli/issues/253
+
+# Run as administrator for best results (cmd)
