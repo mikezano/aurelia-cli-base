@@ -20,8 +20,18 @@ $color5:darken($blue, 50%);
     position:absolute;
     color:white;
 
-    .left-triangle, .right-triangle{
-        position:relative;
+    .left-triangle, .right-triangle, .left-curtain, .right-curtain{
+        position:absolute;
+    }
+
+    .left-triangle, .left-curtain{
+        left:0;
+        bottom:0;
+    }
+
+    .right-triangle, .right-curtain{
+        top:0;
+        right:0;
     }
 
     .left-triangle{
@@ -31,10 +41,7 @@ $color5:darken($blue, 50%);
 	    clip-path:polygon(0 0, 100% 100%, 0 100%);
         background: linear-gradient(45deg, $color4, $color2 49%, $color1 50%);
         //border:1px solid $color2;
-        left:0;
-        bottom:0;
         margin-top:100px;
-        float:left;
     }
 
     .right-triangle{
@@ -44,8 +51,25 @@ $color5:darken($blue, 50%);
 	    clip-path:polygon(0 0, 100% 0, 100% 100%);
         background: linear-gradient(45deg, $color1 50%, $color2 51%, $color4 100%);
         //border:1px solid $color2;
-        right:0;
-        top:0;
-        float:right;
-    }    
+    }  
+
+    .left-curtain{
+        width:500px;
+        height:400px;
+        background-color:red;
+        clip-path:polygon(0 0, 100px 0, 100% 100%, 0 100%);
+        background: linear-gradient(45deg, $color4, $color1 50%);
+       // z-index:100;
+    }  
+
+    .right-curtain{
+        //display:none;
+        width:500px;
+        height:400px;
+        background-color:white;
+        clip-path:polygon(0 0, 100% 0, 100% 100%, 400px 100%);
+        background: linear-gradient(45deg, $color1 50%,  $color4 100%);
+        //z-index:100;
+    } 
+
 }
