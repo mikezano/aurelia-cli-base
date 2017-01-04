@@ -1,7 +1,8 @@
 template
     require(from="./hub.css")
-    .container(ref="container")
-        .left-curtain
-        .right-curtain
-        .left-triangle
-        .right-triangle
+    .parent
+        .container(ref="container")
+            .left-curtain(ref="leftCurtain")
+            .right-curtain(ref="rightCurtain")
+            .left-triangle(ref="leftCorner")
+            .right-triangle(ref="rightCorner")
