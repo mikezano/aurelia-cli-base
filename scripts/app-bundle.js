@@ -29,6 +29,7 @@ define('main',["require", "exports", "./environment"], function (require, export
     function configure(aurelia) {
         aurelia.use
             .standardConfiguration()
+            .plugin("aurelia-animator-velocity")
             .feature('resources');
         if (environment_1.default.debug) {
             aurelia.use.developmentLogging();

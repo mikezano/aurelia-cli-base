@@ -121,6 +121,18 @@
           "aurelia-templating",
           "aurelia-templating-binding",
           "text",
+          "aurelia-animator-velocity",
+          {
+            "name": "velocity-animate",
+            "path": "../node_modules/velocity-animate",
+            "main": "velocity",
+            "deps": ["jquery"],
+            "resources": ["velocity.ui.js"]
+          },
+          {
+            "name": "velocity",
+            "path": "../scripts/velocity-shim"
+          },        
           {
             "name": "aurelia-templating-resources",
             "path": "../node_modules/aurelia-templating-resources/dist/amd",
