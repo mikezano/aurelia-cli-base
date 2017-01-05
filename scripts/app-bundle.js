@@ -109,10 +109,10 @@ define('resources/elements/hub',["require", "exports", "aurelia-framework", "aur
                 { e: this.rightCorner, p: { translateX: 300 }, o: { duration: 0, sequenceQueue: false } },
                 { e: this.container, p: { width: 600 }, o: { duration: duration / 3, easing: easeOut } },
                 { e: this.container, p: { height: 400 }, o: { duration: duration / 2.5, easing: easeOut } },
-                { e: this.leftCorner, p: { translateX: 0 }, o: { duration: duration / 2, easing: easeOut } },
-                { e: this.rightCorner, p: { translateX: 0 }, o: { duration: duration / 2, easing: easeOut, sequenceQueue: false } },
-                { e: this.leftCurtain, p: { translateX: -500, }, o: { duration: duration, easing: easeOut } },
-                { e: this.rightCurtain, p: { translateX: 500, }, o: { duration: duration, easing: easeOut, sequenceQueue: false } }
+                { e: this.leftCorner, p: { translateX: 0 }, o: { duration: duration / 2.5, easing: easeOut } },
+                { e: this.rightCorner, p: { translateX: 0 }, o: { duration: duration / 2.5, easing: easeOut, sequenceQueue: false } },
+                { e: this.leftCurtain, p: { translateX: -500 }, o: { duration: duration * 2, easing: easeOut } },
+                { e: this.rightCurtain, p: { translateX: 500 }, o: { duration: duration * 2, easing: easeOut, sequenceQueue: false } }
             ]);
         };
         Hub.prototype.valueChanged = function (newValue, oldValue) {

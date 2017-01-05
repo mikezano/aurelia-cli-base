@@ -57,10 +57,10 @@ export class Hub {
       //{ e: this.leftCurtain, p: { translateX: 0 }, o: { duration: duration/2, sequenceQueue: false} },  
       //{ e: this.rightCurtain, p: { translateX: 0 }, o: { duration: duration/2, sequenceQueue: false} },  
       //{ e: this.container, p: { height: 400}, o: { duration: duration/2, easing: easeOut} },
-      { e: this.leftCorner, p: { translateX: 0 }, o: { duration: duration/2, easing:easeOut} },
-      { e: this.rightCorner, p: { translateX: 0 }, o: { duration: duration/2, easing:easeOut, sequenceQueue: false} },
-      { e: this.leftCurtain, p: { translateX: -500, }, o: { duration: duration, easing: easeOut} },
-      { e: this.rightCurtain, p: { translateX: 500 , }, o: { duration: duration, easing: easeOut, sequenceQueue: false } }
+      { e: this.leftCorner, p: { translateX: 0 }, o: { duration: duration/2.5, easing:easeOut} },
+      { e: this.rightCorner, p: { translateX: 0 }, o: { duration: duration/2.5, easing:easeOut, sequenceQueue: false} },
+      { e: this.leftCurtain, p: { translateX: -500 }, o: { duration: duration*2, easing: easeOut} },
+      { e: this.rightCurtain, p: { translateX: 500 }, o: { duration: duration*2, easing: easeOut, sequenceQueue: false } }
     ]);
   }
   valueChanged(newValue, oldValue) {
