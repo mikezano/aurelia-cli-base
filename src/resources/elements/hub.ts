@@ -25,7 +25,7 @@ export class Hub {
 
   public initialState(){
     this.container.style.height = '10px';
-    //this.container.style.width = '10px';
+    this.container.style.width = '10px';
     this.leftCorner.style.transform = "translateX(-300px)";
     this.rightCorner.style.transform = "translateX(300px)";
     //this.leftCorner.style.display = "none";
@@ -49,12 +49,17 @@ export class Hub {
     this.velocity.runSequence([
       { e: this.leftCorner, p: { translateX: -300 }, o: { duration: 0} },
       { e: this.rightCorner, p: { translateX: 300 }, o: { duration: 0, sequenceQueue: false} },      
-      { e: this.container, p: { height:400}, o: { duration: duration*2, easing: easeOut} },
+      //{ e: this.leftCurtain, p: { translateX: -500 }, o: { duration: 0, sequenceQueue: false} },      
+      //{ e: this.rightCurtain, p: { translateX: 500 }, o: { duration: 0, sequenceQueue: false} },    
+      { e: this.container, p: { width:600}, o: { duration: duration/4, easing: easeOut} },  
+      { e: this.container, p: { height:400}, o: { duration: duration/2, easing: easeOut} },
+      //{ e: this.leftCurtain, p: { translateX: 0 }, o: { duration: duration/2, sequenceQueue: false} },  
+      //{ e: this.rightCurtain, p: { translateX: 0 }, o: { duration: duration/2, sequenceQueue: false} },  
       //{ e: this.container, p: { height: 400}, o: { duration: duration/2, easing: easeOut} },
       { e: this.leftCorner, p: { translateX: 0 }, o: { duration: duration/2, easing:easeOut} },
       { e: this.rightCorner, p: { translateX: 0 }, o: { duration: duration/2, easing:easeOut, sequenceQueue: false} },
       { e: this.leftCurtain, p: { translateX: -500, }, o: { duration: duration*2, easing: easeOut} },
-    { e: this.rightCurtain, p: { translateX: 500 , }, o: { duration: duration*2, easing: easeOut, sequenceQueue: false } }
+      { e: this.rightCurtain, p: { translateX: 500 , }, o: { duration: duration*2, easing: easeOut, sequenceQueue: false } }
     ]);
   }
   valueChanged(newValue, oldValue) {
