@@ -38,25 +38,20 @@ export class Hub {
   public attached(){
     console.log(this.container);
 
-    this.initialState();
-    this.runSequence();
+   // this.initialState();
+   // this.runSequence();
   }
 
   public runSequence(){
         var duration:number = 1000;
     //var easeOut:number[] = [0.19, 0.92, 0.23, 1];
-    var easeOut:number[] = [.2,1,.1,.95];
+    var easeOut:number[] = [.2,1,.8,.95];
     var easeIn:number[] = [.95,.03,.95,.04];
     this.velocity.runSequence([
       { e: this.leftCorner, p: { translateX: -300 }, o: { duration: 0} },
-      { e: this.rightCorner, p: { translateX: 300 }, o: { duration: 0, sequenceQueue: false} },      
-      //{ e: this.leftCurtain, p: { translateX: -500 }, o: { duration: 0, sequenceQueue: false} },      
-      //{ e: this.rightCurtain, p: { translateX: 500 }, o: { duration: 0, sequenceQueue: false} },    
+      { e: this.rightCorner, p: { translateX: 300 }, o: { duration: 0, sequenceQueue: false} },         
       { e: this.container, p: { width:600}, o: { duration: duration/3, easing: easeOut} },  
       { e: this.container, p: { height:400}, o: { duration: duration/2.5, easing: easeOut} },
-      //{ e: this.leftCurtain, p: { translateX: 0 }, o: { duration: duration/2, sequenceQueue: false} },  
-      //{ e: this.rightCurtain, p: { translateX: 0 }, o: { duration: duration/2, sequenceQueue: false} },  
-      //{ e: this.container, p: { height: 400}, o: { duration: duration/2, easing: easeOut} },
       { e: this.leftCorner, p: { translateX: 0 }, o: { duration: duration/2.5, easing:easeOut} },
       { e: this.rightCorner, p: { translateX: 0 }, o: { duration: duration/2.5, easing:easeOut, sequenceQueue: false} },
       { e: this.leftCurtain, p: { translateX: -500 }, o: { duration: duration*2, easing: easeOut} },

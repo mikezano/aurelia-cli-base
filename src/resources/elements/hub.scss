@@ -1,6 +1,8 @@
 @import '../colors';
 
 $size:300px;
+$containerWidth: 600px;
+$containerHeight: 400px;
 $color1:darken($blue, 10%);
 $color2:darken($blue, 20%);
 $color3:darken($blue, 30%);
@@ -20,52 +22,76 @@ $color5:darken($blue, 50%);
     align-items: center;
     justify-content:center;
 }
+
+.container-curtains{
+    width: $containerWidth;
+    height:$containerHeight;
+    border:1px solid white;
+    position:absolute;
+
+    .left-curtain, .right-curtain{
+        position:absolute;
+        top:0;
+        width: $containerWidth - 100px;
+        height: $containerHeight;
+    }
+
+    .left-curtain{       
+        clip-path:polygon(0 0, 100px 0, 100% 100%, 0 100%);
+        background: linear-gradient(45deg, $color4, $color1 50%);
+        left:0;
+    }  
+
+    .right-curtain{
+        clip-path:polygon(0 0, 100% 0, 100% 100%, 400px 100%);
+        background: linear-gradient(45deg, $color1 50%,  $color4 100%);
+        right:0;
+    }     
+}
+
+.container-corners {
+    width: $containerWidth;
+    height:$containerHeight;
+    border:1px solid red;  
+    position:absolute; 
+
+    .left-corner, .right-corner{
+        width: $size;
+        height: $size;       
+    }
+
+    .left-corner{
+        shape-outside: polygon(0 100px, 100% 100%, 0 100%);
+	    clip-path:polygon(0 0, 100% 100%, 0 100%);
+        background: linear-gradient(45deg, $color5, $color2 49%, $color1 50%);
+        float:left;
+        margin-top:100px;
+    }
+
+    .right-corner{
+        shape-outside: polygon(0 0, 100% 0, 100% 100%);
+	    clip-path:polygon(0 0, 100% 0, 100% 100%);
+        background: linear-gradient(45deg, $color1 50%, $color2 51%, $color4);
+        float:right;
+    }      
+}
 .container{
 
     height:400px;
     width:600px;
+    position:absolute;
     overflow:hidden;
     background:radial-gradient($color2, $color3);
     border:1px solid $color1;
     position:absolute;
     color:white;
     box-shadow:4px 4px 16px #222;
-
-    .left-triangle, .right-triangle, .left-curtain, .right-curtain{
-        position:absolute;
-    }
-
-    .left-triangle, .left-curtain{
-        left:0;
-        bottom:0;
-    }
-
-    .right-triangle, .right-curtain{
-        top:0;
-        right:0;
-    }
-
-    .left-triangle{
-        width:$size;
-        height:$size;
-        shape-outside: polygon(0 0, 100% 100%, 0 100%);
-	    clip-path:polygon(0 0, 100% 100%, 0 100%);
-        background: linear-gradient(45deg, $color4, $color2 49%, $color1 50%);
-    }
-
-    .right-triangle{
-        width:$size;
-        height:$size;
-        shape-outside: polygon(0 0, 100% 0, 100% 100%);
-        float:right;
-	    clip-path:polygon(0 0, 100% 0, 100% 100%);
-        background: linear-gradient(45deg, $color1 50%, $color2 51%, $color4 100%);
-        //border:1px solid $color2;
-    }  
+    z-index:10;
 
     .left-curtain{
         width:500px;
         height:400px;
+        
         clip-path:polygon(0 0, 100px 0, 100% 100%, 0 100%);
         background: linear-gradient(45deg, $color4, $color1 50%);
         //z-index:100;
@@ -76,6 +102,9 @@ $color5:darken($blue, 50%);
         height:400px;
         clip-path:polygon(0 0, 100% 0, 100% 100%, 400px 100%);
         background: linear-gradient(45deg, $color1 50%,  $color4 100%);
+        position:absolute;
+        right:0;
+        z-index:1;
         //z-index:99;
     } 
 }
