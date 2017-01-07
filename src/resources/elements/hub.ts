@@ -6,7 +6,9 @@ export class Hub {
   @bindable value;
 
   @bindable
-  public container:HTMLElement;
+  public containerContent:HTMLElement;
+  @bindable
+  public containerCurtains:HTMLElement;
   @bindable
   public leftCurtain:HTMLElement;
   @bindable
@@ -24,8 +26,9 @@ export class Hub {
   }
 
   public initialState(){
-    this.container.style.height = '10px';
-    this.container.style.width = '300px';
+    this.containerContent.style.height = '10px';
+    //this.containerContent.style.width = '300px';
+    this.containerCurtains.style.height = '10px';
     this.leftCorner.style.transform = "translateX(-300px)";
     this.rightCorner.style.transform = "translateX(300px)";
     //this.leftCorner.style.display = "none";
@@ -36,10 +39,10 @@ export class Hub {
     //this.leftCorner.style.top= "400px";
   }
   public attached(){
-    console.log(this.container);
+    console.log(this.containerContent);
 
-   // this.initialState();
-   // this.runSequence();
+    this.initialState();
+    this.runSequence();
   }
 
   public runSequence(){
@@ -50,8 +53,9 @@ export class Hub {
     this.velocity.runSequence([
       { e: this.leftCorner, p: { translateX: -300 }, o: { duration: 0} },
       { e: this.rightCorner, p: { translateX: 300 }, o: { duration: 0, sequenceQueue: false} },         
-      { e: this.container, p: { width:600}, o: { duration: duration/3, easing: easeOut} },  
-      { e: this.container, p: { height:400}, o: { duration: duration/2.5, easing: easeOut} },
+      //{ e: this.containerContent, p: { width:600}, o: { duration: duration/3, easing: easeOut} },  
+      { e: this.containerContent, p: { height:400}, o: { duration: duration/2.5, easing: easeOut} },
+      { e: this.containerCurtains, p: { height:400}, o: { duration: duration/2.5, easing: easeOut, sequenceQueue: false} },
       { e: this.leftCorner, p: { translateX: 0 }, o: { duration: duration/2.5, easing:easeOut} },
       { e: this.rightCorner, p: { translateX: 0 }, o: { duration: duration/2.5, easing:easeOut, sequenceQueue: false} },
       { e: this.leftCurtain, p: { translateX: -500 }, o: { duration: duration*2, easing: easeOut} },

@@ -23,11 +23,44 @@ $color5:darken($blue, 50%);
     justify-content:center;
 }
 
-.container-curtains{
-    width: $containerWidth;
+.container-content, .container-curtains, .container-corners{
+    overflow:hidden;
+    width:$containerWidth;
     height:$containerHeight;
-    border:1px solid white;
+}
+
+.container-content{
+    //background:radial-gradient($color2, $color3);
+    color:white;
+    border:1px solid $blue;
+    box-shadow:4px 4px 12px #222;
+
+    p{
+        padding:10px;
+        font-size:14px;
+        margin:0;
+    }
+    .left-corner-boundary, .right-corner-boundary{
+        width:$size;
+        height:$size;
+        shape-margin:10px;
+    }
+    .left-corner-boundary{
+        shape-outside: polygon(0 100px, 100% 100%, 0 100%);
+	    clip-path:polygon(0 0, 100% 100%, 0 100%);
+        float:left;
+        margin-top:100px;
+    }
+    .right-corner-boundary{
+        shape-outside: polygon(0 0, 100% 0, 100% 100%);
+	    clip-path:polygon(0 0, 100% 0, 100% 100%);
+        float:right;
+    }
+}
+
+.container-curtains{
     position:absolute;
+    z-index:9;
 
     .left-curtain, .right-curtain{
         position:absolute;
@@ -50,79 +83,28 @@ $color5:darken($blue, 50%);
 }
 
 .container-corners {
-    width: $containerWidth;
-    height:$containerHeight;
-    border:1px solid red;  
     position:absolute; 
+    z-index:10;
 
     .left-corner, .right-corner{
         width: $size;
-        height: $size;       
+        height: $size;   
+        position:absolute;    
     }
 
     .left-corner{
         shape-outside: polygon(0 100px, 100% 100%, 0 100%);
 	    clip-path:polygon(0 0, 100% 100%, 0 100%);
         background: linear-gradient(45deg, $color5, $color2 49%, $color1 50%);
-        float:left;
-        margin-top:100px;
+        left:0;
+        top:100px;
     }
 
     .right-corner{
         shape-outside: polygon(0 0, 100% 0, 100% 100%);
 	    clip-path:polygon(0 0, 100% 0, 100% 100%);
         background: linear-gradient(45deg, $color1 50%, $color2 51%, $color4);
-        float:right;
-    }      
-}
-.container{
-
-    height:400px;
-    width:600px;
-    position:absolute;
-    overflow:hidden;
-    background:radial-gradient($color2, $color3);
-    border:1px solid $color1;
-    position:absolute;
-    color:white;
-    box-shadow:4px 4px 16px #222;
-    z-index:10;
-
-    .left-curtain{
-        width:500px;
-        height:400px;
-        
-        clip-path:polygon(0 0, 100px 0, 100% 100%, 0 100%);
-        background: linear-gradient(45deg, $color4, $color1 50%);
-        //z-index:100;
-    }  
-
-    .right-curtain{
-        width:500px;
-        height:400px;
-        clip-path:polygon(0 0, 100% 0, 100% 100%, 400px 100%);
-        background: linear-gradient(45deg, $color1 50%,  $color4 100%);
-        position:absolute;
         right:0;
-        z-index:1;
-        //z-index:99;
-    } 
-}
-
-.container-polygon{
-    position:absolute;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    p{text-align:right;}
-    .polygon{
-        //position:absolute;
-        //top:0;
-        //left:0;
-        width:600px;
-        height:400px;
-        shape-outside: polygon(0 0, 300px 0, 600px 300px, 600px 400px,300px 400px, 0 100px);
-        float:right;
-    } 
+        top:0;
+    }      
 }
