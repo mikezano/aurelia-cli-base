@@ -30,10 +30,11 @@ $color5:darken($blue, 50%);
 }
 
 .container-content{
-    //background:radial-gradient($color2, $color3);
+    background:radial-gradient($color2, $color3);
     color:white;
     border:1px solid $blue;
     box-shadow:4px 4px 12px #222;
+    position:absolute;
 
     p{
         padding:10px;
@@ -56,11 +57,12 @@ $color5:darken($blue, 50%);
 	    clip-path:polygon(0 0, 100% 0, 100% 100%);
         float:right;
     }
-}
 
-.container-curtains{
-    position:absolute;
-    z-index:9;
+    .left-corner, .right-corner{
+        width: $size;
+        height: $size;   
+        position:absolute;    
+    }
 
     .left-curtain, .right-curtain{
         position:absolute;
@@ -80,6 +82,40 @@ $color5:darken($blue, 50%);
         background: linear-gradient(45deg, $color1 50%,  $color4 100%);
         right:0;
     }     
+
+    .left-corner{
+        shape-outside: polygon(0 100px, 100% 100%, 0 100%);
+	    clip-path:polygon(0 0, 100% 100%, 0 100%);
+        background: linear-gradient(45deg, $color5, $color2 49%, $color1 50%);
+        left:0;
+        bottom:0;
+        .corner-border{
+            width:$size;
+            height:$size;
+            border:1px solid white;
+            shape-outside: polygon(0 0, 100% 0, 100% 100%);
+            float:right;
+            //position:absolute;
+        }
+        ul{
+            text-align:right;
+        }
+    }
+
+    .right-corner{
+        shape-outside: polygon(0 0, 100% 0, 100% 100%);
+        clip-path:polygon(0 0, 100% 0, 100% 100%);
+        background: linear-gradient(45deg, $color1 50%, $color2 51%, $color4);
+        right:0;
+        top:0;
+    }   
+}
+
+.container-curtains{
+    position:absolute;
+    z-index:-1;
+
+    
 }
 
 .container-corners {

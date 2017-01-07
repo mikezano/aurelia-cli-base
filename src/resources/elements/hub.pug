@@ -8,14 +8,19 @@ template
             p Phasellus ac dictum nisi, non porttitor tortor. Phasellus lobortis, elit sed sodales scelerisque, erat ipsum elementum mi, vitae laoreet enim nisi sit amet leo. Suspendisse gravida, nisl non porta ultrices, nisi massa eleifend purus, sed aliquam diam sapien ut erat. In pellentesque
             p Phasellus ac dictum nisi, non porttitor tortor. Phasellus lobortis, elit sed sodales scelerisque, erat ipsum elementum mi, vitae laoreet enim nisi sit amet leo. Suspendisse gravida, nisl non porta ultrices, nisi massa eleifend purus, sed aliquam diam sapien ut erat. In pellentesque
             p Phasellus ac dictum nisi, non porttitor tortor. Phasellus lobortis, elit sed sodales scelerisque, erat ipsum elementum mi, vitae laoreet enim nisi sit amet leo. Suspendisse gravida, nisl non porta ultrices, nisi massa eleifend purus, sed aliquam diam sapien ut erat. In pellentesque
-            //p Phasellus ac dictum nisi, non porttitor tortor. Phasellus lobortis, elit sed sodales scelerisque, erat ipsum elementum mi, vitae laoreet enim nisi sit amet leo. Suspendisse gravida, nisl non porta ultrices, nisi massa eleifend purus, sed aliquam diam sapien ut erat. In pellentesque
-            //p Phasellus ac dictum nisi, non porttitor tortor. Phasellus lobortis, elit sed sodales scelerisque, erat ipsum elementum mi, vitae laoreet enim nisi sit amet leo. Suspendisse gravida, nisl non porta ultrices, nisi massa eleifend purus, sed aliquam diam sapien ut erat. In pellentesque   
-        .container-curtains(ref="containerCurtains")
+            
             .left-curtain(ref="leftCurtain")
-            .right-curtain(ref="rightCurtain")  
-        .container-corners 
+            .right-curtain(ref="rightCurtain") 
             .left-corner(ref="leftCorner")
+                .corner-border
+                ul
+                    li(click.delegate="curtainAnimate()") First
+                    li Sample be
+                    li Sample twee
+
             .right-corner(ref="rightCorner")  
+            
+
 
 
 
