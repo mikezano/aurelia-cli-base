@@ -1,5 +1,6 @@
 import { autoinject, bindable } from 'aurelia-framework';
 import {VelocityAnimator} from 'aurelia-animator-velocity';
+import {Router, RouterConfiguration} from 'aurelia-router';
 
 @autoinject()
 export class Hub {
@@ -21,10 +22,16 @@ export class Hub {
   public rightCorner:HTMLElement;
 
   public velocity:VelocityAnimator;
+  public router:Router;
 
-  constructor(velocity:VelocityAnimator){
+  constructor(velocity:VelocityAnimator, config:RouterConfiguration, router:Router){
     this.velocity = velocity;
-
+    // config.title="Zano";
+    // config.map([
+    //   { route: ['welcome'], name: 'welcome',      moduleId: 'welcome',      nav: true, title: 'Welcome' },
+    //   { route: 'users',         name: 'users',        moduleId: 'users',        nav: true, title: 'Github Users' }
+    // ]);
+    // this.router = router;
   }
 
   public initialState(){
