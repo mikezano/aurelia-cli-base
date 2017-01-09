@@ -5,22 +5,19 @@ template
         .container-content(ref="containerContent")
             .left-corner-boundary(ref="leftCornerBoundary")
             .right-corner-boundary(ref="rightCornerBoundary")
-            p Phasellus ac dictum nisi, non porttitor tortor. Phasellus lobortis, elit sed sodales scelerisque, erat ipsum elementum mi, vitae laoreet enim nisi sit amet leo. Suspendisse gravida, nisl non porta ultrices, nisi massa eleifend purus, sed aliquam diam sapien ut erat. In pellentesque
-            p Phasellus ac dictum nisi, non porttitor tortor. Phasellus lobortis, elit sed sodales scelerisque, erat ipsum elementum mi, vitae laoreet enim nisi sit amet leo. Suspendisse gravida, nisl non porta ultrices, nisi massa eleifend purus, sed aliquam diam sapien ut erat. In pellentesque
-            p Phasellus ac dictum nisi, non porttitor tortor. Phasellus lobortis, elit sed sodales scelerisque, erat ipsum elementum mi, vitae laoreet enim nisi sit amet leo. Suspendisse gravida, nisl non porta ultrices, nisi massa eleifend purus, sed aliquam diam sapien ut erat. In pellentesque
-            //router-view
+            router-view
+                
             .left-curtain(ref="leftCurtain")
             .right-curtain(ref="rightCurtain") 
             .left-corner(ref="leftCorner")
                 .corner-border
-                ul
-                    li(click.delegate="curtainAnimate()") First
-                    li Sample be
-                    li Sample twee
-                    li(repeat.for="row of router.navigation" class="${row.isActive ? 'active' : ''}")
-                        a(data-toggle="collapse" data-target="#bs-example-navbar-collapse-1.in" href.bind="row.href") ${row.title}
+                ul(repeat.for="row of router.navigation" class="${row.isActive ? 'active' : ''}")
+                    li
+                        a(href.bind="row.href") ${row.title}
 
+                   
             .right-corner(ref="rightCorner")  
+        
             
 
 

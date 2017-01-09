@@ -20,18 +20,13 @@ export class Hub {
   public leftCorner:HTMLElement;
   @bindable
   public rightCorner:HTMLElement;
-
-  public velocity:VelocityAnimator;
+  @bindable
   public router:Router;
 
-  constructor(velocity:VelocityAnimator, config:RouterConfiguration, router:Router){
+  public velocity:VelocityAnimator;
+
+  constructor(velocity:VelocityAnimator){
     this.velocity = velocity;
-    // config.title="Zano";
-    // config.map([
-    //   { route: ['welcome'], name: 'welcome',      moduleId: 'welcome',      nav: true, title: 'Welcome' },
-    //   { route: 'users',         name: 'users',        moduleId: 'users',        nav: true, title: 'Github Users' }
-    // ]);
-    // this.router = router;
   }
 
   public initialState(){

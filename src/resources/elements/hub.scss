@@ -99,6 +99,9 @@ $color5:darken($blue, 50%);
         }
         ul{
             text-align:right;
+            list-style-type:none;
+            a{color:white;}
+
         }
     }
 
