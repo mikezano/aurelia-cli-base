@@ -15,11 +15,21 @@ define('app',["require", "exports", "aurelia-framework", "aurelia-event-aggregat
         }
         App.prototype.configureRouter = function (config, router) {
             var _this = this;
+            var close = {
+                run: function (navigationInsruction, next) {
+                    _this.ea.publish('toggleCurtains', { value: true });
+                    return next();
+                }
+            };
+            var open = {
+                run: function (navigationInsruction, next) {
+                    _this.ea.publish('toggleCurtains', { value: false });
+                    return next();
+                }
+            };
             config.title = "Zano";
-            config.addPreRenderStep(function (s, v) {
-                debugger;
-                return _this.closeCurtains();
-            });
+            config.addPreActivateStep(close);
+            config.addPostRenderStep(open);
             config.map([
                 { route: ['', 'resume'], name: 'resume', moduleId: 'resume', nav: true, title: 'Resume' },
                 { route: ['css-tricks'], name: 'css-tricks', moduleId: 'css-tricks', nav: true, title: 'CSS tricks' },
@@ -199,7 +209,6 @@ define('resources/elements/hub',["require", "exports", "aurelia-framework", "aur
             this.toggleCurtain = false;
             this.velocity = velocity;
             this.ea = ea;
-            debugger;
             this.ea.subscribe('toggleCurtains', function (value) {
                 _this.curtainAnimate(value);
             });

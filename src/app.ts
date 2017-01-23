@@ -10,12 +10,25 @@ export class App {
   constructor(private ea:EventAggregator){
   }
   public configureRouter(config:RouterConfiguration, router:Router){
+
+    var close = {
+      run:(navigationInsruction, next)=>{
+        //debugger;
+        this.ea.publish('toggleCurtains',{value:true});
+        return next();
+      }
+    };
+    var open = {
+      run:(navigationInsruction, next)=>{
+        //debugger;
+        this.ea.publish('toggleCurtains',{value:false});
+        return next();
+      }
+    };    
     //debugger;
     config.title="Zano";
-    config.addPreRenderStep((s,v)=>{
-          debugger;
-      return this.closeCurtains();
-    });
+    config.addPreActivateStep(close);
+    config.addPostRenderStep(open);
     config.map([
       { route: ['', 'resume'], name: 'resume',      moduleId: 'resume', nav: true, title: 'Resume' },
       { route: ['css-tricks'], name: 'css-tricks',      moduleId: 'css-tricks', nav: true, title: 'CSS tricks' },

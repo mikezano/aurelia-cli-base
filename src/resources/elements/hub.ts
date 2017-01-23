@@ -34,7 +34,6 @@ export class Hub {
     // this.ea.subscribe('closeCurtains', ()=>{
     //     this.curtainAnimate();
     // });
-    debugger;
     this.ea.subscribe('toggleCurtains', (value:boolean)=>{
         this.curtainAnimate(value);
     });    
