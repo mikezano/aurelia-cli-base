@@ -1,6 +1,7 @@
 import { autoinject, bindable } from 'aurelia-framework';
 import {VelocityAnimator} from 'aurelia-animator-velocity';
 import {Router, RouterConfiguration} from 'aurelia-router';
+import {EventAggregator} from 'aurelia-event-aggregator';
 
 @autoinject()
 export class Hub {
@@ -24,9 +25,19 @@ export class Hub {
   public router:Router;
 
   public velocity:VelocityAnimator;
+  public ea:EventAggregator;
 
-  constructor(velocity:VelocityAnimator){
+  constructor(velocity:VelocityAnimator, ea:EventAggregator){
     this.velocity = velocity;
+    this.ea = ea;
+
+    // this.ea.subscribe('closeCurtains', ()=>{
+    //     this.curtainAnimate();
+    // });
+    debugger;
+    this.ea.subscribe('toggleCurtains', (value:boolean)=>{
+        this.curtainAnimate(value);
+    });    
   }
 
   public initialState(){
@@ -55,14 +66,17 @@ export class Hub {
     ]);
   }
 
-  public curtainAnimate():void{
+  public curtainAnimate(value:boolean):void{
 
-    this.toggleCurtain = !this.toggleCurtain;
+    // this.toggleCurtain = !this.toggleCurtain;
+    this.toggleCurtain = value;
 
     this.velocity.runSequence([
       { e: this.leftCurtain, p: { translateX: this.toggleCurtain? 0: -500 }, o: { duration: Hub.duration, easing: Hub.easeOut} },
       { e: this.rightCurtain, p: { translateX: this.toggleCurtain? 0: 500 }, o: { duration: Hub.duration, easing: Hub.easeOut, sequenceQueue: false } }
     ]);
   }
+
+
 }
 

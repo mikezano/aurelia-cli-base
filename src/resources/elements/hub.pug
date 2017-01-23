@@ -13,9 +13,7 @@ template
                 .corner-border
                 ul(repeat.for="row of router.navigation" class="${row.isActive ? 'active' : ''}")
                     li
-                        a(href.bind="row.href") ${row.title}
-
-                   
+                        a(href.bind="row.href") ${row.title}            
             .right-corner(ref="rightCorner")  
         
             
