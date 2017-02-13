@@ -121,6 +121,7 @@
           "aurelia-templating",
           "aurelia-templating-binding",
           "text",
+          "aurelia-animator-css",
           "aurelia-animator-velocity",
           {
             "name": "velocity-animate",

@@ -66,14 +66,16 @@ export class Hub {
   }
 
   public curtainAnimate(value:boolean):void{
-
+    return;
     // this.toggleCurtain = !this.toggleCurtain;
-    this.toggleCurtain = value;
+    // this.toggleCurtain = value;
 
-    this.velocity.runSequence([
-      { e: this.leftCurtain, p: { translateX: this.toggleCurtain? 0: -500 }, o: { duration: Hub.duration, easing: Hub.easeOut} },
-      { e: this.rightCurtain, p: { translateX: this.toggleCurtain? 0: 500 }, o: { duration: Hub.duration, easing: Hub.easeOut, sequenceQueue: false } }
-    ]);
+    // this.velocity.runSequence([
+    //   { e: this.leftCurtain, p: { translateX: this.toggleCurtain? 0: -500 }, o: { duration: Hub.duration, easing: Hub.easeOut} },
+    //   { e: this.rightCurtain, p: { translateX: this.toggleCurtain? 0: 500 }, o: { duration: Hub.duration, easing: Hub.easeOut, sequenceQueue: false } }
+    // ]);
+
+    // this.ea.publish('finished-animating-curtain');
   }
 
 

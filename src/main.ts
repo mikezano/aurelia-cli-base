@@ -13,6 +13,7 @@ export function configure(aurelia: Aurelia) {
   aurelia.use
     .standardConfiguration()
     .plugin("aurelia-animator-velocity")
+    .plugin("aurelia-animator-css")
     .feature('resources');
 
   if (environment.debug) {

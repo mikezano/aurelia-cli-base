@@ -13,19 +13,18 @@ export class App {
 
     var close = {
       run:(navigationInsruction, next)=>{
-        //debugger;
         this.ea.publish('toggleCurtains',{value:true});
         return next();
       }
     };
     var open = {
       run:(navigationInsruction, next)=>{
-        //debugger;
+        
         this.ea.publish('toggleCurtains',{value:false});
         return next();
       }
     };    
-    //debugger;
+
     config.title="Zano";
     config.addPreActivateStep(close);
     config.addPostRenderStep(open);
