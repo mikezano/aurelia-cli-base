@@ -34,8 +34,8 @@ export class Hub {
     // this.ea.subscribe('closeCurtains', ()=>{
     //     this.curtainAnimate();
     // });
-    this.ea.subscribe('toggleCurtains', (value:boolean)=>{
-        this.curtainAnimate(value);
+    this.ea.subscribe('toggleCurtains', (data:any)=>{
+        this.curtainAnimate(data.value, data.wait);
     });    
   }
 
@@ -58,22 +58,25 @@ export class Hub {
       //{ e: this.containerContent, p: { width:600}, o: { duration: duration/3, easing: easeOut} },  
       { e: this.containerContent, p: { height:400}, o: { duration: Hub.duration/2.5, easing: Hub.easeOut} },
       //{ e: this.containerCurtains, p: { height:400}, o: { duration: duration/2.5, easing: easeOut, sequenceQueue: false} },
-      { e: this.leftCorner, p: { translateX: 0 }, o: { duration: Hub.duration/2.5, easing:Hub.easeOut} },
-      { e: this.rightCorner, p: { translateX: 0 }, o: { duration: Hub.duration/2.5, easing:Hub.easeOut, sequenceQueue: false} },
-      { e: this.leftCurtain, p: { translateX: -500 }, o: { duration: Hub.duration*2, easing: Hub.easeOut} },
-      { e: this.rightCurtain, p: { translateX: 500 }, o: { duration: Hub.duration*2, easing: Hub.easeOut, sequenceQueue: false } }
+      { e: this.leftCorner, p: { translateX: 0 }, o: { duration: Hub.duration/2, easing:Hub.easeOut} },
+      { e: this.rightCorner, p: { translateX: 0 }, o: { duration: Hub.duration/2, easing:Hub.easeOut, sequenceQueue: false} },
+      { e: this.leftCurtain, p: { translateX: -500 }, o: { duration: Hub.duration*1.5, easing: Hub.easeOut} },
+      { e: this.rightCurtain, p: { translateX: 500 }, o: { duration: Hub.duration*1.5, easing: Hub.easeOut, sequenceQueue: false } }
     ]);
   }
 
-  public curtainAnimate(value:boolean):void{
-    return;
-    // this.toggleCurtain = !this.toggleCurtain;
-    // this.toggleCurtain = value;
+  public curtainAnimate(value:boolean, wait:number = 0):void{
 
-    // this.velocity.runSequence([
-    //   { e: this.leftCurtain, p: { translateX: this.toggleCurtain? 0: -500 }, o: { duration: Hub.duration, easing: Hub.easeOut} },
-    //   { e: this.rightCurtain, p: { translateX: this.toggleCurtain? 0: 500 }, o: { duration: Hub.duration, easing: Hub.easeOut, sequenceQueue: false } }
-    // ]);
+    this.toggleCurtain = value;
+
+    this.velocity.runSequence([
+      { e: this.leftCurtain, 
+        p: { translateX: this.toggleCurtain? 0: -500 }, 
+        o: { duration: Hub.duration, easing: Hub.easeOut, delay: wait } },
+      { e: this.rightCurtain, 
+        p: { translateX: this.toggleCurtain? 0: 500 }, 
+        o: { duration: Hub.duration, easing: Hub.easeOut, sequenceQueue: false } }
+    ]);
 
     // this.ea.publish('finished-animating-curtain');
   }

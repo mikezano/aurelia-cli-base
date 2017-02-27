@@ -19,15 +19,15 @@ export class App {
     };
     var open = {
       run:(navigationInsruction, next)=>{
-        
+        debugger;
         this.ea.publish('toggleCurtains',{value:false});
         return next();
       }
     };    
 
     config.title="Zano";
-    config.addPreActivateStep(close);
-    config.addPostRenderStep(open);
+    //config.addPreActivateStep(close);
+    //config.addPostRenderStep(open);
     config.map([
       { route: ['', 'resume'], name: 'resume',      moduleId: 'resume', nav: true, title: 'Resume' },
       { route: ['css-tricks'], name: 'css-tricks',      moduleId: 'css-tricks', nav: true, title: 'CSS tricks' },
@@ -46,3 +46,6 @@ export class App {
     this.ea.publish('toggleCurtains',{value:false});
   }
 }
+
+//
+//http://stackoverflow.com/questions/38508898/how-to-provide-information-to-candeactivate-in-aurelia-view-model

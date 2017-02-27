@@ -1,37 +1,18 @@
 import {bindable, autoinject} from 'aurelia-framework';
 import {EventAggregator} from 'aurelia-event-aggregator';
+import {BaseVM} from './baseViewModel';
 
 @autoinject()
-export class Resume {
+export class Resume extends BaseVM {
   @bindable value;
 
-  public ea:EventAggregator;
-
     constructor(ea:EventAggregator){
-      this.ea = ea;
+        super(ea);
+      //this.ea = ea;
       console.log('constructor');
       //this.ea.publish('closeCurtains',{});
     }
 
-    public attached() {
-        console.log("attached");
-    }
- 
-    public activated() {
-        console.log("activated");
-    }
- 
-    public created() {
-        console.log("created");
-    }
- 
-    public activate() {
-        console.log("activate");
-    }
- 
-    public canActivate() {
-        console.log("canActivate");
 
-    }
 }
 
