@@ -5,9 +5,10 @@
 	bottom:0;
 	right:0;
 	z-index:10;
-	background: radial-gradient(green, #ddd);
+	background: radial-gradient(#ddd, #888);
 	padding:10px;
-
+	display:flex;
+	justify-content:center;
 
 	button{
 		font-size:20px;
@@ -15,13 +16,14 @@
 		padding:4px 10px;
 
 		&.background-color{
-			$backgroundColor: #444444;
-			color:white;
-			transition: background .2s ease-in-out, box-shadow .2s ease-in-out;
+			$backgroundColor: hsla(176, 100%, 50%, 1);
+			color: darken($backgroundColor, 20%);
+			transition: all .2s ease-in-out;
 			background-color:$backgroundColor;
 			&:hover{
 				background-color:darken($backgroundColor, 10%);
 				box-shadow: 2px 2px 4px hsla(0, 0, 0, 50%);
+				color: $backgroundColor;
 			}
 		}
 
