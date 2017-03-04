@@ -1,0 +1,39 @@
+.button-sandbox{
+	position:fixed;
+	top:0;
+	left:0;
+	bottom:0;
+	right:0;
+	z-index:10;
+	background: radial-gradient(green, #ddd);
+	padding:10px;
+
+
+	button{
+		font-size:20px;
+		border:none;
+		padding:4px 10px;
+
+		&.background-color{
+			$backgroundColor: #444444;
+			color:white;
+			transition: background .2s ease-in-out, box-shadow .2s ease-in-out;
+			background-color:$backgroundColor;
+			&:hover{
+				background-color:darken($backgroundColor, 10%);
+				box-shadow: 2px 2px 4px hsla(0, 0, 0, 50%);
+			}
+		}
+
+		&.border{
+			$backgroundColor: #34c;
+			color:white;
+			transition: all .2s ease-in-out;
+			background-color:$backgroundColor;
+			border:3px solid darken($backgroundColor, 10%);
+			&:hover{
+				border:3px solid darken($backgroundColor, 20%);
+			}
+		}		
+	}
+}

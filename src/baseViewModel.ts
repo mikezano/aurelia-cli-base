@@ -7,9 +7,11 @@ export class BaseVM {
         this._ea = ea;
     }
 
+
+
     public attached() {
         console.log("attached");
-        this._ea.publish('toggleCurtains',{value:false, wait:1000});
+        this._ea.publish('toggleCurtains',{value:false, wait:0});
     }
  
     public activated() {
@@ -29,8 +31,19 @@ export class BaseVM {
     }
 
     public canDeactivate(){
-        this._ea.publish('toggleCurtains',{value:true, wait: 0});
+        
         return true;
+    }
+
+    public deactivate(){
+        return new Promise((resolve)=>{
+            this._ea.publish('toggleCurtains',{value:true, wait: 0});
+            setTimeout(()=>{
+                resolve();
+            },1000);
+            
+        });
     }
 }
 
+//https://www.danyow.net/inversion-of-control-with-aurelia-part-1/

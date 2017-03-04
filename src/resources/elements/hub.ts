@@ -26,16 +26,16 @@ export class Hub {
 
   public velocity:VelocityAnimator;
   public ea:EventAggregator;
+  public firstTime:boolean = true;
 
   constructor(velocity:VelocityAnimator, ea:EventAggregator){
     this.velocity = velocity;
     this.ea = ea;
 
-    // this.ea.subscribe('closeCurtains', ()=>{
-    //     this.curtainAnimate();
-    // });
     this.ea.subscribe('toggleCurtains', (data:any)=>{
-        this.curtainAnimate(data.value, data.wait);
+        if(this.firstTime != true)
+          this.curtainAnimate(data.value, data.wait);
+        this.firstTime = false;
     });    
   }
 

@@ -31,7 +31,7 @@ export class App {
     config.map([
       { route: ['', 'resume'], name: 'resume',      moduleId: 'resume', nav: true, title: 'Resume' },
       { route: ['css-tricks'], name: 'css-tricks',      moduleId: 'css-tricks', nav: true, title: 'CSS tricks' },
-      { route: 'users',         name: 'users',        moduleId: 'users',        nav: true, title: 'Github Users' }
+      { route: ['buttons'], name: 'buttons',      moduleId: 'experiments/buttonSandbox', nav: true, title: 'Buttons' }
     ]);
     //debugger;
 

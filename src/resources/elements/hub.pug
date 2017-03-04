@@ -11,9 +11,14 @@ template
             .right-curtain(ref="rightCurtain") 
             .left-corner(ref="leftCorner")
                 .corner-border
-                ul(repeat.for="row of router.navigation" class="${row.isActive ? 'active' : ''}")
+                //ul(repeat.for="row of router.navigation" class="${row.isActive ? 'active' : ''}")
                     li
-                        a(href.bind="row.href") ${row.title}            
+                        a(href.bind="row.href") ${row.title}  
+                ul(class="${row.isActive ? 'active' : ''}")
+                    li
+                        a(href="#/resume") Resume 
+                    li                            
+                        a(href="#/css-tricks") CSS                            
             .right-corner(ref="rightCorner")  
         
             

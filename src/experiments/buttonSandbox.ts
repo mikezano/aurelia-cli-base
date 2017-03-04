@@ -1,12 +1,12 @@
 import {bindable, autoinject} from 'aurelia-framework';
 import {EventAggregator} from 'aurelia-event-aggregator';
-import {BaseVM} from './baseViewModel';
+import {BaseVM} from '../baseViewModel';
 
 @autoinject()
-export class CssTricks extends BaseVM{
+export class ButtonSandbox extends BaseVM {
 
     constructor(ea:EventAggregator){
-    	super(ea);
+        super(ea);
     }
 }
 
