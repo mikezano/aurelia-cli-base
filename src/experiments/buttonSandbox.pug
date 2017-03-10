@@ -1,11 +1,11 @@
 template
 	require(from="./buttonSandbox.css")
-	require(from="./resources/elements/button_code")
+	require(from="../resources/elements/button_code")
 
 	.au-animate.button-sandbox
 		a(href="javascript:history.back()") Go Back
 
-		button_code(repeat.for="item of items" model.bind="item")
+		button-code(repeat.for="model of models" model.bind="model")
 
 		.grid
 			.header Normal

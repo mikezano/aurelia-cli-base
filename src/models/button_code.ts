@@ -1,4 +1,4 @@
-export class ButtonCode{
+export class ButtonCodeModel{
 
   public title:string = "Title";
   public className:string = "ClassName";

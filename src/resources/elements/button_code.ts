@@ -1,5 +1,5 @@
 import {bindable} from 'aurelia-framework';
-import {ButtonCode as ButtonCodeModel} from '../../models/button_code';
+import {ButtonCodeModel} from '../../models/button_code';
 
 export class ButtonCode {
   @bindable value;
