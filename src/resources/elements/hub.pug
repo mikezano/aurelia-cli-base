@@ -10,17 +10,23 @@ template
             .left-curtain(ref="leftCurtain")
             .right-curtain(ref="rightCurtain") 
             .left-corner(ref="leftCorner")
-                .corner-border
-                //ul(repeat.for="row of router.navigation" class="${row.isActive ? 'active' : ''}")
-                    li
-                        a(href.bind="row.href") ${row.title}  
+                .corner-border 
                 ul(class="${row.isActive ? 'active' : ''}")
                     li
                         a(href="#/resume") Home
                     li                            
-                        a(href="#/css-tricks") CSS                            
-            .right-corner(ref="rightCorner")  
-        
+                        a(href="#/css-tricks") CSS      
+                    li                            
+                        a(href="#/css-tricks") About                                              
+            .right-corner(ref="rightCorner") 
+                .corner-border 
+                ul 
+                    li
+                        a(href="#/resume") Concepts
+                    li                            
+                        a(href="#/css-tricks") Components      
+                    li                            
+                        a(href="#/css-tricks") Tricks   
             
 
 
