@@ -8,6 +8,7 @@ export class Hub {
 
   public static duration:number = 1000;
   public static  easeOut:number[] = [.2,1,.8,.95];
+  public static  easeOutInverse:number[] = [.62,.03,.93,.45];
 
   public toggleCurtain:boolean = false;
 
@@ -72,10 +73,10 @@ export class Hub {
     this.velocity.runSequence([
       { e: this.leftCurtain, 
         p: { translateX: this.toggleCurtain? 0: -500 }, 
-        o: { duration: Hub.duration, easing: Hub.easeOut, delay: wait } },
+        o: { duration: Hub.duration/(this.toggleCurtain?2:1), easing: Hub.easeOut } },
       { e: this.rightCurtain, 
         p: { translateX: this.toggleCurtain? 0: 500 }, 
-        o: { duration: Hub.duration, easing: Hub.easeOut, sequenceQueue: false } }
+        o: { duration: Hub.duration/(this.toggleCurtain?2:1), easing: Hub.easeOut, sequenceQueue: false } }
     ]);
 
     // this.ea.publish('finished-animating-curtain');

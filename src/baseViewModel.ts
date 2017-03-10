@@ -40,7 +40,7 @@ export class BaseVM {
             this._ea.publish('toggleCurtains',{value:true, wait: 0});
             setTimeout(()=>{
                 resolve();
-            },1000);
+            },500);
             
         });
     }

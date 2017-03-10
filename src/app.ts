@@ -29,7 +29,7 @@ export class App {
     //config.addPreActivateStep(close);
     //config.addPostRenderStep(open);
     config.map([
-      { route: ['', 'resume'], name: 'resume',      moduleId: 'resume', nav: true, title: 'Resume' },
+      { route: ['', 'resume'], name: 'Home',      moduleId: 'resume', nav: true, title: 'Home' },
       { route: ['css-tricks'], name: 'css-tricks',      moduleId: 'css-tricks', nav: true, title: 'CSS tricks' },
       { route: ['buttons'], name: 'buttons',      moduleId: 'experiments/buttonSandbox', nav: true, title: 'Buttons' }
     ]);

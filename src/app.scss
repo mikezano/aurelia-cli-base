@@ -7,23 +7,18 @@ background-attachment:fixed;
 font-family: 'Orbitron', sans-serif;
 }
 
-h1{
-    color:blue;
+.au-enter{
+    opacity:0;
+}
+
+.au-enter-active{
+    animation: fade-in .5s linear;
 }
 
 
-    .au-enter{
-        opacity:0;
-    }
-
-    .au-enter-active{
-        animation: fade-in .5s linear;
-    }
-
-
-    @keyframes fade-in{
-        0%{opacity:0;}
-        100%{opacity:1;}
-    }
+@keyframes fade-in{
+    0%{opacity:0;}
+    100%{opacity:1;}
+}
 
   

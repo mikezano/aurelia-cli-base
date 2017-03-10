@@ -1,22 +1,24 @@
-css-tricks{
-	text-align:center;
-	font-size:30px;
-	.tricks{
-		font-size:20px;
-	}
-}
+@import './resources/colors';
 
-.tricks{
-	div{
-		text-align:left;
-		margin-left:40px;
+ul.tricks{
+	text-align:center;
+	li{
+		list-style-type:none;
+		margin:20px 0;
+		a{
+			color:white;
+			text-decoration:none;
+			text-align:left;
+			transition: .2s all ease-in-out;
+			padding:8px 0;
+
+			&:hover{
+				color:$colorBlueDarken2;
+				transform:scale(1.4);
+				background-color:rgba(255,255,255,50%);
+				padding:8px 30px;
+				box-shadow:4px 4px 8px #333;
+			}
+		}	
 	}
 }
-a{
-	color:white;
-	text-decoration:none;
-	text-align:left;
-}
-	.tricks{
-		text-align:center;
-	}
