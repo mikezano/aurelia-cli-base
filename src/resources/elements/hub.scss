@@ -92,7 +92,6 @@ $color5:darken($blue, 50%);
         .corner-border{
             width:$size;
             height:$size;
-            border:1px solid white;
             shape-outside: polygon(0 50%, 0 100%, 50% 100%);
             float:left;
             //position:absolute;
@@ -111,7 +110,7 @@ $color5:darken($blue, 50%);
                 border-bottom:6px solid transparent;
                 &:hover{
                     border-bottom:6px solid $color1;
-                    text-shadow:2px 2px 2px black;
+                    text-shadow:2px 2px 1px #222;
                     //box-shadow:2px 2px 4px $colorBlueDarken2;
                 }
             }
