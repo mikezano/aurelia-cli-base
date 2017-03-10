@@ -11509,6 +11509,170 @@ define('aurelia-binding',['exports', 'aurelia-logging', 'aurelia-pal', 'aurelia-
     return deco(targetOrConfig, key, descriptor);
   }
 });
+define('aurelia-event-aggregator',['exports', 'aurelia-logging'], function (exports, _aureliaLogging) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.EventAggregator = undefined;
+  exports.includeEventsIn = includeEventsIn;
+  exports.configure = configure;
+
+  var LogManager = _interopRequireWildcard(_aureliaLogging);
+
+  function _interopRequireWildcard(obj) {
+    if (obj && obj.__esModule) {
+      return obj;
+    } else {
+      var newObj = {};
+
+      if (obj != null) {
+        for (var key in obj) {
+          if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key];
+        }
+      }
+
+      newObj.default = obj;
+      return newObj;
+    }
+  }
+
+  
+
+  var logger = LogManager.getLogger('event-aggregator');
+
+  var Handler = function () {
+    function Handler(messageType, callback) {
+      
+
+      this.messageType = messageType;
+      this.callback = callback;
+    }
+
+    Handler.prototype.handle = function handle(message) {
+      if (message instanceof this.messageType) {
+        this.callback.call(null, message);
+      }
+    };
+
+    return Handler;
+  }();
+
+  function invokeCallback(callback, data, event) {
+    try {
+      callback(data, event);
+    } catch (e) {
+      logger.error(e);
+    }
+  }
+
+  function invokeHandler(handler, data) {
+    try {
+      handler.handle(data);
+    } catch (e) {
+      logger.error(e);
+    }
+  }
+
+  var EventAggregator = exports.EventAggregator = function () {
+    function EventAggregator() {
+      
+
+      this.eventLookup = {};
+      this.messageHandlers = [];
+    }
+
+    EventAggregator.prototype.publish = function publish(event, data) {
+      var subscribers = void 0;
+      var i = void 0;
+
+      if (!event) {
+        throw new Error('Event was invalid.');
+      }
+
+      if (typeof event === 'string') {
+        subscribers = this.eventLookup[event];
+        if (subscribers) {
+          subscribers = subscribers.slice();
+          i = subscribers.length;
+
+          while (i--) {
+            invokeCallback(subscribers[i], data, event);
+          }
+        }
+      } else {
+        subscribers = this.messageHandlers.slice();
+        i = subscribers.length;
+
+        while (i--) {
+          invokeHandler(subscribers[i], event);
+        }
+      }
+    };
+
+    EventAggregator.prototype.subscribe = function subscribe(event, callback) {
+      var handler = void 0;
+      var subscribers = void 0;
+
+      if (!event) {
+        throw new Error('Event channel/type was invalid.');
+      }
+
+      if (typeof event === 'string') {
+        handler = callback;
+        subscribers = this.eventLookup[event] || (this.eventLookup[event] = []);
+      } else {
+        handler = new Handler(event, callback);
+        subscribers = this.messageHandlers;
+      }
+
+      subscribers.push(handler);
+
+      return {
+        dispose: function dispose() {
+          var idx = subscribers.indexOf(handler);
+          if (idx !== -1) {
+            subscribers.splice(idx, 1);
+          }
+        }
+      };
+    };
+
+    EventAggregator.prototype.subscribeOnce = function subscribeOnce(event, callback) {
+      var sub = this.subscribe(event, function (a, b) {
+        sub.dispose();
+        return callback(a, b);
+      });
+
+      return sub;
+    };
+
+    return EventAggregator;
+  }();
+
+  function includeEventsIn(obj) {
+    var ea = new EventAggregator();
+
+    obj.subscribeOnce = function (event, callback) {
+      return ea.subscribeOnce(event, callback);
+    };
+
+    obj.subscribe = function (event, callback) {
+      return ea.subscribe(event, callback);
+    };
+
+    obj.publish = function (event, data) {
+      ea.publish(event, data);
+    };
+
+    return ea;
+  }
+
+  function configure(config) {
+    config.instance(EventAggregator, includeEventsIn(config.aurelia));
+  }
+});
 define('aurelia-dependency-injection',['exports', 'aurelia-metadata', 'aurelia-pal'], function (exports, _aureliaMetadata, _aureliaPal) {
   'use strict';
 
@@ -12810,170 +12974,6 @@ define('aurelia-framework',['exports', 'aurelia-dependency-injection', 'aurelia-
   exports.FrameworkConfiguration = FrameworkConfiguration;
   var LogManager = exports.LogManager = TheLogManager;
 });
-define('aurelia-event-aggregator',['exports', 'aurelia-logging'], function (exports, _aureliaLogging) {
-  'use strict';
-
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-  exports.EventAggregator = undefined;
-  exports.includeEventsIn = includeEventsIn;
-  exports.configure = configure;
-
-  var LogManager = _interopRequireWildcard(_aureliaLogging);
-
-  function _interopRequireWildcard(obj) {
-    if (obj && obj.__esModule) {
-      return obj;
-    } else {
-      var newObj = {};
-
-      if (obj != null) {
-        for (var key in obj) {
-          if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key];
-        }
-      }
-
-      newObj.default = obj;
-      return newObj;
-    }
-  }
-
-  
-
-  var logger = LogManager.getLogger('event-aggregator');
-
-  var Handler = function () {
-    function Handler(messageType, callback) {
-      
-
-      this.messageType = messageType;
-      this.callback = callback;
-    }
-
-    Handler.prototype.handle = function handle(message) {
-      if (message instanceof this.messageType) {
-        this.callback.call(null, message);
-      }
-    };
-
-    return Handler;
-  }();
-
-  function invokeCallback(callback, data, event) {
-    try {
-      callback(data, event);
-    } catch (e) {
-      logger.error(e);
-    }
-  }
-
-  function invokeHandler(handler, data) {
-    try {
-      handler.handle(data);
-    } catch (e) {
-      logger.error(e);
-    }
-  }
-
-  var EventAggregator = exports.EventAggregator = function () {
-    function EventAggregator() {
-      
-
-      this.eventLookup = {};
-      this.messageHandlers = [];
-    }
-
-    EventAggregator.prototype.publish = function publish(event, data) {
-      var subscribers = void 0;
-      var i = void 0;
-
-      if (!event) {
-        throw new Error('Event was invalid.');
-      }
-
-      if (typeof event === 'string') {
-        subscribers = this.eventLookup[event];
-        if (subscribers) {
-          subscribers = subscribers.slice();
-          i = subscribers.length;
-
-          while (i--) {
-            invokeCallback(subscribers[i], data, event);
-          }
-        }
-      } else {
-        subscribers = this.messageHandlers.slice();
-        i = subscribers.length;
-
-        while (i--) {
-          invokeHandler(subscribers[i], event);
-        }
-      }
-    };
-
-    EventAggregator.prototype.subscribe = function subscribe(event, callback) {
-      var handler = void 0;
-      var subscribers = void 0;
-
-      if (!event) {
-        throw new Error('Event channel/type was invalid.');
-      }
-
-      if (typeof event === 'string') {
-        handler = callback;
-        subscribers = this.eventLookup[event] || (this.eventLookup[event] = []);
-      } else {
-        handler = new Handler(event, callback);
-        subscribers = this.messageHandlers;
-      }
-
-      subscribers.push(handler);
-
-      return {
-        dispose: function dispose() {
-          var idx = subscribers.indexOf(handler);
-          if (idx !== -1) {
-            subscribers.splice(idx, 1);
-          }
-        }
-      };
-    };
-
-    EventAggregator.prototype.subscribeOnce = function subscribeOnce(event, callback) {
-      var sub = this.subscribe(event, function (a, b) {
-        sub.dispose();
-        return callback(a, b);
-      });
-
-      return sub;
-    };
-
-    return EventAggregator;
-  }();
-
-  function includeEventsIn(obj) {
-    var ea = new EventAggregator();
-
-    obj.subscribeOnce = function (event, callback) {
-      return ea.subscribeOnce(event, callback);
-    };
-
-    obj.subscribe = function (event, callback) {
-      return ea.subscribe(event, callback);
-    };
-
-    obj.publish = function (event, data) {
-      ea.publish(event, data);
-    };
-
-    return ea;
-  }
-
-  function configure(config) {
-    config.instance(EventAggregator, includeEventsIn(config.aurelia));
-  }
-});
 define('aurelia-history-browser',['exports', 'aurelia-pal', 'aurelia-history'], function (exports, _aureliaPal, _aureliaHistory) {
   'use strict';
 
@@ -13498,64 +13498,6 @@ define('aurelia-history',['exports'], function (exports) {
     return History;
   }();
 });
-define('aurelia-logging-console',['exports', 'aurelia-logging'], function (exports, _aureliaLogging) {
-  'use strict';
-
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-  exports.ConsoleAppender = undefined;
-
-  
-
-  var ConsoleAppender = exports.ConsoleAppender = function () {
-    function ConsoleAppender() {
-      
-    }
-
-    ConsoleAppender.prototype.debug = function debug(logger) {
-      var _console;
-
-      for (var _len = arguments.length, rest = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-        rest[_key - 1] = arguments[_key];
-      }
-
-      (_console = console).debug.apply(_console, ['DEBUG [' + logger.id + ']'].concat(rest));
-    };
-
-    ConsoleAppender.prototype.info = function info(logger) {
-      var _console2;
-
-      for (var _len2 = arguments.length, rest = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
-        rest[_key2 - 1] = arguments[_key2];
-      }
-
-      (_console2 = console).info.apply(_console2, ['INFO [' + logger.id + ']'].concat(rest));
-    };
-
-    ConsoleAppender.prototype.warn = function warn(logger) {
-      var _console3;
-
-      for (var _len3 = arguments.length, rest = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
-        rest[_key3 - 1] = arguments[_key3];
-      }
-
-      (_console3 = console).warn.apply(_console3, ['WARN [' + logger.id + ']'].concat(rest));
-    };
-
-    ConsoleAppender.prototype.error = function error(logger) {
-      var _console4;
-
-      for (var _len4 = arguments.length, rest = Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
-        rest[_key4 - 1] = arguments[_key4];
-      }
-
-      (_console4 = console).error.apply(_console4, ['ERROR [' + logger.id + ']'].concat(rest));
-    };
-
-    return ConsoleAppender;
-  }();
-});
 define('aurelia-logging',['exports'], function (exports) {
   'use strict';
 
@@ -13957,108 +13899,6 @@ define('aurelia-loader-default',['exports', 'aurelia-loader', 'aurelia-pal', 'au
     };
   }
 });
-define('aurelia-pal',['exports'], function (exports) {
-  'use strict';
-
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-  exports.AggregateError = AggregateError;
-  exports.initializePAL = initializePAL;
-  exports.reset = reset;
-  function AggregateError(message, innerError, skipIfAlreadyAggregate) {
-    if (innerError) {
-      if (innerError.innerError && skipIfAlreadyAggregate) {
-        return innerError;
-      }
-
-      var separator = '\n------------------------------------------------\n';
-
-      message += separator + 'Inner Error:\n';
-
-      if (typeof innerError === 'string') {
-        message += 'Message: ' + innerError;
-      } else {
-        if (innerError.message) {
-          message += 'Message: ' + innerError.message;
-        } else {
-          message += 'Unknown Inner Error Type. Displaying Inner Error as JSON:\n ' + JSON.stringify(innerError, null, '  ');
-        }
-
-        if (innerError.stack) {
-          message += '\nInner Error Stack:\n' + innerError.stack;
-          message += '\nEnd Inner Error Stack';
-        }
-      }
-
-      message += separator;
-    }
-
-    var e = new Error(message);
-    if (innerError) {
-      e.innerError = innerError;
-    }
-
-    return e;
-  }
-
-  var FEATURE = exports.FEATURE = {};
-
-  var PLATFORM = exports.PLATFORM = {
-    noop: function noop() {},
-    eachModule: function eachModule() {},
-    moduleName: function (_moduleName) {
-      function moduleName(_x) {
-        return _moduleName.apply(this, arguments);
-      }
-
-      moduleName.toString = function () {
-        return _moduleName.toString();
-      };
-
-      return moduleName;
-    }(function (moduleName) {
-      return moduleName;
-    })
-  };
-
-  PLATFORM.global = function () {
-    if (typeof self !== 'undefined') {
-      return self;
-    }
-
-    if (typeof global !== 'undefined') {
-      return global;
-    }
-
-    return new Function('return this')();
-  }();
-
-  var DOM = exports.DOM = {};
-  var isInitialized = exports.isInitialized = false;
-  function initializePAL(callback) {
-    if (isInitialized) {
-      return;
-    }
-    exports.isInitialized = isInitialized = true;
-    if (typeof Object.getPropertyDescriptor !== 'function') {
-      Object.getPropertyDescriptor = function (subject, name) {
-        var pd = Object.getOwnPropertyDescriptor(subject, name);
-        var proto = Object.getPrototypeOf(subject);
-        while (typeof pd === 'undefined' && proto !== null) {
-          pd = Object.getOwnPropertyDescriptor(proto, name);
-          proto = Object.getPrototypeOf(proto);
-        }
-        return pd;
-      };
-    }
-
-    callback(PLATFORM, FEATURE, DOM);
-  }
-  function reset() {
-    exports.isInitialized = isInitialized = false;
-  }
-});
 define('aurelia-metadata',['exports', 'aurelia-pal'], function (exports, _aureliaPal) {
   'use strict';
 
@@ -14342,6 +14182,381 @@ define('aurelia-metadata',['exports', 'aurelia-pal'], function (exports, _aureli
 
     return result;
   };
+});
+define('aurelia-logging-console',['exports', 'aurelia-logging'], function (exports, _aureliaLogging) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.ConsoleAppender = undefined;
+
+  
+
+  var ConsoleAppender = exports.ConsoleAppender = function () {
+    function ConsoleAppender() {
+      
+    }
+
+    ConsoleAppender.prototype.debug = function debug(logger) {
+      var _console;
+
+      for (var _len = arguments.length, rest = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+        rest[_key - 1] = arguments[_key];
+      }
+
+      (_console = console).debug.apply(_console, ['DEBUG [' + logger.id + ']'].concat(rest));
+    };
+
+    ConsoleAppender.prototype.info = function info(logger) {
+      var _console2;
+
+      for (var _len2 = arguments.length, rest = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+        rest[_key2 - 1] = arguments[_key2];
+      }
+
+      (_console2 = console).info.apply(_console2, ['INFO [' + logger.id + ']'].concat(rest));
+    };
+
+    ConsoleAppender.prototype.warn = function warn(logger) {
+      var _console3;
+
+      for (var _len3 = arguments.length, rest = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
+        rest[_key3 - 1] = arguments[_key3];
+      }
+
+      (_console3 = console).warn.apply(_console3, ['WARN [' + logger.id + ']'].concat(rest));
+    };
+
+    ConsoleAppender.prototype.error = function error(logger) {
+      var _console4;
+
+      for (var _len4 = arguments.length, rest = Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
+        rest[_key4 - 1] = arguments[_key4];
+      }
+
+      (_console4 = console).error.apply(_console4, ['ERROR [' + logger.id + ']'].concat(rest));
+    };
+
+    return ConsoleAppender;
+  }();
+});
+define('aurelia-pal',['exports'], function (exports) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.AggregateError = AggregateError;
+  exports.initializePAL = initializePAL;
+  exports.reset = reset;
+  function AggregateError(message, innerError, skipIfAlreadyAggregate) {
+    if (innerError) {
+      if (innerError.innerError && skipIfAlreadyAggregate) {
+        return innerError;
+      }
+
+      var separator = '\n------------------------------------------------\n';
+
+      message += separator + 'Inner Error:\n';
+
+      if (typeof innerError === 'string') {
+        message += 'Message: ' + innerError;
+      } else {
+        if (innerError.message) {
+          message += 'Message: ' + innerError.message;
+        } else {
+          message += 'Unknown Inner Error Type. Displaying Inner Error as JSON:\n ' + JSON.stringify(innerError, null, '  ');
+        }
+
+        if (innerError.stack) {
+          message += '\nInner Error Stack:\n' + innerError.stack;
+          message += '\nEnd Inner Error Stack';
+        }
+      }
+
+      message += separator;
+    }
+
+    var e = new Error(message);
+    if (innerError) {
+      e.innerError = innerError;
+    }
+
+    return e;
+  }
+
+  var FEATURE = exports.FEATURE = {};
+
+  var PLATFORM = exports.PLATFORM = {
+    noop: function noop() {},
+    eachModule: function eachModule() {},
+    moduleName: function (_moduleName) {
+      function moduleName(_x) {
+        return _moduleName.apply(this, arguments);
+      }
+
+      moduleName.toString = function () {
+        return _moduleName.toString();
+      };
+
+      return moduleName;
+    }(function (moduleName) {
+      return moduleName;
+    })
+  };
+
+  PLATFORM.global = function () {
+    if (typeof self !== 'undefined') {
+      return self;
+    }
+
+    if (typeof global !== 'undefined') {
+      return global;
+    }
+
+    return new Function('return this')();
+  }();
+
+  var DOM = exports.DOM = {};
+  var isInitialized = exports.isInitialized = false;
+  function initializePAL(callback) {
+    if (isInitialized) {
+      return;
+    }
+    exports.isInitialized = isInitialized = true;
+    if (typeof Object.getPropertyDescriptor !== 'function') {
+      Object.getPropertyDescriptor = function (subject, name) {
+        var pd = Object.getOwnPropertyDescriptor(subject, name);
+        var proto = Object.getPrototypeOf(subject);
+        while (typeof pd === 'undefined' && proto !== null) {
+          pd = Object.getOwnPropertyDescriptor(proto, name);
+          proto = Object.getPrototypeOf(proto);
+        }
+        return pd;
+      };
+    }
+
+    callback(PLATFORM, FEATURE, DOM);
+  }
+  function reset() {
+    exports.isInitialized = isInitialized = false;
+  }
+});
+define('aurelia-path',['exports'], function (exports) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.relativeToFile = relativeToFile;
+  exports.join = join;
+  exports.buildQueryString = buildQueryString;
+  exports.parseQueryString = parseQueryString;
+
+  var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+    return typeof obj;
+  } : function (obj) {
+    return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
+  };
+
+  function trimDots(ary) {
+    for (var i = 0; i < ary.length; ++i) {
+      var part = ary[i];
+      if (part === '.') {
+        ary.splice(i, 1);
+        i -= 1;
+      } else if (part === '..') {
+        if (i === 0 || i === 1 && ary[2] === '..' || ary[i - 1] === '..') {
+          continue;
+        } else if (i > 0) {
+          ary.splice(i - 1, 2);
+          i -= 2;
+        }
+      }
+    }
+  }
+
+  function relativeToFile(name, file) {
+    var fileParts = file && file.split('/');
+    var nameParts = name.trim().split('/');
+
+    if (nameParts[0].charAt(0) === '.' && fileParts) {
+      var normalizedBaseParts = fileParts.slice(0, fileParts.length - 1);
+      nameParts.unshift.apply(nameParts, normalizedBaseParts);
+    }
+
+    trimDots(nameParts);
+
+    return nameParts.join('/');
+  }
+
+  function join(path1, path2) {
+    if (!path1) {
+      return path2;
+    }
+
+    if (!path2) {
+      return path1;
+    }
+
+    var schemeMatch = path1.match(/^([^/]*?:)\//);
+    var scheme = schemeMatch && schemeMatch.length > 0 ? schemeMatch[1] : '';
+    path1 = path1.substr(scheme.length);
+
+    var urlPrefix = void 0;
+    if (path1.indexOf('///') === 0 && scheme === 'file:') {
+      urlPrefix = '///';
+    } else if (path1.indexOf('//') === 0) {
+      urlPrefix = '//';
+    } else if (path1.indexOf('/') === 0) {
+      urlPrefix = '/';
+    } else {
+      urlPrefix = '';
+    }
+
+    var trailingSlash = path2.slice(-1) === '/' ? '/' : '';
+
+    var url1 = path1.split('/');
+    var url2 = path2.split('/');
+    var url3 = [];
+
+    for (var i = 0, ii = url1.length; i < ii; ++i) {
+      if (url1[i] === '..') {
+        url3.pop();
+      } else if (url1[i] === '.' || url1[i] === '') {
+        continue;
+      } else {
+        url3.push(url1[i]);
+      }
+    }
+
+    for (var _i = 0, _ii = url2.length; _i < _ii; ++_i) {
+      if (url2[_i] === '..') {
+        url3.pop();
+      } else if (url2[_i] === '.' || url2[_i] === '') {
+        continue;
+      } else {
+        url3.push(url2[_i]);
+      }
+    }
+
+    return scheme + urlPrefix + url3.join('/') + trailingSlash;
+  }
+
+  var encode = encodeURIComponent;
+  var encodeKey = function encodeKey(k) {
+    return encode(k).replace('%24', '$');
+  };
+
+  function buildParam(key, value, traditional) {
+    var result = [];
+    if (value === null || value === undefined) {
+      return result;
+    }
+    if (Array.isArray(value)) {
+      for (var i = 0, l = value.length; i < l; i++) {
+        if (traditional) {
+          result.push(encodeKey(key) + '=' + encode(value[i]));
+        } else {
+          var arrayKey = key + '[' + (_typeof(value[i]) === 'object' && value[i] !== null ? i : '') + ']';
+          result = result.concat(buildParam(arrayKey, value[i]));
+        }
+      }
+    } else if ((typeof value === 'undefined' ? 'undefined' : _typeof(value)) === 'object' && !traditional) {
+      for (var propertyName in value) {
+        result = result.concat(buildParam(key + '[' + propertyName + ']', value[propertyName]));
+      }
+    } else {
+      result.push(encodeKey(key) + '=' + encode(value));
+    }
+    return result;
+  }
+
+  function buildQueryString(params, traditional) {
+    var pairs = [];
+    var keys = Object.keys(params || {}).sort();
+    for (var i = 0, len = keys.length; i < len; i++) {
+      var key = keys[i];
+      pairs = pairs.concat(buildParam(key, params[key], traditional));
+    }
+
+    if (pairs.length === 0) {
+      return '';
+    }
+
+    return pairs.join('&');
+  }
+
+  function processScalarParam(existedParam, value) {
+    if (Array.isArray(existedParam)) {
+      existedParam.push(value);
+      return existedParam;
+    }
+    if (existedParam !== undefined) {
+      return [existedParam, value];
+    }
+
+    return value;
+  }
+
+  function parseComplexParam(queryParams, keys, value) {
+    var currentParams = queryParams;
+    var keysLastIndex = keys.length - 1;
+    for (var j = 0; j <= keysLastIndex; j++) {
+      var key = keys[j] === '' ? currentParams.length : keys[j];
+      if (j < keysLastIndex) {
+        var prevValue = !currentParams[key] || _typeof(currentParams[key]) === 'object' ? currentParams[key] : [currentParams[key]];
+        currentParams = currentParams[key] = prevValue || (isNaN(keys[j + 1]) ? {} : []);
+      } else {
+        currentParams = currentParams[key] = value;
+      }
+    }
+  }
+
+  function parseQueryString(queryString) {
+    var queryParams = {};
+    if (!queryString || typeof queryString !== 'string') {
+      return queryParams;
+    }
+
+    var query = queryString;
+    if (query.charAt(0) === '?') {
+      query = query.substr(1);
+    }
+
+    var pairs = query.replace(/\+/g, ' ').split('&');
+    for (var i = 0; i < pairs.length; i++) {
+      var pair = pairs[i].split('=');
+      var key = decodeURIComponent(pair[0]);
+      if (!key) {
+        continue;
+      }
+
+      var keys = key.split('][');
+      var keysLastIndex = keys.length - 1;
+
+      if (/\[/.test(keys[0]) && /\]$/.test(keys[keysLastIndex])) {
+        keys[keysLastIndex] = keys[keysLastIndex].replace(/\]$/, '');
+        keys = keys.shift().split('[').concat(keys);
+        keysLastIndex = keys.length - 1;
+      } else {
+        keysLastIndex = 0;
+      }
+
+      if (pair.length >= 2) {
+        var value = pair[1] ? decodeURIComponent(pair[1]) : '';
+        if (keysLastIndex) {
+          parseComplexParam(queryParams, keys, value);
+        } else {
+          queryParams[key] = processScalarParam(queryParams[key], value);
+        }
+      } else {
+        queryParams[key] = true;
+      }
+    }
+    return queryParams;
+  }
 });
 define('aurelia-pal-browser',['exports', 'aurelia-pal'], function (exports, _aureliaPal) {
   'use strict';
@@ -14852,221 +15067,6 @@ define('aurelia-pal-browser',['exports', 'aurelia-pal'], function (exports, _aur
         }
       });
     });
-  }
-});
-define('aurelia-path',['exports'], function (exports) {
-  'use strict';
-
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-  exports.relativeToFile = relativeToFile;
-  exports.join = join;
-  exports.buildQueryString = buildQueryString;
-  exports.parseQueryString = parseQueryString;
-
-  var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
-    return typeof obj;
-  } : function (obj) {
-    return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
-  };
-
-  function trimDots(ary) {
-    for (var i = 0; i < ary.length; ++i) {
-      var part = ary[i];
-      if (part === '.') {
-        ary.splice(i, 1);
-        i -= 1;
-      } else if (part === '..') {
-        if (i === 0 || i === 1 && ary[2] === '..' || ary[i - 1] === '..') {
-          continue;
-        } else if (i > 0) {
-          ary.splice(i - 1, 2);
-          i -= 2;
-        }
-      }
-    }
-  }
-
-  function relativeToFile(name, file) {
-    var fileParts = file && file.split('/');
-    var nameParts = name.trim().split('/');
-
-    if (nameParts[0].charAt(0) === '.' && fileParts) {
-      var normalizedBaseParts = fileParts.slice(0, fileParts.length - 1);
-      nameParts.unshift.apply(nameParts, normalizedBaseParts);
-    }
-
-    trimDots(nameParts);
-
-    return nameParts.join('/');
-  }
-
-  function join(path1, path2) {
-    if (!path1) {
-      return path2;
-    }
-
-    if (!path2) {
-      return path1;
-    }
-
-    var schemeMatch = path1.match(/^([^/]*?:)\//);
-    var scheme = schemeMatch && schemeMatch.length > 0 ? schemeMatch[1] : '';
-    path1 = path1.substr(scheme.length);
-
-    var urlPrefix = void 0;
-    if (path1.indexOf('///') === 0 && scheme === 'file:') {
-      urlPrefix = '///';
-    } else if (path1.indexOf('//') === 0) {
-      urlPrefix = '//';
-    } else if (path1.indexOf('/') === 0) {
-      urlPrefix = '/';
-    } else {
-      urlPrefix = '';
-    }
-
-    var trailingSlash = path2.slice(-1) === '/' ? '/' : '';
-
-    var url1 = path1.split('/');
-    var url2 = path2.split('/');
-    var url3 = [];
-
-    for (var i = 0, ii = url1.length; i < ii; ++i) {
-      if (url1[i] === '..') {
-        url3.pop();
-      } else if (url1[i] === '.' || url1[i] === '') {
-        continue;
-      } else {
-        url3.push(url1[i]);
-      }
-    }
-
-    for (var _i = 0, _ii = url2.length; _i < _ii; ++_i) {
-      if (url2[_i] === '..') {
-        url3.pop();
-      } else if (url2[_i] === '.' || url2[_i] === '') {
-        continue;
-      } else {
-        url3.push(url2[_i]);
-      }
-    }
-
-    return scheme + urlPrefix + url3.join('/') + trailingSlash;
-  }
-
-  var encode = encodeURIComponent;
-  var encodeKey = function encodeKey(k) {
-    return encode(k).replace('%24', '$');
-  };
-
-  function buildParam(key, value, traditional) {
-    var result = [];
-    if (value === null || value === undefined) {
-      return result;
-    }
-    if (Array.isArray(value)) {
-      for (var i = 0, l = value.length; i < l; i++) {
-        if (traditional) {
-          result.push(encodeKey(key) + '=' + encode(value[i]));
-        } else {
-          var arrayKey = key + '[' + (_typeof(value[i]) === 'object' && value[i] !== null ? i : '') + ']';
-          result = result.concat(buildParam(arrayKey, value[i]));
-        }
-      }
-    } else if ((typeof value === 'undefined' ? 'undefined' : _typeof(value)) === 'object' && !traditional) {
-      for (var propertyName in value) {
-        result = result.concat(buildParam(key + '[' + propertyName + ']', value[propertyName]));
-      }
-    } else {
-      result.push(encodeKey(key) + '=' + encode(value));
-    }
-    return result;
-  }
-
-  function buildQueryString(params, traditional) {
-    var pairs = [];
-    var keys = Object.keys(params || {}).sort();
-    for (var i = 0, len = keys.length; i < len; i++) {
-      var key = keys[i];
-      pairs = pairs.concat(buildParam(key, params[key], traditional));
-    }
-
-    if (pairs.length === 0) {
-      return '';
-    }
-
-    return pairs.join('&');
-  }
-
-  function processScalarParam(existedParam, value) {
-    if (Array.isArray(existedParam)) {
-      existedParam.push(value);
-      return existedParam;
-    }
-    if (existedParam !== undefined) {
-      return [existedParam, value];
-    }
-
-    return value;
-  }
-
-  function parseComplexParam(queryParams, keys, value) {
-    var currentParams = queryParams;
-    var keysLastIndex = keys.length - 1;
-    for (var j = 0; j <= keysLastIndex; j++) {
-      var key = keys[j] === '' ? currentParams.length : keys[j];
-      if (j < keysLastIndex) {
-        var prevValue = !currentParams[key] || _typeof(currentParams[key]) === 'object' ? currentParams[key] : [currentParams[key]];
-        currentParams = currentParams[key] = prevValue || (isNaN(keys[j + 1]) ? {} : []);
-      } else {
-        currentParams = currentParams[key] = value;
-      }
-    }
-  }
-
-  function parseQueryString(queryString) {
-    var queryParams = {};
-    if (!queryString || typeof queryString !== 'string') {
-      return queryParams;
-    }
-
-    var query = queryString;
-    if (query.charAt(0) === '?') {
-      query = query.substr(1);
-    }
-
-    var pairs = query.replace(/\+/g, ' ').split('&');
-    for (var i = 0; i < pairs.length; i++) {
-      var pair = pairs[i].split('=');
-      var key = decodeURIComponent(pair[0]);
-      if (!key) {
-        continue;
-      }
-
-      var keys = key.split('][');
-      var keysLastIndex = keys.length - 1;
-
-      if (/\[/.test(keys[0]) && /\]$/.test(keys[keysLastIndex])) {
-        keys[keysLastIndex] = keys[keysLastIndex].replace(/\]$/, '');
-        keys = keys.shift().split('[').concat(keys);
-        keysLastIndex = keys.length - 1;
-      } else {
-        keysLastIndex = 0;
-      }
-
-      if (pair.length >= 2) {
-        var value = pair[1] ? decodeURIComponent(pair[1]) : '';
-        if (keysLastIndex) {
-          parseComplexParam(queryParams, keys, value);
-        } else {
-          queryParams[key] = processScalarParam(queryParams[key], value);
-        }
-      } else {
-        queryParams[key] = true;
-      }
-    }
-    return queryParams;
   }
 });
 define('aurelia-polyfills',['aurelia-pal'], function (_aureliaPal) {
@@ -23868,6 +23868,307 @@ define('aurelia-templating-binding',['exports', 'aurelia-logging', 'aurelia-bind
   }
 });
 define('text',{});
+define('aurelia-animator-velocity',['exports', 'velocity-animate', 'aurelia-templating', 'aurelia-pal', 'velocity-animate/velocity.ui'], function (exports, _velocityAnimate, _aureliaTemplating, _aureliaPal) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.VelocityAnimator = undefined;
+  exports.configure = configure;
+
+  var _velocityAnimate2 = _interopRequireDefault(_velocityAnimate);
+
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {
+      default: obj
+    };
+  }
+
+  
+
+  var VelocityAnimator = exports.VelocityAnimator = function () {
+    function VelocityAnimator(container) {
+      
+
+      this.options = {
+        duration: 400,
+        easing: 'linear'
+      };
+      this.isAnimating = false;
+      this.enterAnimation = { properties: ':enter', options: { easing: 'ease-in', duration: 200 } };
+      this.leaveAnimation = { properties: ':leave', options: { easing: 'ease-in', duration: 200 } };
+      this.easings = [];
+      this.effects = {
+        ':enter': 'fadeIn',
+        ':leave': 'fadeOut'
+      };
+
+      this.container = container || _aureliaPal.DOM;
+      this.easings = Object.assign(_velocityAnimate2.default.Easings, this.easings);
+      this.effects = Object.assign(_velocityAnimate2.default.Redirects, this.effects);
+    }
+
+    VelocityAnimator.prototype.animate = function animate(element, nameOrProps, options, silent) {
+      this.isAnimating = true;
+      var _this = this;
+      var overrides = {
+        complete: function complete(el) {
+          _this.isAnimating = false;
+          if (!silent) dispatch(el, 'animateDone');
+          if (options && options.complete) options.complete.apply(this, arguments);
+        }
+      };
+      if (!element) return Promise.reject(new Error('invalid first argument'));
+
+      if (typeof element === 'string') element = this.container.querySelectorAll(element);
+
+      if (!element || element.length === 0) return Promise.resolve(element);
+
+      if (!silent) dispatch(element, 'animateBegin');
+
+      if (typeof nameOrProps === 'string') {
+        nameOrProps = this.resolveEffectAlias(nameOrProps);
+      }
+
+      var opts = Object.assign({}, this.options, options, overrides);
+      var p = (0, _velocityAnimate2.default)(element, nameOrProps, opts);
+
+      if (!p) return Promise.reject(new Error('invalid element used for animator.animate'));
+      return p;
+    };
+
+    VelocityAnimator.prototype.stop = function stop(element, clearQueue) {
+      (0, _velocityAnimate2.default)(element, 'stop', clearQueue);
+      this.isAnimating = false;
+      return this;
+    };
+
+    VelocityAnimator.prototype.reverse = function reverse(element) {
+      (0, _velocityAnimate2.default)(element, 'reverse');
+      return this;
+    };
+
+    VelocityAnimator.prototype.rewind = function rewind(element) {
+      (0, _velocityAnimate2.default)(name, 'rewind');
+      return this;
+    };
+
+    VelocityAnimator.prototype.registerEffect = function registerEffect(name, props) {
+      if (name[0] === ':') {
+        if (typeof props === 'string') {
+          this.effects[name] = props;
+        } else {
+          throw new Error('second parameter must be a string when registering aliases');
+        }
+      } else {
+        _velocityAnimate2.default.RegisterEffect(name, props);
+      }
+      return this;
+    };
+
+    VelocityAnimator.prototype.unregisterEffect = function unregisterEffect(name) {
+      delete this.effects[name];
+      return this;
+    };
+
+    VelocityAnimator.prototype.runSequence = function runSequence(sequence) {
+      var _this2 = this;
+
+      dispatch(_aureliaPal.PLATFORM.global, 'sequenceBegin');
+      return new Promise(function (resolve, reject) {
+        _this2.sequenceReject = resolve;
+        var last = sequence[sequence.length - 1];
+        last.options = last.options || last.o || {};
+        last.options.complete = function () {
+          if (!_this2.sequenceReject) return;
+          _this2.sequenceReject = undefined;
+          dispatch(_aureliaPal.PLATFORM.global, 'sequenceDone');
+          resolve();
+        };
+        try {
+          _velocityAnimate2.default.RunSequence(sequence);
+        } catch (e) {
+          _this2.stopSequence(sequence);
+          _this2.sequenceReject(e);
+        }
+      });
+    };
+
+    VelocityAnimator.prototype.stopSequence = function stopSequence(sequence) {
+      var _this3 = this;
+
+      sequence.map(function (item) {
+        var el = item.e || item.element || item.elements;
+        _this3.stop(el, true);
+      });
+      if (this.sequenceReject) {
+        this.sequenceReject();
+        this.sequenceReject = undefined;
+      }
+      dispatch(_aureliaPal.PLATFORM.global, 'sequenceDone');
+      return this;
+    };
+
+    VelocityAnimator.prototype.resolveEffectAlias = function resolveEffectAlias(alias) {
+      if (typeof alias === 'string' && alias[0] === ':') {
+        return this.effects[alias];
+      }
+      return alias;
+    };
+
+    VelocityAnimator.prototype.enter = function enter(element, effectName, options) {
+      return this.stop(element, true)._runElementAnimation(element, effectName || ':enter', options, 'enter');
+    };
+
+    VelocityAnimator.prototype.leave = function leave(element, effectName, options) {
+      return this.stop(element, true)._runElementAnimation(element, effectName || ':leave', options, 'leave');
+    };
+
+    VelocityAnimator.prototype.removeClass = function removeClass(element, className) {
+      element.classList.remove(className);
+      return Promise.resolve(false);
+    };
+
+    VelocityAnimator.prototype.addClass = function addClass(element, className) {
+      element.classList.add(className);
+      return Promise.resolve(false);
+    };
+
+    VelocityAnimator.prototype._runElements = function _runElements(element, name) {
+      var options = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+
+      if (!element) return Promise.reject(new Error('invalid first argument'));
+
+      if (typeof element === 'string') element = this.container.querySelectorAll(element);
+
+      if (!element || element.length === 0) return Promise.resolve(element);
+
+      for (var i = 0; i < element.length; i++) {
+        this._runElementAnimation(element[i], name, options);
+      }
+
+      return Promise.resolve(element);
+    };
+
+    VelocityAnimator.prototype._runElementAnimation = function _runElementAnimation(element, name) {
+      var _this4 = this,
+          _arguments = arguments;
+
+      var options = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+      var eventName = arguments.length <= 3 || arguments[3] === undefined ? undefined : arguments[3];
+
+      if (!element) return Promise.reject(new Error('invalid first argument'));
+
+      if (typeof element === 'string') element = this.container.querySelectorAll(element);
+
+      if (!element || element.length === 0) return Promise.resolve(element);
+
+      if (!element.animations) this._parseAttributes(element);
+
+      if (eventName) dispatch(element, eventName + 'Begin');
+
+      var overrides = {
+        complete: function complete(elements) {
+          _this4.isAnimating = false;
+          if (eventName) dispatch(element, eventName + 'Done');
+          if (options && options.complete) options.complete.apply(_this4, _arguments);
+        }
+      };
+
+      var attrOpts = {};
+      switch (name) {
+        case ':enter':
+          var enter = element.animations.enter;
+          name = enter.properties;
+          attrOpts = enter.options;
+          break;
+
+        case ':leave':
+          var leave = element.animations.leave;
+          name = leave.properties;
+          attrOpts = leave.options;
+          break;
+
+        default:
+          throw new Error(name + ' animation is not supported.');
+      }
+
+      var opts = Object.assign({}, this.options, attrOpts, options, overrides);
+      return this.animate(element, name, opts, true);
+    };
+
+    VelocityAnimator.prototype._parseAttributes = function _parseAttributes(element) {
+      var el = void 0;
+      var i = void 0;
+      var l = void 0;
+      element = this._ensureList(element);
+      for (i = 0, l = element.length; i < l; i++) {
+        el = element[i];
+        el.animations = {};
+        el.animations.enter = this._parseAttributeValue(el.getAttribute('anim-enter')) || this.enterAnimation;
+        el.animations.leave = this._parseAttributeValue(el.getAttribute('anim-leave')) || this.leaveAnimation;
+      }
+    };
+
+    VelocityAnimator.prototype._parseAttributeValue = function _parseAttributeValue(value) {
+      if (!value) {
+        return value;
+      }
+
+      var p = value.split(';');
+      var properties = p[0].trim();
+      var options = {};
+
+      if (properties[0] === '{' && properties[properties.length - 1] === '}') {
+        properties = parseJSObject(properties);
+      }
+
+      if (p.length > 1) {
+        options = parseJSObject(p[1].trim());
+      }
+
+      return { properties: properties, options: options };
+    };
+
+    VelocityAnimator.prototype._ensureList = function _ensureList(element) {
+      if (!Array.isArray(element) && !(element instanceof NodeList)) element = [element];
+      return element;
+    };
+
+    return VelocityAnimator;
+  }();
+
+  function dispatch(element, name) {
+    var evt = _aureliaPal.DOM.createCustomEvent(_aureliaTemplating.animationEvent[name], { bubbles: true, cancelable: true, detail: element });
+    _aureliaPal.DOM.dispatchEvent(evt);
+  }
+
+  function parseJSObject(text) {
+    if (typeof text !== 'string' || !text) {
+      return null;
+    }
+
+    text = text.replace('{', '').replace('}', '');
+    var pairs = text.split(',');
+    var obj = {};
+
+    for (var i = 0; i < pairs.length; ++i) {
+      var keyAndValue = pairs[i].split(':');
+      obj[keyAndValue[0].trim()] = keyAndValue[1].trim();
+    }
+
+    return obj;
+  }
+
+  function configure(config, callback) {
+    var animator = config.container.get(VelocityAnimator);
+    config.container.get(_aureliaTemplating.TemplatingEngine).configureAnimator(animator);
+    if (typeof callback === 'function') {
+      callback(animator);
+    }
+  }
+});
 define('aurelia-animator-css',['exports', 'aurelia-templating', 'aurelia-pal'], function (exports, _aureliaTemplating, _aureliaPal) {
   'use strict';
 
@@ -24362,307 +24663,6 @@ define('aurelia-animator-css',['exports', 'aurelia-templating', 'aurelia-pal'], 
 
   function configure(config, callback) {
     var animator = config.container.get(CssAnimator);
-    config.container.get(_aureliaTemplating.TemplatingEngine).configureAnimator(animator);
-    if (typeof callback === 'function') {
-      callback(animator);
-    }
-  }
-});
-define('aurelia-animator-velocity',['exports', 'velocity-animate', 'aurelia-templating', 'aurelia-pal', 'velocity-animate/velocity.ui'], function (exports, _velocityAnimate, _aureliaTemplating, _aureliaPal) {
-  'use strict';
-
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-  exports.VelocityAnimator = undefined;
-  exports.configure = configure;
-
-  var _velocityAnimate2 = _interopRequireDefault(_velocityAnimate);
-
-  function _interopRequireDefault(obj) {
-    return obj && obj.__esModule ? obj : {
-      default: obj
-    };
-  }
-
-  
-
-  var VelocityAnimator = exports.VelocityAnimator = function () {
-    function VelocityAnimator(container) {
-      
-
-      this.options = {
-        duration: 400,
-        easing: 'linear'
-      };
-      this.isAnimating = false;
-      this.enterAnimation = { properties: ':enter', options: { easing: 'ease-in', duration: 200 } };
-      this.leaveAnimation = { properties: ':leave', options: { easing: 'ease-in', duration: 200 } };
-      this.easings = [];
-      this.effects = {
-        ':enter': 'fadeIn',
-        ':leave': 'fadeOut'
-      };
-
-      this.container = container || _aureliaPal.DOM;
-      this.easings = Object.assign(_velocityAnimate2.default.Easings, this.easings);
-      this.effects = Object.assign(_velocityAnimate2.default.Redirects, this.effects);
-    }
-
-    VelocityAnimator.prototype.animate = function animate(element, nameOrProps, options, silent) {
-      this.isAnimating = true;
-      var _this = this;
-      var overrides = {
-        complete: function complete(el) {
-          _this.isAnimating = false;
-          if (!silent) dispatch(el, 'animateDone');
-          if (options && options.complete) options.complete.apply(this, arguments);
-        }
-      };
-      if (!element) return Promise.reject(new Error('invalid first argument'));
-
-      if (typeof element === 'string') element = this.container.querySelectorAll(element);
-
-      if (!element || element.length === 0) return Promise.resolve(element);
-
-      if (!silent) dispatch(element, 'animateBegin');
-
-      if (typeof nameOrProps === 'string') {
-        nameOrProps = this.resolveEffectAlias(nameOrProps);
-      }
-
-      var opts = Object.assign({}, this.options, options, overrides);
-      var p = (0, _velocityAnimate2.default)(element, nameOrProps, opts);
-
-      if (!p) return Promise.reject(new Error('invalid element used for animator.animate'));
-      return p;
-    };
-
-    VelocityAnimator.prototype.stop = function stop(element, clearQueue) {
-      (0, _velocityAnimate2.default)(element, 'stop', clearQueue);
-      this.isAnimating = false;
-      return this;
-    };
-
-    VelocityAnimator.prototype.reverse = function reverse(element) {
-      (0, _velocityAnimate2.default)(element, 'reverse');
-      return this;
-    };
-
-    VelocityAnimator.prototype.rewind = function rewind(element) {
-      (0, _velocityAnimate2.default)(name, 'rewind');
-      return this;
-    };
-
-    VelocityAnimator.prototype.registerEffect = function registerEffect(name, props) {
-      if (name[0] === ':') {
-        if (typeof props === 'string') {
-          this.effects[name] = props;
-        } else {
-          throw new Error('second parameter must be a string when registering aliases');
-        }
-      } else {
-        _velocityAnimate2.default.RegisterEffect(name, props);
-      }
-      return this;
-    };
-
-    VelocityAnimator.prototype.unregisterEffect = function unregisterEffect(name) {
-      delete this.effects[name];
-      return this;
-    };
-
-    VelocityAnimator.prototype.runSequence = function runSequence(sequence) {
-      var _this2 = this;
-
-      dispatch(_aureliaPal.PLATFORM.global, 'sequenceBegin');
-      return new Promise(function (resolve, reject) {
-        _this2.sequenceReject = resolve;
-        var last = sequence[sequence.length - 1];
-        last.options = last.options || last.o || {};
-        last.options.complete = function () {
-          if (!_this2.sequenceReject) return;
-          _this2.sequenceReject = undefined;
-          dispatch(_aureliaPal.PLATFORM.global, 'sequenceDone');
-          resolve();
-        };
-        try {
-          _velocityAnimate2.default.RunSequence(sequence);
-        } catch (e) {
-          _this2.stopSequence(sequence);
-          _this2.sequenceReject(e);
-        }
-      });
-    };
-
-    VelocityAnimator.prototype.stopSequence = function stopSequence(sequence) {
-      var _this3 = this;
-
-      sequence.map(function (item) {
-        var el = item.e || item.element || item.elements;
-        _this3.stop(el, true);
-      });
-      if (this.sequenceReject) {
-        this.sequenceReject();
-        this.sequenceReject = undefined;
-      }
-      dispatch(_aureliaPal.PLATFORM.global, 'sequenceDone');
-      return this;
-    };
-
-    VelocityAnimator.prototype.resolveEffectAlias = function resolveEffectAlias(alias) {
-      if (typeof alias === 'string' && alias[0] === ':') {
-        return this.effects[alias];
-      }
-      return alias;
-    };
-
-    VelocityAnimator.prototype.enter = function enter(element, effectName, options) {
-      return this.stop(element, true)._runElementAnimation(element, effectName || ':enter', options, 'enter');
-    };
-
-    VelocityAnimator.prototype.leave = function leave(element, effectName, options) {
-      return this.stop(element, true)._runElementAnimation(element, effectName || ':leave', options, 'leave');
-    };
-
-    VelocityAnimator.prototype.removeClass = function removeClass(element, className) {
-      element.classList.remove(className);
-      return Promise.resolve(false);
-    };
-
-    VelocityAnimator.prototype.addClass = function addClass(element, className) {
-      element.classList.add(className);
-      return Promise.resolve(false);
-    };
-
-    VelocityAnimator.prototype._runElements = function _runElements(element, name) {
-      var options = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
-
-      if (!element) return Promise.reject(new Error('invalid first argument'));
-
-      if (typeof element === 'string') element = this.container.querySelectorAll(element);
-
-      if (!element || element.length === 0) return Promise.resolve(element);
-
-      for (var i = 0; i < element.length; i++) {
-        this._runElementAnimation(element[i], name, options);
-      }
-
-      return Promise.resolve(element);
-    };
-
-    VelocityAnimator.prototype._runElementAnimation = function _runElementAnimation(element, name) {
-      var _this4 = this,
-          _arguments = arguments;
-
-      var options = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
-      var eventName = arguments.length <= 3 || arguments[3] === undefined ? undefined : arguments[3];
-
-      if (!element) return Promise.reject(new Error('invalid first argument'));
-
-      if (typeof element === 'string') element = this.container.querySelectorAll(element);
-
-      if (!element || element.length === 0) return Promise.resolve(element);
-
-      if (!element.animations) this._parseAttributes(element);
-
-      if (eventName) dispatch(element, eventName + 'Begin');
-
-      var overrides = {
-        complete: function complete(elements) {
-          _this4.isAnimating = false;
-          if (eventName) dispatch(element, eventName + 'Done');
-          if (options && options.complete) options.complete.apply(_this4, _arguments);
-        }
-      };
-
-      var attrOpts = {};
-      switch (name) {
-        case ':enter':
-          var enter = element.animations.enter;
-          name = enter.properties;
-          attrOpts = enter.options;
-          break;
-
-        case ':leave':
-          var leave = element.animations.leave;
-          name = leave.properties;
-          attrOpts = leave.options;
-          break;
-
-        default:
-          throw new Error(name + ' animation is not supported.');
-      }
-
-      var opts = Object.assign({}, this.options, attrOpts, options, overrides);
-      return this.animate(element, name, opts, true);
-    };
-
-    VelocityAnimator.prototype._parseAttributes = function _parseAttributes(element) {
-      var el = void 0;
-      var i = void 0;
-      var l = void 0;
-      element = this._ensureList(element);
-      for (i = 0, l = element.length; i < l; i++) {
-        el = element[i];
-        el.animations = {};
-        el.animations.enter = this._parseAttributeValue(el.getAttribute('anim-enter')) || this.enterAnimation;
-        el.animations.leave = this._parseAttributeValue(el.getAttribute('anim-leave')) || this.leaveAnimation;
-      }
-    };
-
-    VelocityAnimator.prototype._parseAttributeValue = function _parseAttributeValue(value) {
-      if (!value) {
-        return value;
-      }
-
-      var p = value.split(';');
-      var properties = p[0].trim();
-      var options = {};
-
-      if (properties[0] === '{' && properties[properties.length - 1] === '}') {
-        properties = parseJSObject(properties);
-      }
-
-      if (p.length > 1) {
-        options = parseJSObject(p[1].trim());
-      }
-
-      return { properties: properties, options: options };
-    };
-
-    VelocityAnimator.prototype._ensureList = function _ensureList(element) {
-      if (!Array.isArray(element) && !(element instanceof NodeList)) element = [element];
-      return element;
-    };
-
-    return VelocityAnimator;
-  }();
-
-  function dispatch(element, name) {
-    var evt = _aureliaPal.DOM.createCustomEvent(_aureliaTemplating.animationEvent[name], { bubbles: true, cancelable: true, detail: element });
-    _aureliaPal.DOM.dispatchEvent(evt);
-  }
-
-  function parseJSObject(text) {
-    if (typeof text !== 'string' || !text) {
-      return null;
-    }
-
-    text = text.replace('{', '').replace('}', '');
-    var pairs = text.split(',');
-    var obj = {};
-
-    for (var i = 0; i < pairs.length; ++i) {
-      var keyAndValue = pairs[i].split(':');
-      obj[keyAndValue[0].trim()] = keyAndValue[1].trim();
-    }
-
-    return obj;
-  }
-
-  function configure(config, callback) {
-    var animator = config.container.get(VelocityAnimator);
     config.container.get(_aureliaTemplating.TemplatingEngine).configureAnimator(animator);
     if (typeof callback === 'function') {
       callback(animator);
@@ -33228,4 +33228,4 @@ define('aurelia-testing/component-tester',['exports', 'aurelia-templating', 'aur
     return ComponentTester;
   }();
 });
-function _aureliaConfigureModuleLoader(){requirejs.config({"baseUrl":"src/","paths":{"velocity":"../scripts/velocity-shim","aurelia-bootstrapper":"../node_modules\\aurelia-bootstrapper\\dist\\amd\\aurelia-bootstrapper","aurelia-binding":"../node_modules\\aurelia-binding\\dist\\amd\\aurelia-binding","aurelia-dependency-injection":"../node_modules\\aurelia-dependency-injection\\dist\\amd\\aurelia-dependency-injection","aurelia-framework":"../node_modules\\aurelia-framework\\dist\\amd\\aurelia-framework","aurelia-event-aggregator":"../node_modules\\aurelia-event-aggregator\\dist\\amd\\aurelia-event-aggregator","aurelia-history-browser":"../node_modules\\aurelia-history-browser\\dist\\amd\\aurelia-history-browser","aurelia-loader":"../node_modules\\aurelia-loader\\dist\\amd\\aurelia-loader","aurelia-history":"../node_modules\\aurelia-history\\dist\\amd\\aurelia-history","aurelia-logging-console":"../node_modules\\aurelia-logging-console\\dist\\amd\\aurelia-logging-console","aurelia-logging":"../node_modules\\aurelia-logging\\dist\\amd\\aurelia-logging","aurelia-loader-default":"../node_modules\\aurelia-loader-default\\dist\\amd\\aurelia-loader-default","aurelia-pal":"../node_modules\\aurelia-pal\\dist\\amd\\aurelia-pal","aurelia-metadata":"../node_modules\\aurelia-metadata\\dist\\amd\\aurelia-metadata","aurelia-pal-browser":"../node_modules\\aurelia-pal-browser\\dist\\amd\\aurelia-pal-browser","aurelia-path":"../node_modules\\aurelia-path\\dist\\amd\\aurelia-path","aurelia-polyfills":"../node_modules\\aurelia-polyfills\\dist\\amd\\aurelia-polyfills","aurelia-route-recognizer":"../node_modules\\aurelia-route-recognizer\\dist\\amd\\aurelia-route-recognizer","aurelia-router":"../node_modules\\aurelia-router\\dist\\amd\\aurelia-router","aurelia-task-queue":"../node_modules\\aurelia-task-queue\\dist\\amd\\aurelia-task-queue","aurelia-templating":"../node_modules\\aurelia-templating\\dist\\amd\\aurelia-templating","aurelia-templating-binding":"../node_modules\\aurelia-templating-binding\\dist\\amd\\aurelia-templating-binding","text":"../node_modules\\text\\text","aurelia-animator-css":"../node_modules\\aurelia-animator-css\\dist\\amd\\aurelia-animator-css","aurelia-animator-velocity":"../node_modules\\aurelia-animator-velocity\\dist\\amd\\aurelia-animator-velocity","app-bundle":"../scripts/app-bundle"},"packages":[{"name":"velocity-animate","location":"../node_modules/velocity-animate","main":"velocity"},{"name":"aurelia-templating-resources","location":"../node_modules/aurelia-templating-resources/dist/amd","main":"aurelia-templating-resources"},{"name":"aurelia-templating-router","location":"../node_modules/aurelia-templating-router/dist/amd","main":"aurelia-templating-router"},{"name":"aurelia-testing","location":"../node_modules/aurelia-testing/dist/amd","main":"aurelia-testing"}],"stubModules":["text"],"shim":{"velocity-animate":{"deps":["jquery"]}},"bundles":{"app-bundle":["app","baseViewModel","child-router","css-tricks","environment","main","resume","users","experiments/buttonSandbox","experiments/particles","resources/index","resources/elements/hub","resources/colors"]}})}
+function _aureliaConfigureModuleLoader(){requirejs.config({"baseUrl":"src/","paths":{"velocity":"../scripts/velocity-shim","aurelia-bootstrapper":"../node_modules\\aurelia-bootstrapper\\dist\\amd\\aurelia-bootstrapper","aurelia-binding":"../node_modules\\aurelia-binding\\dist\\amd\\aurelia-binding","aurelia-event-aggregator":"../node_modules\\aurelia-event-aggregator\\dist\\amd\\aurelia-event-aggregator","aurelia-dependency-injection":"../node_modules\\aurelia-dependency-injection\\dist\\amd\\aurelia-dependency-injection","aurelia-framework":"../node_modules\\aurelia-framework\\dist\\amd\\aurelia-framework","aurelia-history-browser":"../node_modules\\aurelia-history-browser\\dist\\amd\\aurelia-history-browser","aurelia-loader":"../node_modules\\aurelia-loader\\dist\\amd\\aurelia-loader","aurelia-history":"../node_modules\\aurelia-history\\dist\\amd\\aurelia-history","aurelia-logging":"../node_modules\\aurelia-logging\\dist\\amd\\aurelia-logging","aurelia-loader-default":"../node_modules\\aurelia-loader-default\\dist\\amd\\aurelia-loader-default","aurelia-metadata":"../node_modules\\aurelia-metadata\\dist\\amd\\aurelia-metadata","aurelia-logging-console":"../node_modules\\aurelia-logging-console\\dist\\amd\\aurelia-logging-console","aurelia-pal":"../node_modules\\aurelia-pal\\dist\\amd\\aurelia-pal","aurelia-path":"../node_modules\\aurelia-path\\dist\\amd\\aurelia-path","aurelia-pal-browser":"../node_modules\\aurelia-pal-browser\\dist\\amd\\aurelia-pal-browser","aurelia-polyfills":"../node_modules\\aurelia-polyfills\\dist\\amd\\aurelia-polyfills","aurelia-route-recognizer":"../node_modules\\aurelia-route-recognizer\\dist\\amd\\aurelia-route-recognizer","aurelia-router":"../node_modules\\aurelia-router\\dist\\amd\\aurelia-router","aurelia-task-queue":"../node_modules\\aurelia-task-queue\\dist\\amd\\aurelia-task-queue","aurelia-templating":"../node_modules\\aurelia-templating\\dist\\amd\\aurelia-templating","aurelia-templating-binding":"../node_modules\\aurelia-templating-binding\\dist\\amd\\aurelia-templating-binding","text":"../node_modules\\text\\text","aurelia-animator-velocity":"../node_modules\\aurelia-animator-velocity\\dist\\amd\\aurelia-animator-velocity","aurelia-animator-css":"../node_modules\\aurelia-animator-css\\dist\\amd\\aurelia-animator-css","app-bundle":"../scripts/app-bundle"},"packages":[{"name":"velocity-animate","location":"../node_modules/velocity-animate","main":"velocity"},{"name":"aurelia-templating-resources","location":"../node_modules/aurelia-templating-resources/dist/amd","main":"aurelia-templating-resources"},{"name":"aurelia-templating-router","location":"../node_modules/aurelia-templating-router/dist/amd","main":"aurelia-templating-router"},{"name":"aurelia-testing","location":"../node_modules/aurelia-testing/dist/amd","main":"aurelia-testing"}],"stubModules":["text"],"shim":{"velocity-animate":{"deps":["jquery"]}},"bundles":{"app-bundle":["app","baseViewModel","child-router","css-tricks","environment","main","resume","users","experiments/buttonSandbox","experiments/particles","resources/index","resources/elements/hub","resources/colors"]}})}

@@ -93,29 +93,26 @@ $color5:darken($blue, 50%);
             width:$size;
             height:$size;
             border:1px solid white;
-            shape-outside: polygon(0 0, 100% 0, 100% 100%);
-            float:right;
+            shape-outside: polygon(0 50%, 0 100%, 50% 100%);
+            float:left;
             //position:absolute;
 
         }
-        ul{
-            text-align:right;
-            list-style-type:none;
-            li{
-                margin-top:10px;
-                a{
-                    color:white;
-                    text-decoration:none;
-                    font-size:26px;
-                
-                    margin-right:20px;
-                    transition: all .2s ease-in-out;
-                    border-bottom:6px solid transparent;
-                    &:hover{
-                        border-bottom:6px solid $color1;
-                        text-shadow:2px 2px 4px $colorBlueDarken2;
-                        //box-shadow:2px 2px 4px $colorBlueDarken2;
-                    }
+        p{
+            &:first-of-type{
+                margin-top:140px;
+            }
+            a{           
+                color:white;
+                text-decoration:none;
+
+                font-size:26px;
+                transition: all .2s ease-in-out;
+                border-bottom:6px solid transparent;
+                &:hover{
+                    border-bottom:6px solid $color1;
+                    text-shadow:2px 2px 2px black;
+                    //box-shadow:2px 2px 4px $colorBlueDarken2;
                 }
             }
         }

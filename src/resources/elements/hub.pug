@@ -10,8 +10,18 @@ template
             .left-curtain(ref="leftCurtain")
             .right-curtain(ref="rightCurtain") 
             .left-corner(ref="leftCorner")
+                //http://stackoverflow.com/questions/2717480/css-selector-for-first-element-with-class/8539107#8539107
                 .corner-border 
-                ul(class="${row.isActive ? 'active' : ''}")
+                p
+                    a(href="#/resume") Home
+                p
+                    a(href="#/css-tricks") CSS
+                p
+                    a(href="#/css-tricks") About
+                                                                                                                                         
+
+
+                //ul(class="${row.isActive ? 'active' : ''}")
                     li
                         a(href="#/resume") Home
                     li                            
