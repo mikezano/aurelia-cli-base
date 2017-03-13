@@ -10,7 +10,11 @@ export class Hub {
   public static  easeOut:number[] = [.2,1,.8,.95];
   public static  easeOutInverse:number[] = [.62,.03,.93,.45];
 
-  public toggleCurtain:boolean = false;
+  public toggleCurtain:boolean = false; 
+
+
+
+  
 
   @bindable
   public containerContent:HTMLElement;
