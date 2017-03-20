@@ -106,11 +106,13 @@ $color5:darken($blue, 50%);
                 text-decoration:none;
 
                 font-size:26px;
+                font-weight:100;
                 transition: all .2s ease-in-out;
-                border-bottom:2px solid transparent;
-                &:hover{
-                    border-bottom:2px solid $color1;
-                    text-shadow:2px 2px 1px #222;
+                border-bottom:4px solid transparent;
+                &:hover, &.active{
+   
+                    border-bottom:4px solid $blue;
+                    text-shadow: 2px 2px 4px #222;
                     //box-shadow:2px 2px 4px $colorBlueDarken2;
                 }
             }

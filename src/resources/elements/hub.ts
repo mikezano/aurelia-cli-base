@@ -86,6 +86,20 @@ export class Hub {
     // this.ea.publish('finished-animating-curtain');
   }
 
+  public activeArea(element:Event)
+  {
+    var target:HTMLElement = element.target as HTMLElement;
 
+    if(target.nodeName == "A")
+    {
+      var elements = document.querySelectorAll(".nav-item");
+      for(let i=0; i< elements.length; i++)
+        elements[i].classList.remove('active');
+
+      target.classList.add('active');
+    }
+    //https://github.com/aurelia/binding/issues/16
+    return true;
+  }
 }
 

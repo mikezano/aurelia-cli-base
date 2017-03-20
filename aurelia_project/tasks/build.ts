@@ -3,6 +3,7 @@ import transpile from './transpile';
 import processMarkup from './process-markup';
 import processCSS from './process-css';
 import processPug from './process-pug';
+import prepareFontAwesome from './prepare-font-awesome'
 import {build} from 'aurelia-cli';
 import * as project from '../aurelia.json';
 
@@ -12,7 +13,8 @@ export default gulp.series(
     transpile,
     processMarkup,
     processCSS,
-    processPug
+    processPug,
+    prepareFontAwesome,
   ),
   writeBundles
 );

@@ -2,27 +2,57 @@
 
 h3{
 	text-align:center;
+	font-size:30px;
+	font-weight:100;
+	color:orange;
 }
 ul.tricks{
-	text-align:center;
+	text-align:left;
 	li{
 		list-style-type:none;
 		margin:20px 0;
-
+		
 		a{
+			margin-left:80px;
 			color:white;
 			display:inline-block;
 			text-decoration:none;
-			text-align:left;
 			transition: .2s all ease-in-out;
-			padding:8px 0;
 			border-bottom:1px solid white;
+			padding:8px 0;
+			
 			width:120px;
+
+			span{
+				padding:0 4px;
+			}
+			i{float:right;}
 
 			&:hover{
 				text-shadow:2px 2px 4px black;
-				border-bottom-color:$blue;
+				border-bottom:1px solid orange;
+				color:orange;
+
+				i{
+					animation:go-next .8s linear infinite;
+
+					@keyframes go-next{
+						0%{	
+							opacity:0;			
+							transform:translateX(0)
+						}
+						20%{opacity:1;}
+						80%{opacity:1;}
+						100%{
+
+							transform:translateX(50px);
+							opacity:0;
+						}
+					}
+				}
 			}
+
+
 		}	
 	}
 }
