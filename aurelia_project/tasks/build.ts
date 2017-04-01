@@ -4,6 +4,7 @@ import processMarkup from './process-markup';
 import processCSS from './process-css';
 import processPug from './process-pug';
 import prepareFontAwesome from './prepare-font-awesome'
+import prepareSampleButtons from './prepare-json-samples'
 import {build} from 'aurelia-cli';
 import * as project from '../aurelia.json';
 
@@ -15,6 +16,7 @@ export default gulp.series(
     processCSS,
     processPug,
     prepareFontAwesome,
+    prepareSampleButtons,
   ),
   writeBundles
 );

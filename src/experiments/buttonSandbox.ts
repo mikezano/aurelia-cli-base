@@ -12,9 +12,9 @@ export class ButtonSandbox extends BaseVM {
         super(ea);
 
         this.models = [];
-        this.models.push(new ButtonCodeModel());
-        this.models.push(new ButtonCodeModel());
-        this.models.push(new ButtonCodeModel());
+        this.models.push(new ButtonCodeModel("Style1"));
+        this.models.push(new ButtonCodeModel("Style2"));
+        this.models.push(new ButtonCodeModel("Style3"));
     }
 }
 

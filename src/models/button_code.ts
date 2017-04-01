@@ -9,10 +9,29 @@ export class ButtonCodeModel{
   public className:string = "ClassName";
   public code: string = "Code";
 
-  constructor(){
+  constructor(styleName:string){
     //const json = data;
-    debugger;
+   
+    this.code = styleName;
     //console.log(data.name);
+    this.readFile("scripts/data.json");
+  }
 
+  public readFile(file:string){
+    var rawFile = new XMLHttpRequest();
+    rawFile.open("GET", file, false);
+    rawFile.onreadystatechange = function ()
+    {
+      if(rawFile.readyState === 4)
+      {
+        if(rawFile.status === 200 || rawFile.status == 0)
+        {
+          debugger;
+          var allText = rawFile.responseText;
+          alert(allText);
+        }
+      }
+    }
+    rawFile.send(null);   
   }
 }

@@ -13,9 +13,6 @@ export class Hub {
   public toggleCurtain:boolean = false; 
 
 
-
-  
-
   @bindable
   public containerContent:HTMLElement;
   @bindable
