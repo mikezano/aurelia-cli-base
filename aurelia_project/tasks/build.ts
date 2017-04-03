@@ -15,8 +15,7 @@ export default gulp.series(
     processMarkup,
     processCSS,
     processPug,
-    prepareFontAwesome,
-    prepareSampleButtons,
+    prepareFontAwesome
   ),
   writeBundles
 );

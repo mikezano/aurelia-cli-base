@@ -8,6 +8,8 @@ import {BaseVM} from '../baseViewModel';
 export class ButtonSandbox extends BaseVM {
 
     public models:ButtonCodeModel[];
+    public one:string = "hover-button";
+    public two:string = "twouuuu";
     constructor(ea:EventAggregator){
         super(ea);
 
