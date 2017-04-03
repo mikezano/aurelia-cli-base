@@ -12,7 +12,7 @@ https://github.com/aurelia/cli/issues/253
 # Run as administrator for best results (cmd)
 
 Commands to get up and running (2017-04-03)
-npm install aurelia-cli -g
-npm install (get all the libraries)
-npm install font-awesome (not sure why individually)
-au build
++ npm install aurelia-cli -g
++ npm install (get all the libraries)
++ npm install font-awesome (not sure why individually)
++ au build
