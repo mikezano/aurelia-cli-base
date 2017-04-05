@@ -1,6 +1,6 @@
 template
-	require(from="./buttonSandbox.css")
-	require(from="experiments/buttonSample")
+	require(from="./buttons.css")
+	require(from="./buttonSample")
 	require(from="./hoverButton")
 	require(from="../resources/elements/button_code")
 
@@ -9,7 +9,7 @@ template
 
 		button-code(repeat.for="model of models" model.bind="model")
 
-		button-sample(content.bind="one" tree.bind="two")
+		button-sample(file.bind="'hoverButton'")
 
 		.grid
 			.header Normal
