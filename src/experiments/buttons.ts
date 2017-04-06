@@ -5,7 +5,6 @@ import {BaseVM} from '../baseViewModel';
 @autoinject()
 export class Buttons extends BaseVM {
 
-    public three:string = "hoverButton";
     constructor(ea:EventAggregator){
         super(ea);
     }
