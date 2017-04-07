@@ -1,3 +1,10 @@
-button{
-	color:green;
+.hover{
+  $color: green;
+  color:white;
+  background-color:$color;
+  border:1px solid darken($color,5%);
+  transition: background-color .2s ease-in-out;
+  &:hover{
+    background-color: lighten($color,5%);
+  }
 }

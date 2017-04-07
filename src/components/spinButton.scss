@@ -1,0 +1,16 @@
+.spin-btn{
+	font-size:40px;
+	$color:lightgreen;
+	border:none;
+	background:none;
+	color:$color;
+	transition: transform .5s ease-out;
+	display:flex;
+	align-items: center;
+	justify-content: center;
+
+	&:hover{
+		color:lighten($color,5%);
+		transform: rotate(360deg) scale(1.2);
+	}
+}

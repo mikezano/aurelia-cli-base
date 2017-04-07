@@ -1,62 +1,12 @@
 template
 	require(from="./buttons.css")
 	require(from="./buttonTemplate")
-	require(from="../components/hoverButton")
-
 
 	.au-animate.button-sandbox
 		a(href="javascript:history.back()") Go Back
 
-
-
+		button-template(file.bind="'spinButton'")
 		button-template(file.bind="'hoverButton'")
 		button-template(file.bind="'zoomButton'")
-
-		.grid
-			.header Normal
-			.button
-				button.background-color Button
-			.code Code
-
-		.grid
-			.header Fading Border
-			.button
-				button.background-color Button
-			.code
-				pre
-					| button{
-					|   text-decoration:none;
-					|   border:1px solid green;
-					|   &:hover{
-					|	  color:white;
-					|   }
-					| }		
-
-		.grid
-			.cell.header Fading Border
-			.cell.button
-				button.background-color Button
-			.cell.code
-				pre
-					| button{
-					|   text-decoration:none;
-					|   border:1px solid green;
-					|   &:hover{
-					|	  color:white;
-					|   }
-					| }	
-
-
-		.grid
-			.cell.header Fading Border
-			.cell.button
-				button.background-color Button
-			.cell.code
-				pre
-					| button{
-					|   text-decoration:none;
-					|   border:1px solid green;
-					|   &:hover{
-					|	  color:white;
-					|   }
-					| }											
+		button-template(file.bind="'notificationButton'")
+		

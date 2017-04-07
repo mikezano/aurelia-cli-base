@@ -1,6 +1,13 @@
 template
-	div ${file}
-	compose(view="components/${file}.html")
-	pre ${scss}
+	require(from="./buttonTemplate.css")
+	.example
+		.example__header 
+			div ${humanizeFile}
+		.example__output 
+			compose(view="components/${file}.html")
+		.example__code
+			pre ${scss}
+	
+
 
 	//https://github.com/aurelia/templating/issues/307
