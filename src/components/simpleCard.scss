@@ -1,0 +1,15 @@
+.simple-card{
+	border:1px solid darkgray;
+	transition: all .2s ease-out;
+	&:hover{
+		box-shadow:2px 2px 4px black;
+	}
+	&__header{
+		background-color:green;
+		padding:10px;
+	}
+	&__content{
+		background-color:purple;
+		padding:10px;
+	}
+}

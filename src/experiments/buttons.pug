@@ -1,12 +1,12 @@
 template
 	require(from="./buttons.css")
-	require(from="./buttonTemplate")
+	require(from="../resources/elements/componentElement")
 
 	.au-animate.button-sandbox
 		a(href="javascript:history.back()") Go Back
 
-		button-template(file.bind="'spinButton'")
-		button-template(file.bind="'hoverButton'")
-		button-template(file.bind="'zoomButton'")
-		button-template(file.bind="'notificationButton'")
+		component-element(file.bind="'spinButton'")
+		component-element(file.bind="'hoverButton'")
+		component-element(file.bind="'zoomButton'")
+		component-element(file.bind="'notificationButton'")
 		

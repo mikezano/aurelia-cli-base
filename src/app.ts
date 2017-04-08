@@ -32,6 +32,7 @@ export class App {
       { route: ['css-tricks'], name: 'css-tricks',      moduleId: 'css-tricks', nav: true, title: 'CSS tricks' },
       { route: ['about'], name: 'about',      moduleId: 'about', nav: true, title: 'About' },
       { route: ['buttons'], name: 'buttons',      moduleId: 'experiments/buttons', nav: true, title: 'Buttons' },
+      { route: ['cards'], name: 'cards',      moduleId: 'experiments/cards', nav: true, title: 'Cards' },
       { route: ['particles'], name: 'particles',      moduleId: 'experiments/particles', nav: true, title: 'particles' }
     ]);
 ;

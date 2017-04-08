@@ -1,0 +1,10 @@
+template
+	require(from="./componentElement.css")
+	.ex
+		.ex__header 
+			div ${humanizeFile}
+		.ex__output 
+			compose(view="../../components/${file}.html")
+		.ex__code
+			pre ${scss}
+	
