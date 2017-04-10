@@ -8,7 +8,6 @@ export class ComponentElement {
 
 	public attached(){
 		this.humanize();
-		debugger;
 		this.getScss("GET", `src/components/${this.file}.scss`, (result)=>{
 			this.scss = result;
 		})

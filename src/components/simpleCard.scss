@@ -1,15 +1,35 @@
 .simple-card{
-	border:1px solid darkgray;
+	$color:darkgray;
+	border:1px solid darken($color, 20%);
 	transition: all .2s ease-out;
+	width:100%;
+	margin:10px;
 	&:hover{
 		box-shadow:2px 2px 4px black;
 	}
 	&__header{
-		background-color:green;
+		background-color:darkgray;
 		padding:10px;
 	}
 	&__content{
-		background-color:purple;
+		background-color:white;
+		color:black;
 		padding:10px;
+	}
+
+	i{
+		border:1px solid darkgray;
+		border-radius:15px;
+		text-align:center;
+		background-color:white;
+		color:black;
+		width:24px;
+		height:24px;
+		border-radius:12px;
+		float:right;
+		margin-top:20px;
+		line-height:20px;
+		box-shadow:1px 1px 2px gray;
+		
 	}
 }
