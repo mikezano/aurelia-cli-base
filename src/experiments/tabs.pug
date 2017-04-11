@@ -1,0 +1,8 @@
+template
+	require(from="./tabs.css")
+	require(from="../resources/elements/componentElement")
+
+	.au-animate.tabs
+		a(href="javascript:history.back()") Go Back
+
+		component-element(file.bind="'simpleTab'")

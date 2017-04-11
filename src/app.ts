@@ -33,7 +33,7 @@ export class App {
       { route: ['about'], name: 'about',      moduleId: 'about', nav: true, title: 'About' },
       { route: ['buttons'], name: 'buttons',      moduleId: 'experiments/buttons', nav: true, title: 'Buttons' },
       { route: ['cards'], name: 'cards',      moduleId: 'experiments/cards', nav: true, title: 'Cards' },
-      { route: ['particles'], name: 'particles',      moduleId: 'experiments/particles', nav: true, title: 'particles' }
+      { route: ['tabs'], name: 'tabs',      moduleId: 'experiments/tabs', nav: true, title: 'Tabs' }
     ]);
 ;
     this.router = router;

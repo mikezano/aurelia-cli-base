@@ -1,7 +1,7 @@
 /* @preserve
  * The MIT License (MIT)
  * 
- * Copyright (c) 2013-2017 Petka Antonov
+ * Copyright (c) 2013-2015 Petka Antonov
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,7 @@
  * 
  */
 /**
- * bluebird build version 3.5.0
+ * bluebird build version 3.4.7
  * Features enabled: core
  * Features disabled: race, call_get, generators, map, nodeify, promisify, props, reduce, settle, some, using, timers, filter, any, each
 */
@@ -1686,11 +1686,10 @@ if (isES5) {
 
 },{}],11:[function(_dereq_,module,exports){
 "use strict";
-module.exports = function(Promise, tryConvertToPromise, NEXT_FILTER) {
+module.exports = function(Promise, tryConvertToPromise) {
 var util = _dereq_("./util");
 var CancellationError = Promise.CancellationError;
 var errorObj = util.errorObj;
-var catchFilter = _dereq_("./catch_filter")(NEXT_FILTER);
 
 function PassThroughHandlerContext(promise, type, handler) {
     this.promise = promise;
@@ -1742,9 +1741,7 @@ function finallyHandler(reasonOrValue) {
         var ret = this.isFinallyHandler()
             ? handler.call(promise._boundValue())
             : handler.call(promise._boundValue(), reasonOrValue);
-        if (ret === NEXT_FILTER) {
-            return ret;
-        } else if (ret !== undefined) {
+        if (ret !== undefined) {
             promise._setReturnedNonUndefined();
             var maybePromise = tryConvertToPromise(ret, promise);
             if (maybePromise instanceof Promise) {
@@ -1793,46 +1790,14 @@ Promise.prototype["finally"] = function (handler) {
                              finallyHandler);
 };
 
-
 Promise.prototype.tap = function (handler) {
     return this._passThrough(handler, 1, finallyHandler);
-};
-
-Promise.prototype.tapCatch = function (handlerOrPredicate) {
-    var len = arguments.length;
-    if(len === 1) {
-        return this._passThrough(handlerOrPredicate,
-                                 1,
-                                 undefined,
-                                 finallyHandler);
-    } else {
-         var catchInstances = new Array(len - 1),
-            j = 0, i;
-        for (i = 0; i < len - 1; ++i) {
-            var item = arguments[i];
-            if (util.isObject(item)) {
-                catchInstances[j++] = item;
-            } else {
-                return Promise.reject(new TypeError(
-                    "tapCatch statement predicate: "
-                    + "expecting an object but got " + util.classString(item)
-                ));
-            }
-        }
-        catchInstances.length = j;
-        var handler = arguments[i];
-        return this._passThrough(catchFilter(catchInstances, handler, this),
-                                 1,
-                                 undefined,
-                                 finallyHandler);
-    }
-
 };
 
 return PassThroughHandlerContext;
 };
 
-},{"./catch_filter":5,"./util":21}],12:[function(_dereq_,module,exports){
+},{"./util":21}],12:[function(_dereq_,module,exports){
 "use strict";
 module.exports =
 function(Promise, PromiseArray, tryConvertToPromise, INTERNAL, async,
@@ -2167,31 +2132,30 @@ var createContext = Context.create;
 var debug = _dereq_("./debuggability")(Promise, Context);
 var CapturedTrace = debug.CapturedTrace;
 var PassThroughHandlerContext =
-    _dereq_("./finally")(Promise, tryConvertToPromise, NEXT_FILTER);
+    _dereq_("./finally")(Promise, tryConvertToPromise);
 var catchFilter = _dereq_("./catch_filter")(NEXT_FILTER);
 var nodebackForPromise = _dereq_("./nodeback");
 var errorObj = util.errorObj;
 var tryCatch = util.tryCatch;
 function check(self, executor) {
-    if (self == null || self.constructor !== Promise) {
-        throw new TypeError("the promise constructor cannot be invoked directly\u000a\u000a    See http://goo.gl/MqrFmX\u000a");
-    }
     if (typeof executor !== "function") {
         throw new TypeError("expecting a function but got " + util.classString(executor));
     }
-
+    if (self.constructor !== Promise) {
+        throw new TypeError("the promise constructor cannot be invoked directly\u000a\u000a    See http://goo.gl/MqrFmX\u000a");
+    }
 }
 
 function Promise(executor) {
-    if (executor !== INTERNAL) {
-        check(this, executor);
-    }
     this._bitField = 0;
     this._fulfillmentHandler0 = undefined;
     this._rejectionHandler0 = undefined;
     this._promise0 = undefined;
     this._receiver0 = undefined;
-    this._resolveFromExecutor(executor);
+    if (executor !== INTERNAL) {
+        check(this, executor);
+        this._resolveFromExecutor(executor);
+    }
     this._promiseCreated();
     this._fireEvent("promiseCreated", this);
 }
@@ -2210,8 +2174,8 @@ Promise.prototype.caught = Promise.prototype["catch"] = function (fn) {
             if (util.isObject(item)) {
                 catchInstances[j++] = item;
             } else {
-                return apiRejection("Catch statement predicate: " +
-                    "expecting an object but got " + util.classString(item));
+                return apiRejection("expecting an object but got " +
+                    "A catch statement predicate " + util.classString(item));
             }
         }
         catchInstances.length = j;
@@ -2590,7 +2554,6 @@ function(reason, synchronous, ignoreNonErrorWarnings) {
 };
 
 Promise.prototype._resolveFromExecutor = function (executor) {
-    if (executor === INTERNAL) return;
     var promise = this;
     this._captureStackTrace();
     this._pushContext();
@@ -2848,7 +2811,7 @@ _dereq_("./synchronous_inspection")(Promise);
 _dereq_("./join")(
     Promise, PromiseArray, tryConvertToPromise, INTERNAL, async, getDomain);
 Promise.Promise = Promise;
-Promise.version = "3.5.0";
+Promise.version = "3.4.7";
                                                          
     util.toFastProperties(Promise);                                          
     util.toFastProperties(Promise.prototype);                                
@@ -2885,7 +2848,6 @@ function toResolutionValue(val) {
     switch(val) {
     case -2: return [];
     case -3: return {};
-    case -6: return new Map();
     }
 }
 
@@ -3173,11 +3135,11 @@ if (util.isNode && typeof MutationObserver === "undefined") {
 
         var scheduleToggle = function() {
             if (toggleScheduled) return;
-            toggleScheduled = true;
-            div2.classList.toggle("foo");
-        };
+                toggleScheduled = true;
+                div2.classList.toggle("foo");
+            };
 
-        return function schedule(fn) {
+            return function schedule(fn) {
             var o = new MutationObserver(function() {
                 o.disconnect();
                 fn();
@@ -3776,7 +3738,7 @@ module.exports = ret;
 },{"./es5":10}]},{},[3])(3)
 });                    ;if (typeof window !== 'undefined' && window !== null) {                               window.P = window.Promise;                                                     } else if (typeof self !== 'undefined' && self !== null) {                             self.P = self.Promise;                                                         }
 /** vim: et:ts=4:sw=4:sts=4
- * @license RequireJS 2.3.3 Copyright jQuery Foundation and other contributors.
+ * @license RequireJS 2.3.2 Copyright jQuery Foundation and other contributors.
  * Released under MIT license, https://github.com/requirejs/requirejs/blob/master/LICENSE
  */
 //Not using strict: uneven strict support in browsers, #392, and causes
@@ -3788,7 +3750,7 @@ var requirejs, require, define;
 (function (global, setTimeout) {
     var req, s, head, baseElement, dataMain, src,
         interactiveScript, currentlyAddingScript, mainScript, subPath,
-        version = '2.3.3',
+        version = '2.3.2',
         commentRegExp = /\/\*[\s\S]*?\*\/|([^:"'=]|^)\/\/.*$/mg,
         cjsRequireRegExp = /[^.]\s*require\s*\(\s*["']([^'"\s]+)["']\s*\)/g,
         jsSuffixRegExp = /\.js$/,
@@ -4217,9 +4179,7 @@ var requirejs, require, define;
             //Account for relative paths if there is a base name.
             if (name) {
                 if (prefix) {
-                    if (isNormalized) {
-                        normalizedName = name;
-                    } else if (pluginModule && pluginModule.normalize) {
+                    if (pluginModule && pluginModule.normalize) {
                         //Plugin is loaded, use its normalize method.
                         normalizedName = pluginModule.normalize(name, function (name) {
                             return normalize(name, parentName, applyMap);
@@ -4751,8 +4711,7 @@ var requirejs, require, define;
                         //prefix and name should already be normalized, no need
                         //for applying map config again either.
                         normalizedMap = makeModuleMap(map.prefix + '!' + name,
-                                                      this.map.parentMap,
-                                                      true);
+                                                      this.map.parentMap);
                         on(normalizedMap,
                             'defined', bind(this, function (value) {
                                 this.map.normalizedMap = normalizedMap;
@@ -6021,7 +5980,7 @@ define('aurelia-binding',['exports', 'aurelia-logging', 'aurelia-pal', 'aurelia-
 
   
 
-  var _dec, _dec2, _class, _dec3, _class2, _dec4, _class3, _dec5, _class5, _dec6, _class7, _dec7, _class8, _dec8, _class9, _dec9, _class10, _class12, _temp, _dec10, _class13, _class14, _temp2;
+  var _dec, _dec2, _class, _dec3, _class2, _dec4, _class3, _dec5, _class5, _dec6, _class7, _dec7, _class8, _dec8, _class9, _dec9, _class10, _class11, _temp, _dec10, _class12, _class13, _temp2;
 
   var map = Object.create(null);
 
@@ -7036,7 +6995,7 @@ define('aurelia-binding',['exports', 'aurelia-logging', 'aurelia-pal', 'aurelia-
       this.__array_observer__.addChangeRecord({
         type: 'splice',
         object: this,
-        index: +arguments[0],
+        index: arguments[0],
         removed: methodCallResult,
         addedCount: arguments.length > 2 ? arguments.length - 2 : 0
       });
@@ -7107,7 +7066,7 @@ define('aurelia-binding',['exports', 'aurelia-logging', 'aurelia-pal', 'aurelia-
     };
 
     Expression.prototype.toString = function toString() {
-      return typeof FEATURE_NO_UNPARSER === 'undefined' ? _Unparser.unparse(this) : Function.prototype.toString.call(this);
+      return Unparser.unparse(this);
     };
 
     return Expression;
@@ -7273,7 +7232,6 @@ define('aurelia-binding',['exports', 'aurelia-logging', 'aurelia-pal', 'aurelia-
 
       _this6.target = target;
       _this6.value = value;
-      _this6.isAssignable = true;
       return _this6;
     }
 
@@ -7286,11 +7244,6 @@ define('aurelia-binding',['exports', 'aurelia-logging', 'aurelia-pal', 'aurelia-
     };
 
     Assign.prototype.connect = function connect(binding, scope) {};
-
-    Assign.prototype.assign = function assign(scope, value) {
-      this.value.assign(scope, value);
-      this.target.assign(scope, value);
-    };
 
     return Assign;
   }(Expression);
@@ -7310,7 +7263,7 @@ define('aurelia-binding',['exports', 'aurelia-logging', 'aurelia-pal', 'aurelia-
     }
 
     Conditional.prototype.evaluate = function evaluate(scope, lookupFunctions) {
-      return !!this.condition.evaluate(scope, lookupFunctions) ? this.yes.evaluate(scope, lookupFunctions) : this.no.evaluate(scope, lookupFunctions);
+      return !!this.condition.evaluate(scope) ? this.yes.evaluate(scope) : this.no.evaluate(scope);
     };
 
     Conditional.prototype.accept = function accept(visitor) {
@@ -7627,16 +7580,16 @@ define('aurelia-binding',['exports', 'aurelia-logging', 'aurelia-pal', 'aurelia-
     }
 
     Binary.prototype.evaluate = function evaluate(scope, lookupFunctions) {
-      var left = this.left.evaluate(scope, lookupFunctions);
+      var left = this.left.evaluate(scope);
 
       switch (this.operation) {
         case '&&':
-          return left && this.right.evaluate(scope, lookupFunctions);
+          return left && this.right.evaluate(scope);
         case '||':
-          return left || this.right.evaluate(scope, lookupFunctions);
+          return left || this.right.evaluate(scope);
       }
 
-      var right = this.right.evaluate(scope, lookupFunctions);
+      var right = this.right.evaluate(scope);
 
       switch (this.operation) {
         case '==':
@@ -7720,7 +7673,7 @@ define('aurelia-binding',['exports', 'aurelia-logging', 'aurelia-pal', 'aurelia-
     }
 
     PrefixNot.prototype.evaluate = function evaluate(scope, lookupFunctions) {
-      return !this.expression.evaluate(scope, lookupFunctions);
+      return !this.expression.evaluate(scope);
     };
 
     PrefixNot.prototype.accept = function accept(visitor) {
@@ -7932,204 +7885,199 @@ define('aurelia-binding',['exports', 'aurelia-logging', 'aurelia-pal', 'aurelia-
     return value;
   }
 
-  var _Unparser = null;
+  var Unparser = exports.Unparser = function () {
+    function Unparser(buffer) {
+      
 
-  exports.Unparser = _Unparser;
-  if (typeof FEATURE_NO_UNPARSER === 'undefined') {
-    exports.Unparser = _Unparser = function () {
-      function Unparser(buffer) {
-        
+      this.buffer = buffer;
+    }
 
-        this.buffer = buffer;
+    Unparser.unparse = function unparse(expression) {
+      var buffer = [];
+      var visitor = new Unparser(buffer);
+
+      expression.accept(visitor);
+
+      return buffer.join('');
+    };
+
+    Unparser.prototype.write = function write(text) {
+      this.buffer.push(text);
+    };
+
+    Unparser.prototype.writeArgs = function writeArgs(args) {
+      this.write('(');
+
+      for (var _i15 = 0, length = args.length; _i15 < length; ++_i15) {
+        if (_i15 !== 0) {
+          this.write(',');
+        }
+
+        args[_i15].accept(this);
       }
 
-      Unparser.unparse = function unparse(expression) {
-        var buffer = [];
-        var visitor = new _Unparser(buffer);
+      this.write(')');
+    };
 
-        expression.accept(visitor);
+    Unparser.prototype.visitChain = function visitChain(chain) {
+      var expressions = chain.expressions;
 
-        return buffer.join('');
-      };
-
-      Unparser.prototype.write = function write(text) {
-        this.buffer.push(text);
-      };
-
-      Unparser.prototype.writeArgs = function writeArgs(args) {
-        this.write('(');
-
-        for (var _i15 = 0, length = args.length; _i15 < length; ++_i15) {
-          if (_i15 !== 0) {
-            this.write(',');
-          }
-
-          args[_i15].accept(this);
+      for (var _i16 = 0, length = expression.length; _i16 < length; ++_i16) {
+        if (_i16 !== 0) {
+          this.write(';');
         }
 
-        this.write(')');
-      };
+        expressions[_i16].accept(this);
+      }
+    };
 
-      Unparser.prototype.visitChain = function visitChain(chain) {
-        var expressions = chain.expressions;
+    Unparser.prototype.visitBindingBehavior = function visitBindingBehavior(behavior) {
+      var args = behavior.args;
 
-        for (var _i16 = 0, length = expression.length; _i16 < length; ++_i16) {
-          if (_i16 !== 0) {
-            this.write(';');
-          }
+      behavior.expression.accept(this);
+      this.write('&' + behavior.name);
 
-          expressions[_i16].accept(this);
-        }
-      };
-
-      Unparser.prototype.visitBindingBehavior = function visitBindingBehavior(behavior) {
-        var args = behavior.args;
-
-        behavior.expression.accept(this);
-        this.write('&' + behavior.name);
-
-        for (var _i17 = 0, length = args.length; _i17 < length; ++_i17) {
-          this.write(':');
-          args[_i17].accept(this);
-        }
-      };
-
-      Unparser.prototype.visitValueConverter = function visitValueConverter(converter) {
-        var args = converter.args;
-
-        converter.expression.accept(this);
-        this.write('|' + converter.name);
-
-        for (var _i18 = 0, length = args.length; _i18 < length; ++_i18) {
-          this.write(':');
-          args[_i18].accept(this);
-        }
-      };
-
-      Unparser.prototype.visitAssign = function visitAssign(assign) {
-        assign.target.accept(this);
-        this.write('=');
-        assign.value.accept(this);
-      };
-
-      Unparser.prototype.visitConditional = function visitConditional(conditional) {
-        conditional.condition.accept(this);
-        this.write('?');
-        conditional.yes.accept(this);
+      for (var _i17 = 0, length = args.length; _i17 < length; ++_i17) {
         this.write(':');
-        conditional.no.accept(this);
-      };
+        args[_i17].accept(this);
+      }
+    };
 
-      Unparser.prototype.visitAccessThis = function visitAccessThis(access) {
-        if (access.ancestor === 0) {
-          this.write('$this');
-          return;
+    Unparser.prototype.visitValueConverter = function visitValueConverter(converter) {
+      var args = converter.args;
+
+      converter.expression.accept(this);
+      this.write('|' + converter.name);
+
+      for (var _i18 = 0, length = args.length; _i18 < length; ++_i18) {
+        this.write(':');
+        args[_i18].accept(this);
+      }
+    };
+
+    Unparser.prototype.visitAssign = function visitAssign(assign) {
+      assign.target.accept(this);
+      this.write('=');
+      assign.value.accept(this);
+    };
+
+    Unparser.prototype.visitConditional = function visitConditional(conditional) {
+      conditional.condition.accept(this);
+      this.write('?');
+      conditional.yes.accept(this);
+      this.write(':');
+      conditional.no.accept(this);
+    };
+
+    Unparser.prototype.visitAccessThis = function visitAccessThis(access) {
+      if (access.ancestor === 0) {
+        this.write('$this');
+        return;
+      }
+      this.write('$parent');
+      var i = access.ancestor - 1;
+      while (i--) {
+        this.write('.$parent');
+      }
+    };
+
+    Unparser.prototype.visitAccessScope = function visitAccessScope(access) {
+      var i = access.ancestor;
+      while (i--) {
+        this.write('$parent.');
+      }
+      this.write(access.name);
+    };
+
+    Unparser.prototype.visitAccessMember = function visitAccessMember(access) {
+      access.object.accept(this);
+      this.write('.' + access.name);
+    };
+
+    Unparser.prototype.visitAccessKeyed = function visitAccessKeyed(access) {
+      access.object.accept(this);
+      this.write('[');
+      access.key.accept(this);
+      this.write(']');
+    };
+
+    Unparser.prototype.visitCallScope = function visitCallScope(call) {
+      var i = call.ancestor;
+      while (i--) {
+        this.write('$parent.');
+      }
+      this.write(call.name);
+      this.writeArgs(call.args);
+    };
+
+    Unparser.prototype.visitCallFunction = function visitCallFunction(call) {
+      call.func.accept(this);
+      this.writeArgs(call.args);
+    };
+
+    Unparser.prototype.visitCallMember = function visitCallMember(call) {
+      call.object.accept(this);
+      this.write('.' + call.name);
+      this.writeArgs(call.args);
+    };
+
+    Unparser.prototype.visitPrefix = function visitPrefix(prefix) {
+      this.write('(' + prefix.operation);
+      prefix.expression.accept(this);
+      this.write(')');
+    };
+
+    Unparser.prototype.visitBinary = function visitBinary(binary) {
+      binary.left.accept(this);
+      this.write(binary.operation);
+      binary.right.accept(this);
+    };
+
+    Unparser.prototype.visitLiteralPrimitive = function visitLiteralPrimitive(literal) {
+      this.write('' + literal.value);
+    };
+
+    Unparser.prototype.visitLiteralArray = function visitLiteralArray(literal) {
+      var elements = literal.elements;
+
+      this.write('[');
+
+      for (var _i19 = 0, length = elements.length; _i19 < length; ++_i19) {
+        if (_i19 !== 0) {
+          this.write(',');
         }
-        this.write('$parent');
-        var i = access.ancestor - 1;
-        while (i--) {
-          this.write('.$parent');
-        }
-      };
 
-      Unparser.prototype.visitAccessScope = function visitAccessScope(access) {
-        var i = access.ancestor;
-        while (i--) {
-          this.write('$parent.');
-        }
-        this.write(access.name);
-      };
+        elements[_i19].accept(this);
+      }
 
-      Unparser.prototype.visitAccessMember = function visitAccessMember(access) {
-        access.object.accept(this);
-        this.write('.' + access.name);
-      };
+      this.write(']');
+    };
 
-      Unparser.prototype.visitAccessKeyed = function visitAccessKeyed(access) {
-        access.object.accept(this);
-        this.write('[');
-        access.key.accept(this);
-        this.write(']');
-      };
+    Unparser.prototype.visitLiteralObject = function visitLiteralObject(literal) {
+      var keys = literal.keys;
+      var values = literal.values;
 
-      Unparser.prototype.visitCallScope = function visitCallScope(call) {
-        var i = call.ancestor;
-        while (i--) {
-          this.write('$parent.');
-        }
-        this.write(call.name);
-        this.writeArgs(call.args);
-      };
+      this.write('{');
 
-      Unparser.prototype.visitCallFunction = function visitCallFunction(call) {
-        call.func.accept(this);
-        this.writeArgs(call.args);
-      };
-
-      Unparser.prototype.visitCallMember = function visitCallMember(call) {
-        call.object.accept(this);
-        this.write('.' + call.name);
-        this.writeArgs(call.args);
-      };
-
-      Unparser.prototype.visitPrefix = function visitPrefix(prefix) {
-        this.write('(' + prefix.operation);
-        prefix.expression.accept(this);
-        this.write(')');
-      };
-
-      Unparser.prototype.visitBinary = function visitBinary(binary) {
-        binary.left.accept(this);
-        this.write(binary.operation);
-        binary.right.accept(this);
-      };
-
-      Unparser.prototype.visitLiteralPrimitive = function visitLiteralPrimitive(literal) {
-        this.write('' + literal.value);
-      };
-
-      Unparser.prototype.visitLiteralArray = function visitLiteralArray(literal) {
-        var elements = literal.elements;
-
-        this.write('[');
-
-        for (var _i19 = 0, length = elements.length; _i19 < length; ++_i19) {
-          if (_i19 !== 0) {
-            this.write(',');
-          }
-
-          elements[_i19].accept(this);
+      for (var _i20 = 0, length = keys.length; _i20 < length; ++_i20) {
+        if (_i20 !== 0) {
+          this.write(',');
         }
 
-        this.write(']');
-      };
+        this.write('\'' + keys[_i20] + '\':');
+        values[_i20].accept(this);
+      }
 
-      Unparser.prototype.visitLiteralObject = function visitLiteralObject(literal) {
-        var keys = literal.keys;
-        var values = literal.values;
+      this.write('}');
+    };
 
-        this.write('{');
+    Unparser.prototype.visitLiteralString = function visitLiteralString(literal) {
+      var escaped = literal.value.replace(/'/g, "\'");
+      this.write('\'' + escaped + '\'');
+    };
 
-        for (var _i20 = 0, length = keys.length; _i20 < length; ++_i20) {
-          if (_i20 !== 0) {
-            this.write(',');
-          }
-
-          this.write('\'' + keys[_i20] + '\':');
-          values[_i20].accept(this);
-        }
-
-        this.write('}');
-      };
-
-      Unparser.prototype.visitLiteralString = function visitLiteralString(literal) {
-        var escaped = literal.value.replace(/'/g, "\'");
-        this.write('\'' + escaped + '\'');
-      };
-
-      return Unparser;
-    }();
-  }
+    return Unparser;
+  }();
 
   var ExpressionCloner = exports.ExpressionCloner = function () {
     function ExpressionCloner() {
@@ -9077,9 +9025,9 @@ define('aurelia-binding',['exports', 'aurelia-logging', 'aurelia-pal', 'aurelia-
       var observer = new ModifyMapObserver(taskQueue, map);
 
       var proto = mapProto;
-      if (proto.set !== map.set || proto.delete !== map.delete || proto.clear !== map.clear) {
+      if (proto.add !== map.add || proto.delete !== map.delete || proto.clear !== map.clear) {
         proto = {
-          set: map.set,
+          add: map.add,
           delete: map.delete,
           clear: map.clear
         };
@@ -9859,7 +9807,7 @@ define('aurelia-binding',['exports', 'aurelia-logging', 'aurelia-pal', 'aurelia-
     };
 
     CheckedObserver.prototype.setValue = function setValue(newValue) {
-      if (this.initialSync && this.value === newValue) {
+      if (this.value === newValue) {
         return;
       }
 
@@ -9948,10 +9896,6 @@ define('aurelia-binding',['exports', 'aurelia-logging', 'aurelia-pal', 'aurelia-
       var oldValue = this.oldValue;
       var newValue = this.value;
 
-      if (newValue === oldValue) {
-        return;
-      }
-
       this.callSubscribers(newValue, oldValue);
     };
 
@@ -10033,9 +9977,12 @@ define('aurelia-binding',['exports', 'aurelia-logging', 'aurelia-pal', 'aurelia-
 
     SelectValueObserver.prototype.synchronizeOptions = function synchronizeOptions() {
       var value = this.value;
+      var clear = void 0;
       var isArray = void 0;
 
-      if (Array.isArray(value)) {
+      if (value === null || value === undefined) {
+        clear = true;
+      } else if (Array.isArray(value)) {
         isArray = true;
       }
 
@@ -10047,6 +9994,10 @@ define('aurelia-binding',['exports', 'aurelia-logging', 'aurelia-pal', 'aurelia-
 
       var _loop = function _loop() {
         var option = options.item(i);
+        if (clear) {
+          option.selected = false;
+          return 'continue';
+        }
         var optionValue = option.hasOwnProperty('model') ? option.model : option.value;
         if (isArray) {
           option.selected = value.findIndex(function (item) {
@@ -10312,260 +10263,234 @@ define('aurelia-binding',['exports', 'aurelia-logging', 'aurelia-pal', 'aurelia-
     return new ExpressionObserver(scope, dependencies, observerLocator);
   }
 
-  var svgElements = void 0;
-  var svgPresentationElements = void 0;
-  var svgPresentationAttributes = void 0;
-  var svgAnalyzer = void 0;
+  var elements = exports.elements = {
+    a: ['class', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'target', 'transform', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
+    altGlyph: ['class', 'dx', 'dy', 'externalResourcesRequired', 'format', 'glyphRef', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'rotate', 'style', 'systemLanguage', 'x', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    altGlyphDef: ['id', 'xml:base', 'xml:lang', 'xml:space'],
+    altGlyphItem: ['id', 'xml:base', 'xml:lang', 'xml:space'],
+    animate: ['accumulate', 'additive', 'attributeName', 'attributeType', 'begin', 'by', 'calcMode', 'dur', 'end', 'externalResourcesRequired', 'fill', 'from', 'id', 'keySplines', 'keyTimes', 'max', 'min', 'onbegin', 'onend', 'onload', 'onrepeat', 'repeatCount', 'repeatDur', 'requiredExtensions', 'requiredFeatures', 'restart', 'systemLanguage', 'to', 'values', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
+    animateColor: ['accumulate', 'additive', 'attributeName', 'attributeType', 'begin', 'by', 'calcMode', 'dur', 'end', 'externalResourcesRequired', 'fill', 'from', 'id', 'keySplines', 'keyTimes', 'max', 'min', 'onbegin', 'onend', 'onload', 'onrepeat', 'repeatCount', 'repeatDur', 'requiredExtensions', 'requiredFeatures', 'restart', 'systemLanguage', 'to', 'values', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
+    animateMotion: ['accumulate', 'additive', 'begin', 'by', 'calcMode', 'dur', 'end', 'externalResourcesRequired', 'fill', 'from', 'id', 'keyPoints', 'keySplines', 'keyTimes', 'max', 'min', 'onbegin', 'onend', 'onload', 'onrepeat', 'origin', 'path', 'repeatCount', 'repeatDur', 'requiredExtensions', 'requiredFeatures', 'restart', 'rotate', 'systemLanguage', 'to', 'values', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
+    animateTransform: ['accumulate', 'additive', 'attributeName', 'attributeType', 'begin', 'by', 'calcMode', 'dur', 'end', 'externalResourcesRequired', 'fill', 'from', 'id', 'keySplines', 'keyTimes', 'max', 'min', 'onbegin', 'onend', 'onload', 'onrepeat', 'repeatCount', 'repeatDur', 'requiredExtensions', 'requiredFeatures', 'restart', 'systemLanguage', 'to', 'type', 'values', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
+    circle: ['class', 'cx', 'cy', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'r', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'xml:base', 'xml:lang', 'xml:space'],
+    clipPath: ['class', 'clipPathUnits', 'externalResourcesRequired', 'id', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'xml:base', 'xml:lang', 'xml:space'],
+    'color-profile': ['id', 'local', 'name', 'rendering-intent', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
+    cursor: ['externalResourcesRequired', 'id', 'requiredExtensions', 'requiredFeatures', 'systemLanguage', 'x', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    defs: ['class', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'xml:base', 'xml:lang', 'xml:space'],
+    desc: ['class', 'id', 'style', 'xml:base', 'xml:lang', 'xml:space'],
+    ellipse: ['class', 'cx', 'cy', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'rx', 'ry', 'style', 'systemLanguage', 'transform', 'xml:base', 'xml:lang', 'xml:space'],
+    feBlend: ['class', 'height', 'id', 'in', 'in2', 'mode', 'result', 'style', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    feColorMatrix: ['class', 'height', 'id', 'in', 'result', 'style', 'type', 'values', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    feComponentTransfer: ['class', 'height', 'id', 'in', 'result', 'style', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    feComposite: ['class', 'height', 'id', 'in', 'in2', 'k1', 'k2', 'k3', 'k4', 'operator', 'result', 'style', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    feConvolveMatrix: ['bias', 'class', 'divisor', 'edgeMode', 'height', 'id', 'in', 'kernelMatrix', 'kernelUnitLength', 'order', 'preserveAlpha', 'result', 'style', 'targetX', 'targetY', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    feDiffuseLighting: ['class', 'diffuseConstant', 'height', 'id', 'in', 'kernelUnitLength', 'result', 'style', 'surfaceScale', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    feDisplacementMap: ['class', 'height', 'id', 'in', 'in2', 'result', 'scale', 'style', 'width', 'x', 'xChannelSelector', 'xml:base', 'xml:lang', 'xml:space', 'y', 'yChannelSelector'],
+    feDistantLight: ['azimuth', 'elevation', 'id', 'xml:base', 'xml:lang', 'xml:space'],
+    feFlood: ['class', 'height', 'id', 'result', 'style', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    feFuncA: ['amplitude', 'exponent', 'id', 'intercept', 'offset', 'slope', 'tableValues', 'type', 'xml:base', 'xml:lang', 'xml:space'],
+    feFuncB: ['amplitude', 'exponent', 'id', 'intercept', 'offset', 'slope', 'tableValues', 'type', 'xml:base', 'xml:lang', 'xml:space'],
+    feFuncG: ['amplitude', 'exponent', 'id', 'intercept', 'offset', 'slope', 'tableValues', 'type', 'xml:base', 'xml:lang', 'xml:space'],
+    feFuncR: ['amplitude', 'exponent', 'id', 'intercept', 'offset', 'slope', 'tableValues', 'type', 'xml:base', 'xml:lang', 'xml:space'],
+    feGaussianBlur: ['class', 'height', 'id', 'in', 'result', 'stdDeviation', 'style', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    feImage: ['class', 'externalResourcesRequired', 'height', 'id', 'preserveAspectRatio', 'result', 'style', 'width', 'x', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    feMerge: ['class', 'height', 'id', 'result', 'style', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    feMergeNode: ['id', 'xml:base', 'xml:lang', 'xml:space'],
+    feMorphology: ['class', 'height', 'id', 'in', 'operator', 'radius', 'result', 'style', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    feOffset: ['class', 'dx', 'dy', 'height', 'id', 'in', 'result', 'style', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    fePointLight: ['id', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y', 'z'],
+    feSpecularLighting: ['class', 'height', 'id', 'in', 'kernelUnitLength', 'result', 'specularConstant', 'specularExponent', 'style', 'surfaceScale', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    feSpotLight: ['id', 'limitingConeAngle', 'pointsAtX', 'pointsAtY', 'pointsAtZ', 'specularExponent', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y', 'z'],
+    feTile: ['class', 'height', 'id', 'in', 'result', 'style', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    feTurbulence: ['baseFrequency', 'class', 'height', 'id', 'numOctaves', 'result', 'seed', 'stitchTiles', 'style', 'type', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    filter: ['class', 'externalResourcesRequired', 'filterRes', 'filterUnits', 'height', 'id', 'primitiveUnits', 'style', 'width', 'x', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    font: ['class', 'externalResourcesRequired', 'horiz-adv-x', 'horiz-origin-x', 'horiz-origin-y', 'id', 'style', 'vert-adv-y', 'vert-origin-x', 'vert-origin-y', 'xml:base', 'xml:lang', 'xml:space'],
+    'font-face': ['accent-height', 'alphabetic', 'ascent', 'bbox', 'cap-height', 'descent', 'font-family', 'font-size', 'font-stretch', 'font-style', 'font-variant', 'font-weight', 'hanging', 'id', 'ideographic', 'mathematical', 'overline-position', 'overline-thickness', 'panose-1', 'slope', 'stemh', 'stemv', 'strikethrough-position', 'strikethrough-thickness', 'underline-position', 'underline-thickness', 'unicode-range', 'units-per-em', 'v-alphabetic', 'v-hanging', 'v-ideographic', 'v-mathematical', 'widths', 'x-height', 'xml:base', 'xml:lang', 'xml:space'],
+    'font-face-format': ['id', 'string', 'xml:base', 'xml:lang', 'xml:space'],
+    'font-face-name': ['id', 'name', 'xml:base', 'xml:lang', 'xml:space'],
+    'font-face-src': ['id', 'xml:base', 'xml:lang', 'xml:space'],
+    'font-face-uri': ['id', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
+    foreignObject: ['class', 'externalResourcesRequired', 'height', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    g: ['class', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'xml:base', 'xml:lang', 'xml:space'],
+    glyph: ['arabic-form', 'class', 'd', 'glyph-name', 'horiz-adv-x', 'id', 'lang', 'orientation', 'style', 'unicode', 'vert-adv-y', 'vert-origin-x', 'vert-origin-y', 'xml:base', 'xml:lang', 'xml:space'],
+    glyphRef: ['class', 'dx', 'dy', 'format', 'glyphRef', 'id', 'style', 'x', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    hkern: ['g1', 'g2', 'id', 'k', 'u1', 'u2', 'xml:base', 'xml:lang', 'xml:space'],
+    image: ['class', 'externalResourcesRequired', 'height', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'preserveAspectRatio', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'width', 'x', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    line: ['class', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'x1', 'x2', 'xml:base', 'xml:lang', 'xml:space', 'y1', 'y2'],
+    linearGradient: ['class', 'externalResourcesRequired', 'gradientTransform', 'gradientUnits', 'id', 'spreadMethod', 'style', 'x1', 'x2', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space', 'y1', 'y2'],
+    marker: ['class', 'externalResourcesRequired', 'id', 'markerHeight', 'markerUnits', 'markerWidth', 'orient', 'preserveAspectRatio', 'refX', 'refY', 'style', 'viewBox', 'xml:base', 'xml:lang', 'xml:space'],
+    mask: ['class', 'externalResourcesRequired', 'height', 'id', 'maskContentUnits', 'maskUnits', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    metadata: ['id', 'xml:base', 'xml:lang', 'xml:space'],
+    'missing-glyph': ['class', 'd', 'horiz-adv-x', 'id', 'style', 'vert-adv-y', 'vert-origin-x', 'vert-origin-y', 'xml:base', 'xml:lang', 'xml:space'],
+    mpath: ['externalResourcesRequired', 'id', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
+    path: ['class', 'd', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'pathLength', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'xml:base', 'xml:lang', 'xml:space'],
+    pattern: ['class', 'externalResourcesRequired', 'height', 'id', 'patternContentUnits', 'patternTransform', 'patternUnits', 'preserveAspectRatio', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'viewBox', 'width', 'x', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    polygon: ['class', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'points', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'xml:base', 'xml:lang', 'xml:space'],
+    polyline: ['class', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'points', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'xml:base', 'xml:lang', 'xml:space'],
+    radialGradient: ['class', 'cx', 'cy', 'externalResourcesRequired', 'fx', 'fy', 'gradientTransform', 'gradientUnits', 'id', 'r', 'spreadMethod', 'style', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
+    rect: ['class', 'externalResourcesRequired', 'height', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'rx', 'ry', 'style', 'systemLanguage', 'transform', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    script: ['externalResourcesRequired', 'id', 'type', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
+    set: ['attributeName', 'attributeType', 'begin', 'dur', 'end', 'externalResourcesRequired', 'fill', 'id', 'max', 'min', 'onbegin', 'onend', 'onload', 'onrepeat', 'repeatCount', 'repeatDur', 'requiredExtensions', 'requiredFeatures', 'restart', 'systemLanguage', 'to', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
+    stop: ['class', 'id', 'offset', 'style', 'xml:base', 'xml:lang', 'xml:space'],
+    style: ['id', 'media', 'title', 'type', 'xml:base', 'xml:lang', 'xml:space'],
+    svg: ['baseProfile', 'class', 'contentScriptType', 'contentStyleType', 'externalResourcesRequired', 'height', 'id', 'onabort', 'onactivate', 'onclick', 'onerror', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'onresize', 'onscroll', 'onunload', 'onzoom', 'preserveAspectRatio', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'version', 'viewBox', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y', 'zoomAndPan'],
+    switch: ['class', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'xml:base', 'xml:lang', 'xml:space'],
+    symbol: ['class', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'preserveAspectRatio', 'style', 'viewBox', 'xml:base', 'xml:lang', 'xml:space'],
+    text: ['class', 'dx', 'dy', 'externalResourcesRequired', 'id', 'lengthAdjust', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'rotate', 'style', 'systemLanguage', 'textLength', 'transform', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    textPath: ['class', 'externalResourcesRequired', 'id', 'lengthAdjust', 'method', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'spacing', 'startOffset', 'style', 'systemLanguage', 'textLength', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
+    title: ['class', 'id', 'style', 'xml:base', 'xml:lang', 'xml:space'],
+    tref: ['class', 'dx', 'dy', 'externalResourcesRequired', 'id', 'lengthAdjust', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'rotate', 'style', 'systemLanguage', 'textLength', 'x', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    tspan: ['class', 'dx', 'dy', 'externalResourcesRequired', 'id', 'lengthAdjust', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'rotate', 'style', 'systemLanguage', 'textLength', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    use: ['class', 'externalResourcesRequired', 'height', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'width', 'x', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space', 'y'],
+    view: ['externalResourcesRequired', 'id', 'preserveAspectRatio', 'viewBox', 'viewTarget', 'xml:base', 'xml:lang', 'xml:space', 'zoomAndPan'],
+    vkern: ['g1', 'g2', 'id', 'k', 'u1', 'u2', 'xml:base', 'xml:lang', 'xml:space']
+  };
+  var presentationElements = exports.presentationElements = {
+    'a': true,
+    'altGlyph': true,
+    'animate': true,
+    'animateColor': true,
+    'circle': true,
+    'clipPath': true,
+    'defs': true,
+    'ellipse': true,
+    'feBlend': true,
+    'feColorMatrix': true,
+    'feComponentTransfer': true,
+    'feComposite': true,
+    'feConvolveMatrix': true,
+    'feDiffuseLighting': true,
+    'feDisplacementMap': true,
+    'feFlood': true,
+    'feGaussianBlur': true,
+    'feImage': true,
+    'feMerge': true,
+    'feMorphology': true,
+    'feOffset': true,
+    'feSpecularLighting': true,
+    'feTile': true,
+    'feTurbulence': true,
+    'filter': true,
+    'font': true,
+    'foreignObject': true,
+    'g': true,
+    'glyph': true,
+    'glyphRef': true,
+    'image': true,
+    'line': true,
+    'linearGradient': true,
+    'marker': true,
+    'mask': true,
+    'missing-glyph': true,
+    'path': true,
+    'pattern': true,
+    'polygon': true,
+    'polyline': true,
+    'radialGradient': true,
+    'rect': true,
+    'stop': true,
+    'svg': true,
+    'switch': true,
+    'symbol': true,
+    'text': true,
+    'textPath': true,
+    'tref': true,
+    'tspan': true,
+    'use': true
+  };
 
-  if (typeof FEATURE_NO_SVG === 'undefined') {
-    (function () {
-      svgElements = {
-        a: ['class', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'target', 'transform', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
-        altGlyph: ['class', 'dx', 'dy', 'externalResourcesRequired', 'format', 'glyphRef', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'rotate', 'style', 'systemLanguage', 'x', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        altGlyphDef: ['id', 'xml:base', 'xml:lang', 'xml:space'],
-        altGlyphItem: ['id', 'xml:base', 'xml:lang', 'xml:space'],
-        animate: ['accumulate', 'additive', 'attributeName', 'attributeType', 'begin', 'by', 'calcMode', 'dur', 'end', 'externalResourcesRequired', 'fill', 'from', 'id', 'keySplines', 'keyTimes', 'max', 'min', 'onbegin', 'onend', 'onload', 'onrepeat', 'repeatCount', 'repeatDur', 'requiredExtensions', 'requiredFeatures', 'restart', 'systemLanguage', 'to', 'values', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
-        animateColor: ['accumulate', 'additive', 'attributeName', 'attributeType', 'begin', 'by', 'calcMode', 'dur', 'end', 'externalResourcesRequired', 'fill', 'from', 'id', 'keySplines', 'keyTimes', 'max', 'min', 'onbegin', 'onend', 'onload', 'onrepeat', 'repeatCount', 'repeatDur', 'requiredExtensions', 'requiredFeatures', 'restart', 'systemLanguage', 'to', 'values', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
-        animateMotion: ['accumulate', 'additive', 'begin', 'by', 'calcMode', 'dur', 'end', 'externalResourcesRequired', 'fill', 'from', 'id', 'keyPoints', 'keySplines', 'keyTimes', 'max', 'min', 'onbegin', 'onend', 'onload', 'onrepeat', 'origin', 'path', 'repeatCount', 'repeatDur', 'requiredExtensions', 'requiredFeatures', 'restart', 'rotate', 'systemLanguage', 'to', 'values', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
-        animateTransform: ['accumulate', 'additive', 'attributeName', 'attributeType', 'begin', 'by', 'calcMode', 'dur', 'end', 'externalResourcesRequired', 'fill', 'from', 'id', 'keySplines', 'keyTimes', 'max', 'min', 'onbegin', 'onend', 'onload', 'onrepeat', 'repeatCount', 'repeatDur', 'requiredExtensions', 'requiredFeatures', 'restart', 'systemLanguage', 'to', 'type', 'values', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
-        circle: ['class', 'cx', 'cy', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'r', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'xml:base', 'xml:lang', 'xml:space'],
-        clipPath: ['class', 'clipPathUnits', 'externalResourcesRequired', 'id', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'xml:base', 'xml:lang', 'xml:space'],
-        'color-profile': ['id', 'local', 'name', 'rendering-intent', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
-        cursor: ['externalResourcesRequired', 'id', 'requiredExtensions', 'requiredFeatures', 'systemLanguage', 'x', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        defs: ['class', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'xml:base', 'xml:lang', 'xml:space'],
-        desc: ['class', 'id', 'style', 'xml:base', 'xml:lang', 'xml:space'],
-        ellipse: ['class', 'cx', 'cy', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'rx', 'ry', 'style', 'systemLanguage', 'transform', 'xml:base', 'xml:lang', 'xml:space'],
-        feBlend: ['class', 'height', 'id', 'in', 'in2', 'mode', 'result', 'style', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        feColorMatrix: ['class', 'height', 'id', 'in', 'result', 'style', 'type', 'values', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        feComponentTransfer: ['class', 'height', 'id', 'in', 'result', 'style', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        feComposite: ['class', 'height', 'id', 'in', 'in2', 'k1', 'k2', 'k3', 'k4', 'operator', 'result', 'style', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        feConvolveMatrix: ['bias', 'class', 'divisor', 'edgeMode', 'height', 'id', 'in', 'kernelMatrix', 'kernelUnitLength', 'order', 'preserveAlpha', 'result', 'style', 'targetX', 'targetY', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        feDiffuseLighting: ['class', 'diffuseConstant', 'height', 'id', 'in', 'kernelUnitLength', 'result', 'style', 'surfaceScale', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        feDisplacementMap: ['class', 'height', 'id', 'in', 'in2', 'result', 'scale', 'style', 'width', 'x', 'xChannelSelector', 'xml:base', 'xml:lang', 'xml:space', 'y', 'yChannelSelector'],
-        feDistantLight: ['azimuth', 'elevation', 'id', 'xml:base', 'xml:lang', 'xml:space'],
-        feFlood: ['class', 'height', 'id', 'result', 'style', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        feFuncA: ['amplitude', 'exponent', 'id', 'intercept', 'offset', 'slope', 'tableValues', 'type', 'xml:base', 'xml:lang', 'xml:space'],
-        feFuncB: ['amplitude', 'exponent', 'id', 'intercept', 'offset', 'slope', 'tableValues', 'type', 'xml:base', 'xml:lang', 'xml:space'],
-        feFuncG: ['amplitude', 'exponent', 'id', 'intercept', 'offset', 'slope', 'tableValues', 'type', 'xml:base', 'xml:lang', 'xml:space'],
-        feFuncR: ['amplitude', 'exponent', 'id', 'intercept', 'offset', 'slope', 'tableValues', 'type', 'xml:base', 'xml:lang', 'xml:space'],
-        feGaussianBlur: ['class', 'height', 'id', 'in', 'result', 'stdDeviation', 'style', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        feImage: ['class', 'externalResourcesRequired', 'height', 'id', 'preserveAspectRatio', 'result', 'style', 'width', 'x', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        feMerge: ['class', 'height', 'id', 'result', 'style', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        feMergeNode: ['id', 'xml:base', 'xml:lang', 'xml:space'],
-        feMorphology: ['class', 'height', 'id', 'in', 'operator', 'radius', 'result', 'style', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        feOffset: ['class', 'dx', 'dy', 'height', 'id', 'in', 'result', 'style', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        fePointLight: ['id', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y', 'z'],
-        feSpecularLighting: ['class', 'height', 'id', 'in', 'kernelUnitLength', 'result', 'specularConstant', 'specularExponent', 'style', 'surfaceScale', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        feSpotLight: ['id', 'limitingConeAngle', 'pointsAtX', 'pointsAtY', 'pointsAtZ', 'specularExponent', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y', 'z'],
-        feTile: ['class', 'height', 'id', 'in', 'result', 'style', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        feTurbulence: ['baseFrequency', 'class', 'height', 'id', 'numOctaves', 'result', 'seed', 'stitchTiles', 'style', 'type', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        filter: ['class', 'externalResourcesRequired', 'filterRes', 'filterUnits', 'height', 'id', 'primitiveUnits', 'style', 'width', 'x', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        font: ['class', 'externalResourcesRequired', 'horiz-adv-x', 'horiz-origin-x', 'horiz-origin-y', 'id', 'style', 'vert-adv-y', 'vert-origin-x', 'vert-origin-y', 'xml:base', 'xml:lang', 'xml:space'],
-        'font-face': ['accent-height', 'alphabetic', 'ascent', 'bbox', 'cap-height', 'descent', 'font-family', 'font-size', 'font-stretch', 'font-style', 'font-variant', 'font-weight', 'hanging', 'id', 'ideographic', 'mathematical', 'overline-position', 'overline-thickness', 'panose-1', 'slope', 'stemh', 'stemv', 'strikethrough-position', 'strikethrough-thickness', 'underline-position', 'underline-thickness', 'unicode-range', 'units-per-em', 'v-alphabetic', 'v-hanging', 'v-ideographic', 'v-mathematical', 'widths', 'x-height', 'xml:base', 'xml:lang', 'xml:space'],
-        'font-face-format': ['id', 'string', 'xml:base', 'xml:lang', 'xml:space'],
-        'font-face-name': ['id', 'name', 'xml:base', 'xml:lang', 'xml:space'],
-        'font-face-src': ['id', 'xml:base', 'xml:lang', 'xml:space'],
-        'font-face-uri': ['id', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
-        foreignObject: ['class', 'externalResourcesRequired', 'height', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        g: ['class', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'xml:base', 'xml:lang', 'xml:space'],
-        glyph: ['arabic-form', 'class', 'd', 'glyph-name', 'horiz-adv-x', 'id', 'lang', 'orientation', 'style', 'unicode', 'vert-adv-y', 'vert-origin-x', 'vert-origin-y', 'xml:base', 'xml:lang', 'xml:space'],
-        glyphRef: ['class', 'dx', 'dy', 'format', 'glyphRef', 'id', 'style', 'x', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        hkern: ['g1', 'g2', 'id', 'k', 'u1', 'u2', 'xml:base', 'xml:lang', 'xml:space'],
-        image: ['class', 'externalResourcesRequired', 'height', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'preserveAspectRatio', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'width', 'x', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        line: ['class', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'x1', 'x2', 'xml:base', 'xml:lang', 'xml:space', 'y1', 'y2'],
-        linearGradient: ['class', 'externalResourcesRequired', 'gradientTransform', 'gradientUnits', 'id', 'spreadMethod', 'style', 'x1', 'x2', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space', 'y1', 'y2'],
-        marker: ['class', 'externalResourcesRequired', 'id', 'markerHeight', 'markerUnits', 'markerWidth', 'orient', 'preserveAspectRatio', 'refX', 'refY', 'style', 'viewBox', 'xml:base', 'xml:lang', 'xml:space'],
-        mask: ['class', 'externalResourcesRequired', 'height', 'id', 'maskContentUnits', 'maskUnits', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        metadata: ['id', 'xml:base', 'xml:lang', 'xml:space'],
-        'missing-glyph': ['class', 'd', 'horiz-adv-x', 'id', 'style', 'vert-adv-y', 'vert-origin-x', 'vert-origin-y', 'xml:base', 'xml:lang', 'xml:space'],
-        mpath: ['externalResourcesRequired', 'id', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
-        path: ['class', 'd', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'pathLength', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'xml:base', 'xml:lang', 'xml:space'],
-        pattern: ['class', 'externalResourcesRequired', 'height', 'id', 'patternContentUnits', 'patternTransform', 'patternUnits', 'preserveAspectRatio', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'viewBox', 'width', 'x', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        polygon: ['class', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'points', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'xml:base', 'xml:lang', 'xml:space'],
-        polyline: ['class', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'points', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'xml:base', 'xml:lang', 'xml:space'],
-        radialGradient: ['class', 'cx', 'cy', 'externalResourcesRequired', 'fx', 'fy', 'gradientTransform', 'gradientUnits', 'id', 'r', 'spreadMethod', 'style', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
-        rect: ['class', 'externalResourcesRequired', 'height', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'rx', 'ry', 'style', 'systemLanguage', 'transform', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        script: ['externalResourcesRequired', 'id', 'type', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
-        set: ['attributeName', 'attributeType', 'begin', 'dur', 'end', 'externalResourcesRequired', 'fill', 'id', 'max', 'min', 'onbegin', 'onend', 'onload', 'onrepeat', 'repeatCount', 'repeatDur', 'requiredExtensions', 'requiredFeatures', 'restart', 'systemLanguage', 'to', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
-        stop: ['class', 'id', 'offset', 'style', 'xml:base', 'xml:lang', 'xml:space'],
-        style: ['id', 'media', 'title', 'type', 'xml:base', 'xml:lang', 'xml:space'],
-        svg: ['baseProfile', 'class', 'contentScriptType', 'contentStyleType', 'externalResourcesRequired', 'height', 'id', 'onabort', 'onactivate', 'onclick', 'onerror', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'onresize', 'onscroll', 'onunload', 'onzoom', 'preserveAspectRatio', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'version', 'viewBox', 'width', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y', 'zoomAndPan'],
-        switch: ['class', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'xml:base', 'xml:lang', 'xml:space'],
-        symbol: ['class', 'externalResourcesRequired', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'preserveAspectRatio', 'style', 'viewBox', 'xml:base', 'xml:lang', 'xml:space'],
-        text: ['class', 'dx', 'dy', 'externalResourcesRequired', 'id', 'lengthAdjust', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'rotate', 'style', 'systemLanguage', 'textLength', 'transform', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        textPath: ['class', 'externalResourcesRequired', 'id', 'lengthAdjust', 'method', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'spacing', 'startOffset', 'style', 'systemLanguage', 'textLength', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space'],
-        title: ['class', 'id', 'style', 'xml:base', 'xml:lang', 'xml:space'],
-        tref: ['class', 'dx', 'dy', 'externalResourcesRequired', 'id', 'lengthAdjust', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'rotate', 'style', 'systemLanguage', 'textLength', 'x', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        tspan: ['class', 'dx', 'dy', 'externalResourcesRequired', 'id', 'lengthAdjust', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'rotate', 'style', 'systemLanguage', 'textLength', 'x', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        use: ['class', 'externalResourcesRequired', 'height', 'id', 'onactivate', 'onclick', 'onfocusin', 'onfocusout', 'onload', 'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'requiredExtensions', 'requiredFeatures', 'style', 'systemLanguage', 'transform', 'width', 'x', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xml:lang', 'xml:space', 'y'],
-        view: ['externalResourcesRequired', 'id', 'preserveAspectRatio', 'viewBox', 'viewTarget', 'xml:base', 'xml:lang', 'xml:space', 'zoomAndPan'],
-        vkern: ['g1', 'g2', 'id', 'k', 'u1', 'u2', 'xml:base', 'xml:lang', 'xml:space']
-      };
+  var presentationAttributes = exports.presentationAttributes = {
+    'alignment-baseline': true,
+    'baseline-shift': true,
+    'clip-path': true,
+    'clip-rule': true,
+    'clip': true,
+    'color-interpolation-filters': true,
+    'color-interpolation': true,
+    'color-profile': true,
+    'color-rendering': true,
+    'color': true,
+    'cursor': true,
+    'direction': true,
+    'display': true,
+    'dominant-baseline': true,
+    'enable-background': true,
+    'fill-opacity': true,
+    'fill-rule': true,
+    'fill': true,
+    'filter': true,
+    'flood-color': true,
+    'flood-opacity': true,
+    'font-family': true,
+    'font-size-adjust': true,
+    'font-size': true,
+    'font-stretch': true,
+    'font-style': true,
+    'font-variant': true,
+    'font-weight': true,
+    'glyph-orientation-horizontal': true,
+    'glyph-orientation-vertical': true,
+    'image-rendering': true,
+    'kerning': true,
+    'letter-spacing': true,
+    'lighting-color': true,
+    'marker-end': true,
+    'marker-mid': true,
+    'marker-start': true,
+    'mask': true,
+    'opacity': true,
+    'overflow': true,
+    'pointer-events': true,
+    'shape-rendering': true,
+    'stop-color': true,
+    'stop-opacity': true,
+    'stroke-dasharray': true,
+    'stroke-dashoffset': true,
+    'stroke-linecap': true,
+    'stroke-linejoin': true,
+    'stroke-miterlimit': true,
+    'stroke-opacity': true,
+    'stroke-width': true,
+    'stroke': true,
+    'text-anchor': true,
+    'text-decoration': true,
+    'text-rendering': true,
+    'unicode-bidi': true,
+    'visibility': true,
+    'word-spacing': true,
+    'writing-mode': true
+  };
 
-
-      svgPresentationElements = {
-        'a': true,
-        'altGlyph': true,
-        'animate': true,
-        'animateColor': true,
-        'circle': true,
-        'clipPath': true,
-        'defs': true,
-        'ellipse': true,
-        'feBlend': true,
-        'feColorMatrix': true,
-        'feComponentTransfer': true,
-        'feComposite': true,
-        'feConvolveMatrix': true,
-        'feDiffuseLighting': true,
-        'feDisplacementMap': true,
-        'feFlood': true,
-        'feGaussianBlur': true,
-        'feImage': true,
-        'feMerge': true,
-        'feMorphology': true,
-        'feOffset': true,
-        'feSpecularLighting': true,
-        'feTile': true,
-        'feTurbulence': true,
-        'filter': true,
-        'font': true,
-        'foreignObject': true,
-        'g': true,
-        'glyph': true,
-        'glyphRef': true,
-        'image': true,
-        'line': true,
-        'linearGradient': true,
-        'marker': true,
-        'mask': true,
-        'missing-glyph': true,
-        'path': true,
-        'pattern': true,
-        'polygon': true,
-        'polyline': true,
-        'radialGradient': true,
-        'rect': true,
-        'stop': true,
-        'svg': true,
-        'switch': true,
-        'symbol': true,
-        'text': true,
-        'textPath': true,
-        'tref': true,
-        'tspan': true,
-        'use': true
-      };
-
-      svgPresentationAttributes = {
-        'alignment-baseline': true,
-        'baseline-shift': true,
-        'clip-path': true,
-        'clip-rule': true,
-        'clip': true,
-        'color-interpolation-filters': true,
-        'color-interpolation': true,
-        'color-profile': true,
-        'color-rendering': true,
-        'color': true,
-        'cursor': true,
-        'direction': true,
-        'display': true,
-        'dominant-baseline': true,
-        'enable-background': true,
-        'fill-opacity': true,
-        'fill-rule': true,
-        'fill': true,
-        'filter': true,
-        'flood-color': true,
-        'flood-opacity': true,
-        'font-family': true,
-        'font-size-adjust': true,
-        'font-size': true,
-        'font-stretch': true,
-        'font-style': true,
-        'font-variant': true,
-        'font-weight': true,
-        'glyph-orientation-horizontal': true,
-        'glyph-orientation-vertical': true,
-        'image-rendering': true,
-        'kerning': true,
-        'letter-spacing': true,
-        'lighting-color': true,
-        'marker-end': true,
-        'marker-mid': true,
-        'marker-start': true,
-        'mask': true,
-        'opacity': true,
-        'overflow': true,
-        'pointer-events': true,
-        'shape-rendering': true,
-        'stop-color': true,
-        'stop-opacity': true,
-        'stroke-dasharray': true,
-        'stroke-dashoffset': true,
-        'stroke-linecap': true,
-        'stroke-linejoin': true,
-        'stroke-miterlimit': true,
-        'stroke-opacity': true,
-        'stroke-width': true,
-        'stroke': true,
-        'text-anchor': true,
-        'text-decoration': true,
-        'text-rendering': true,
-        'unicode-bidi': true,
-        'visibility': true,
-        'word-spacing': true,
-        'writing-mode': true
-      };
-
-      var createElement = function createElement(html) {
-        var div = _aureliaPal.DOM.createElement('div');
-        div.innerHTML = html;
-        return div.firstChild;
-      };
-
-      svgAnalyzer = function () {
-        function SVGAnalyzer() {
-          
-
-          if (createElement('<svg><altGlyph /></svg>').firstElementChild.nodeName === 'altglyph' && elements.altGlyph) {
-            elements.altglyph = elements.altGlyph;
-            delete elements.altGlyph;
-            elements.altglyphdef = elements.altGlyphDef;
-            delete elements.altGlyphDef;
-            elements.altglyphitem = elements.altGlyphItem;
-            delete elements.altGlyphItem;
-            elements.glyphref = elements.glyphRef;
-            delete elements.glyphRef;
-          }
-        }
-
-        SVGAnalyzer.prototype.isStandardSvgAttribute = function isStandardSvgAttribute(nodeName, attributeName) {
-          return presentationElements[nodeName] && presentationAttributes[attributeName] || elements[nodeName] && elements[nodeName].indexOf(attributeName) !== -1;
-        };
-
-        return SVGAnalyzer;
-      }();
-    })();
+  function createElement(html) {
+    var div = _aureliaPal.DOM.createElement('div');
+    div.innerHTML = html;
+    return div.firstChild;
   }
 
-  var elements = exports.elements = svgElements;
-  var presentationElements = exports.presentationElements = svgPresentationElements;
-  var presentationAttributes = exports.presentationAttributes = svgPresentationAttributes;
-  var SVGAnalyzer = exports.SVGAnalyzer = svgAnalyzer || function () {
-    function _class11() {
+  var SVGAnalyzer = exports.SVGAnalyzer = function () {
+    function SVGAnalyzer() {
       
+
+      if (createElement('<svg><altGlyph /></svg>').firstElementChild.nodeName === 'altglyph' && elements.altGlyph) {
+        elements.altglyph = elements.altGlyph;
+        delete elements.altGlyph;
+        elements.altglyphdef = elements.altGlyphDef;
+        delete elements.altGlyphDef;
+        elements.altglyphitem = elements.altGlyphItem;
+        delete elements.altGlyphItem;
+        elements.glyphref = elements.glyphRef;
+        delete elements.glyphRef;
+      }
     }
 
-    _class11.prototype.isStandardSvgAttribute = function isStandardSvgAttribute() {
-      return false;
+    SVGAnalyzer.prototype.isStandardSvgAttribute = function isStandardSvgAttribute(nodeName, attributeName) {
+      return presentationElements[nodeName] && presentationAttributes[attributeName] || elements[nodeName] && elements[nodeName].indexOf(attributeName) !== -1;
     };
 
-    return _class11;
+    return SVGAnalyzer;
   }();
 
-  var ObserverLocator = exports.ObserverLocator = (_temp = _class12 = function () {
+  var ObserverLocator = exports.ObserverLocator = (_temp = _class11 = function () {
     function ObserverLocator(taskQueue, eventManager, dirtyChecker, svgAnalyzer, parser) {
       
 
@@ -10737,7 +10662,7 @@ define('aurelia-binding',['exports', 'aurelia-logging', 'aurelia-pal', 'aurelia-
     };
 
     return ObserverLocator;
-  }(), _class12.inject = [_aureliaTaskQueue.TaskQueue, EventManager, DirtyChecker, SVGAnalyzer, Parser], _temp);
+  }(), _class11.inject = [_aureliaTaskQueue.TaskQueue, EventManager, DirtyChecker, SVGAnalyzer, Parser], _temp);
 
   var ObjectObservationAdapter = exports.ObjectObservationAdapter = function () {
     function ObjectObservationAdapter() {
@@ -10773,7 +10698,7 @@ define('aurelia-binding',['exports', 'aurelia-logging', 'aurelia-pal', 'aurelia-
 
   var targetContext = 'Binding:target';
 
-  var Binding = exports.Binding = (_dec10 = connectable(), _dec10(_class13 = function () {
+  var Binding = exports.Binding = (_dec10 = connectable(), _dec10(_class12 = function () {
     function Binding(observerLocator, sourceExpression, target, targetProperty, mode, lookupFunctions) {
       
 
@@ -10883,7 +10808,7 @@ define('aurelia-binding',['exports', 'aurelia-logging', 'aurelia-pal', 'aurelia-
     };
 
     return Binding;
-  }()) || _class13);
+  }()) || _class12);
 
   var CallExpression = exports.CallExpression = function () {
     function CallExpression(observerLocator, targetProperty, sourceExpression, lookupFunctions) {
@@ -11211,7 +11136,7 @@ define('aurelia-binding',['exports', 'aurelia-logging', 'aurelia-pal', 'aurelia-
     }
   };
 
-  var BindingEngine = exports.BindingEngine = (_temp2 = _class14 = function () {
+  var BindingEngine = exports.BindingEngine = (_temp2 = _class13 = function () {
     function BindingEngine(observerLocator, parser) {
       
 
@@ -11281,7 +11206,7 @@ define('aurelia-binding',['exports', 'aurelia-logging', 'aurelia-pal', 'aurelia-
     };
 
     return BindingEngine;
-  }(), _class14.inject = [ObserverLocator, Parser], _temp2);
+  }(), _class13.inject = [ObserverLocator, Parser], _temp2);
 
 
   var setProto = Set.prototype;
@@ -11583,6 +11508,555 @@ define('aurelia-bootstrapper',['exports', 'aurelia-pal', 'aurelia-pal-browser', 
   }
 
   run();
+});
+define('aurelia-framework',['exports', 'aurelia-dependency-injection', 'aurelia-binding', 'aurelia-metadata', 'aurelia-templating', 'aurelia-loader', 'aurelia-task-queue', 'aurelia-path', 'aurelia-pal', 'aurelia-logging'], function (exports, _aureliaDependencyInjection, _aureliaBinding, _aureliaMetadata, _aureliaTemplating, _aureliaLoader, _aureliaTaskQueue, _aureliaPath, _aureliaPal, _aureliaLogging) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.LogManager = exports.FrameworkConfiguration = exports.Aurelia = undefined;
+  Object.keys(_aureliaDependencyInjection).forEach(function (key) {
+    if (key === "default" || key === "__esModule") return;
+    Object.defineProperty(exports, key, {
+      enumerable: true,
+      get: function () {
+        return _aureliaDependencyInjection[key];
+      }
+    });
+  });
+  Object.keys(_aureliaBinding).forEach(function (key) {
+    if (key === "default" || key === "__esModule") return;
+    Object.defineProperty(exports, key, {
+      enumerable: true,
+      get: function () {
+        return _aureliaBinding[key];
+      }
+    });
+  });
+  Object.keys(_aureliaMetadata).forEach(function (key) {
+    if (key === "default" || key === "__esModule") return;
+    Object.defineProperty(exports, key, {
+      enumerable: true,
+      get: function () {
+        return _aureliaMetadata[key];
+      }
+    });
+  });
+  Object.keys(_aureliaTemplating).forEach(function (key) {
+    if (key === "default" || key === "__esModule") return;
+    Object.defineProperty(exports, key, {
+      enumerable: true,
+      get: function () {
+        return _aureliaTemplating[key];
+      }
+    });
+  });
+  Object.keys(_aureliaLoader).forEach(function (key) {
+    if (key === "default" || key === "__esModule") return;
+    Object.defineProperty(exports, key, {
+      enumerable: true,
+      get: function () {
+        return _aureliaLoader[key];
+      }
+    });
+  });
+  Object.keys(_aureliaTaskQueue).forEach(function (key) {
+    if (key === "default" || key === "__esModule") return;
+    Object.defineProperty(exports, key, {
+      enumerable: true,
+      get: function () {
+        return _aureliaTaskQueue[key];
+      }
+    });
+  });
+  Object.keys(_aureliaPath).forEach(function (key) {
+    if (key === "default" || key === "__esModule") return;
+    Object.defineProperty(exports, key, {
+      enumerable: true,
+      get: function () {
+        return _aureliaPath[key];
+      }
+    });
+  });
+  Object.keys(_aureliaPal).forEach(function (key) {
+    if (key === "default" || key === "__esModule") return;
+    Object.defineProperty(exports, key, {
+      enumerable: true,
+      get: function () {
+        return _aureliaPal[key];
+      }
+    });
+  });
+
+  var TheLogManager = _interopRequireWildcard(_aureliaLogging);
+
+  function _interopRequireWildcard(obj) {
+    if (obj && obj.__esModule) {
+      return obj;
+    } else {
+      var newObj = {};
+
+      if (obj != null) {
+        for (var key in obj) {
+          if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key];
+        }
+      }
+
+      newObj.default = obj;
+      return newObj;
+    }
+  }
+
+  
+
+  function preventActionlessFormSubmit() {
+    _aureliaPal.DOM.addEventListener('submit', function (evt) {
+      var target = evt.target;
+      var action = target.action;
+
+      if (target.tagName.toLowerCase() === 'form' && !action) {
+        evt.preventDefault();
+      }
+    });
+  }
+
+  var Aurelia = exports.Aurelia = function () {
+    function Aurelia(loader, container, resources) {
+      
+
+      this.loader = loader || new _aureliaPal.PLATFORM.Loader();
+      this.container = container || new _aureliaDependencyInjection.Container().makeGlobal();
+      this.resources = resources || new _aureliaTemplating.ViewResources();
+      this.use = new FrameworkConfiguration(this);
+      this.logger = TheLogManager.getLogger('aurelia');
+      this.hostConfigured = false;
+      this.host = null;
+
+      this.use.instance(Aurelia, this);
+      this.use.instance(_aureliaLoader.Loader, this.loader);
+      this.use.instance(_aureliaTemplating.ViewResources, this.resources);
+    }
+
+    Aurelia.prototype.start = function start() {
+      var _this = this;
+
+      if (this.started) {
+        return Promise.resolve(this);
+      }
+
+      this.started = true;
+      this.logger.info('Aurelia Starting');
+
+      return this.use.apply().then(function () {
+        preventActionlessFormSubmit();
+
+        if (!_this.container.hasResolver(_aureliaTemplating.BindingLanguage)) {
+          var message = 'You must configure Aurelia with a BindingLanguage implementation.';
+          _this.logger.error(message);
+          throw new Error(message);
+        }
+
+        _this.logger.info('Aurelia Started');
+        var evt = _aureliaPal.DOM.createCustomEvent('aurelia-started', { bubbles: true, cancelable: true });
+        _aureliaPal.DOM.dispatchEvent(evt);
+        return _this;
+      });
+    };
+
+    Aurelia.prototype.enhance = function enhance() {
+      var _this2 = this;
+
+      var bindingContext = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+      var applicationHost = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
+
+      this._configureHost(applicationHost || _aureliaPal.DOM.querySelectorAll('body')[0]);
+
+      return new Promise(function (resolve) {
+        var engine = _this2.container.get(_aureliaTemplating.TemplatingEngine);
+        _this2.root = engine.enhance({ container: _this2.container, element: _this2.host, resources: _this2.resources, bindingContext: bindingContext });
+        _this2.root.attached();
+        _this2._onAureliaComposed();
+        resolve(_this2);
+      });
+    };
+
+    Aurelia.prototype.setRoot = function setRoot() {
+      var _this3 = this;
+
+      var root = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
+      var applicationHost = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
+
+      var instruction = {};
+
+      if (this.root && this.root.viewModel && this.root.viewModel.router) {
+        this.root.viewModel.router.deactivate();
+        this.root.viewModel.router.reset();
+      }
+
+      this._configureHost(applicationHost);
+
+      var engine = this.container.get(_aureliaTemplating.TemplatingEngine);
+      var transaction = this.container.get(_aureliaTemplating.CompositionTransaction);
+      delete transaction.initialComposition;
+
+      if (!root) {
+        if (this.configModuleId) {
+          root = (0, _aureliaPath.relativeToFile)('./app', this.configModuleId);
+        } else {
+          root = 'app';
+        }
+      }
+
+      instruction.viewModel = root;
+      instruction.container = instruction.childContainer = this.container;
+      instruction.viewSlot = this.hostSlot;
+      instruction.host = this.host;
+
+      return engine.compose(instruction).then(function (r) {
+        _this3.root = r;
+        instruction.viewSlot.attached();
+        _this3._onAureliaComposed();
+        return _this3;
+      });
+    };
+
+    Aurelia.prototype._configureHost = function _configureHost(applicationHost) {
+      if (this.hostConfigured) {
+        return;
+      }
+      applicationHost = applicationHost || this.host;
+
+      if (!applicationHost || typeof applicationHost === 'string') {
+        this.host = _aureliaPal.DOM.getElementById(applicationHost || 'applicationHost');
+      } else {
+        this.host = applicationHost;
+      }
+
+      if (!this.host) {
+        throw new Error('No applicationHost was specified.');
+      }
+
+      this.hostConfigured = true;
+      this.host.aurelia = this;
+      this.hostSlot = new _aureliaTemplating.ViewSlot(this.host, true);
+      this.hostSlot.transformChildNodesIntoView();
+      this.container.registerInstance(_aureliaPal.DOM.boundary, this.host);
+    };
+
+    Aurelia.prototype._onAureliaComposed = function _onAureliaComposed() {
+      var evt = _aureliaPal.DOM.createCustomEvent('aurelia-composed', { bubbles: true, cancelable: true });
+      setTimeout(function () {
+        return _aureliaPal.DOM.dispatchEvent(evt);
+      }, 1);
+    };
+
+    return Aurelia;
+  }();
+
+  var logger = TheLogManager.getLogger('aurelia');
+  var extPattern = /\.[^/.]+$/;
+
+  function runTasks(config, tasks) {
+    var current = void 0;
+    var next = function next() {
+      current = tasks.shift();
+      if (current) {
+        return Promise.resolve(current(config)).then(next);
+      }
+
+      return Promise.resolve();
+    };
+
+    return next();
+  }
+
+  function loadPlugin(config, loader, info) {
+    logger.debug('Loading plugin ' + info.moduleId + '.');
+    config.resourcesRelativeTo = info.resourcesRelativeTo;
+
+    var id = info.moduleId;
+
+    if (info.resourcesRelativeTo.length > 1) {
+      return loader.normalize(info.moduleId, info.resourcesRelativeTo[1]).then(function (normalizedId) {
+        return _loadPlugin(normalizedId);
+      });
+    }
+
+    return _loadPlugin(id);
+
+    function _loadPlugin(moduleId) {
+      return loader.loadModule(moduleId).then(function (m) {
+        if ('configure' in m) {
+          return Promise.resolve(m.configure(config, info.config || {})).then(function () {
+            config.resourcesRelativeTo = null;
+            logger.debug('Configured plugin ' + info.moduleId + '.');
+          });
+        }
+
+        config.resourcesRelativeTo = null;
+        logger.debug('Loaded plugin ' + info.moduleId + '.');
+      });
+    }
+  }
+
+  function loadResources(aurelia, resourcesToLoad, appResources) {
+    var viewEngine = aurelia.container.get(_aureliaTemplating.ViewEngine);
+
+    return Promise.all(Object.keys(resourcesToLoad).map(function (n) {
+      return _normalize(resourcesToLoad[n]);
+    })).then(function (loads) {
+      var names = [];
+      var importIds = [];
+
+      loads.forEach(function (l) {
+        names.push(undefined);
+        importIds.push(l.importId);
+      });
+
+      return viewEngine.importViewResources(importIds, names, appResources);
+    });
+
+    function _normalize(load) {
+      var moduleId = load.moduleId;
+      var ext = getExt(moduleId);
+
+      if (isOtherResource(moduleId)) {
+        moduleId = removeExt(moduleId);
+      }
+
+      return aurelia.loader.normalize(moduleId, load.relativeTo).then(function (normalized) {
+        return {
+          name: load.moduleId,
+          importId: isOtherResource(load.moduleId) ? addOriginalExt(normalized, ext) : normalized
+        };
+      });
+    }
+
+    function isOtherResource(name) {
+      var ext = getExt(name);
+      if (!ext) return false;
+      if (ext === '') return false;
+      if (ext === '.js' || ext === '.ts') return false;
+      return true;
+    }
+
+    function removeExt(name) {
+      return name.replace(extPattern, '');
+    }
+
+    function addOriginalExt(normalized, ext) {
+      return removeExt(normalized) + '.' + ext;
+    }
+  }
+
+  function getExt(name) {
+    var match = name.match(extPattern);
+    if (match && match.length > 0) {
+      return match[0].split('.')[1];
+    }
+  }
+
+  function assertProcessed(plugins) {
+    if (plugins.processed) {
+      throw new Error('This config instance has already been applied. To load more plugins or global resources, create a new FrameworkConfiguration instance.');
+    }
+  }
+
+  var FrameworkConfiguration = function () {
+    function FrameworkConfiguration(aurelia) {
+      var _this4 = this;
+
+      
+
+      this.aurelia = aurelia;
+      this.container = aurelia.container;
+      this.info = [];
+      this.processed = false;
+      this.preTasks = [];
+      this.postTasks = [];
+      this.resourcesToLoad = {};
+      this.preTask(function () {
+        return aurelia.loader.normalize('aurelia-bootstrapper').then(function (name) {
+          return _this4.bootstrapperName = name;
+        });
+      });
+      this.postTask(function () {
+        return loadResources(aurelia, _this4.resourcesToLoad, aurelia.resources);
+      });
+    }
+
+    FrameworkConfiguration.prototype.instance = function instance(type, _instance) {
+      this.container.registerInstance(type, _instance);
+      return this;
+    };
+
+    FrameworkConfiguration.prototype.singleton = function singleton(type, implementation) {
+      this.container.registerSingleton(type, implementation);
+      return this;
+    };
+
+    FrameworkConfiguration.prototype.transient = function transient(type, implementation) {
+      this.container.registerTransient(type, implementation);
+      return this;
+    };
+
+    FrameworkConfiguration.prototype.preTask = function preTask(task) {
+      assertProcessed(this);
+      this.preTasks.push(task);
+      return this;
+    };
+
+    FrameworkConfiguration.prototype.postTask = function postTask(task) {
+      assertProcessed(this);
+      this.postTasks.push(task);
+      return this;
+    };
+
+    FrameworkConfiguration.prototype.feature = function feature(plugin, config) {
+      if (getExt(plugin)) {
+        return this.plugin({ moduleId: plugin, resourcesRelativeTo: [plugin, ''], config: config || {} });
+      }
+
+      return this.plugin({ moduleId: plugin + '/index', resourcesRelativeTo: [plugin, ''], config: config || {} });
+    };
+
+    FrameworkConfiguration.prototype.globalResources = function globalResources(resources) {
+      assertProcessed(this);
+
+      var toAdd = Array.isArray(resources) ? resources : arguments;
+      var resource = void 0;
+      var resourcesRelativeTo = this.resourcesRelativeTo || ['', ''];
+
+      for (var i = 0, ii = toAdd.length; i < ii; ++i) {
+        resource = toAdd[i];
+        if (typeof resource !== 'string') {
+          throw new Error('Invalid resource path [' + resource + ']. Resources must be specified as relative module IDs.');
+        }
+
+        var parent = resourcesRelativeTo[0];
+        var grandParent = resourcesRelativeTo[1];
+        var name = resource;
+
+        if ((resource.startsWith('./') || resource.startsWith('../')) && parent !== '') {
+          name = (0, _aureliaPath.join)(parent, resource);
+        }
+
+        this.resourcesToLoad[name] = { moduleId: name, relativeTo: grandParent };
+      }
+
+      return this;
+    };
+
+    FrameworkConfiguration.prototype.globalName = function globalName(resourcePath, newName) {
+      assertProcessed(this);
+      this.resourcesToLoad[resourcePath] = { moduleId: newName, relativeTo: '' };
+      return this;
+    };
+
+    FrameworkConfiguration.prototype.plugin = function plugin(_plugin, config) {
+      assertProcessed(this);
+
+      if (typeof _plugin === 'string') {
+        return this.plugin({ moduleId: _plugin, resourcesRelativeTo: [_plugin, ''], config: config || {} });
+      }
+
+      this.info.push(_plugin);
+      return this;
+    };
+
+    FrameworkConfiguration.prototype._addNormalizedPlugin = function _addNormalizedPlugin(name, config) {
+      var _this5 = this;
+
+      var plugin = { moduleId: name, resourcesRelativeTo: [name, ''], config: config || {} };
+      this.plugin(plugin);
+
+      this.preTask(function () {
+        var relativeTo = [name, _this5.bootstrapperName];
+        plugin.moduleId = name;
+        plugin.resourcesRelativeTo = relativeTo;
+        return Promise.resolve();
+      });
+
+      return this;
+    };
+
+    FrameworkConfiguration.prototype.defaultBindingLanguage = function defaultBindingLanguage() {
+      return this._addNormalizedPlugin('aurelia-templating-binding');
+    };
+
+    FrameworkConfiguration.prototype.router = function router() {
+      return this._addNormalizedPlugin('aurelia-templating-router');
+    };
+
+    FrameworkConfiguration.prototype.history = function history() {
+      return this._addNormalizedPlugin('aurelia-history-browser');
+    };
+
+    FrameworkConfiguration.prototype.defaultResources = function defaultResources() {
+      return this._addNormalizedPlugin('aurelia-templating-resources');
+    };
+
+    FrameworkConfiguration.prototype.eventAggregator = function eventAggregator() {
+      return this._addNormalizedPlugin('aurelia-event-aggregator');
+    };
+
+    FrameworkConfiguration.prototype.basicConfiguration = function basicConfiguration() {
+      return this.defaultBindingLanguage().defaultResources().eventAggregator();
+    };
+
+    FrameworkConfiguration.prototype.standardConfiguration = function standardConfiguration() {
+      return this.basicConfiguration().history().router();
+    };
+
+    FrameworkConfiguration.prototype.developmentLogging = function developmentLogging() {
+      var _this6 = this;
+
+      this.preTask(function () {
+        return _this6.aurelia.loader.normalize('aurelia-logging-console', _this6.bootstrapperName).then(function (name) {
+          return _this6.aurelia.loader.loadModule(name).then(function (m) {
+            TheLogManager.addAppender(new m.ConsoleAppender());
+            TheLogManager.setLevel(TheLogManager.logLevel.debug);
+          });
+        });
+      });
+
+      return this;
+    };
+
+    FrameworkConfiguration.prototype.apply = function apply() {
+      var _this7 = this;
+
+      if (this.processed) {
+        return Promise.resolve();
+      }
+
+      return runTasks(this, this.preTasks).then(function () {
+        var loader = _this7.aurelia.loader;
+        var info = _this7.info;
+        var current = void 0;
+
+        var next = function next() {
+          current = info.shift();
+          if (current) {
+            return loadPlugin(_this7, loader, current).then(next);
+          }
+
+          _this7.processed = true;
+          return Promise.resolve();
+        };
+
+        return next().then(function () {
+          return runTasks(_this7, _this7.postTasks);
+        });
+      });
+    };
+
+    return FrameworkConfiguration;
+  }();
+
+  exports.FrameworkConfiguration = FrameworkConfiguration;
+  var LogManager = exports.LogManager = TheLogManager;
 });
 define('aurelia-dependency-injection',['exports', 'aurelia-metadata', 'aurelia-pal'], function (exports, _aureliaMetadata, _aureliaPal) {
   'use strict';
@@ -11943,8 +12417,7 @@ define('aurelia-dependency-injection',['exports', 'aurelia-metadata', 'aurelia-p
     }
 
     TransientRegistration.prototype.registerResolver = function registerResolver(container, key, fn) {
-      var existingResolver = container.getResolver(this._key || key);
-      return existingResolver === undefined ? container.registerTransient(this._key || key, fn) : existingResolver;
+      return container.registerTransient(this._key || key, fn);
     };
 
     return TransientRegistration;
@@ -11965,9 +12438,7 @@ define('aurelia-dependency-injection',['exports', 'aurelia-metadata', 'aurelia-p
     }
 
     SingletonRegistration.prototype.registerResolver = function registerResolver(container, key, fn) {
-      var targetContainer = this._registerInChild ? container : container.root;
-      var existingResolver = targetContainer.getResolver(this._key || key);
-      return existingResolver === undefined ? targetContainer.registerSingleton(this._key || key, fn) : existingResolver;
+      return this._registerInChild ? container.registerSingleton(this._key || key, fn) : container.root.registerSingleton(this._key || key, fn);
     };
 
     return SingletonRegistration;
@@ -12167,10 +12638,6 @@ define('aurelia-dependency-injection',['exports', 'aurelia-metadata', 'aurelia-p
       return this._resolvers.has(key) || checkParent && this.parent !== null && this.parent.hasResolver(key, checkParent);
     };
 
-    Container.prototype.getResolver = function getResolver(key) {
-      return this._resolvers.get(key);
-    };
-
     Container.prototype.get = function get(key) {
       validateKey(key);
 
@@ -12342,554 +12809,6 @@ define('aurelia-dependency-injection',['exports', 'aurelia-metadata', 'aurelia-p
       }
     };
   }
-});
-define('aurelia-framework',['exports', 'aurelia-dependency-injection', 'aurelia-binding', 'aurelia-metadata', 'aurelia-templating', 'aurelia-loader', 'aurelia-task-queue', 'aurelia-path', 'aurelia-pal', 'aurelia-logging'], function (exports, _aureliaDependencyInjection, _aureliaBinding, _aureliaMetadata, _aureliaTemplating, _aureliaLoader, _aureliaTaskQueue, _aureliaPath, _aureliaPal, _aureliaLogging) {
-  'use strict';
-
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-  exports.LogManager = exports.FrameworkConfiguration = exports.Aurelia = undefined;
-  Object.keys(_aureliaDependencyInjection).forEach(function (key) {
-    if (key === "default" || key === "__esModule") return;
-    Object.defineProperty(exports, key, {
-      enumerable: true,
-      get: function () {
-        return _aureliaDependencyInjection[key];
-      }
-    });
-  });
-  Object.keys(_aureliaBinding).forEach(function (key) {
-    if (key === "default" || key === "__esModule") return;
-    Object.defineProperty(exports, key, {
-      enumerable: true,
-      get: function () {
-        return _aureliaBinding[key];
-      }
-    });
-  });
-  Object.keys(_aureliaMetadata).forEach(function (key) {
-    if (key === "default" || key === "__esModule") return;
-    Object.defineProperty(exports, key, {
-      enumerable: true,
-      get: function () {
-        return _aureliaMetadata[key];
-      }
-    });
-  });
-  Object.keys(_aureliaTemplating).forEach(function (key) {
-    if (key === "default" || key === "__esModule") return;
-    Object.defineProperty(exports, key, {
-      enumerable: true,
-      get: function () {
-        return _aureliaTemplating[key];
-      }
-    });
-  });
-  Object.keys(_aureliaLoader).forEach(function (key) {
-    if (key === "default" || key === "__esModule") return;
-    Object.defineProperty(exports, key, {
-      enumerable: true,
-      get: function () {
-        return _aureliaLoader[key];
-      }
-    });
-  });
-  Object.keys(_aureliaTaskQueue).forEach(function (key) {
-    if (key === "default" || key === "__esModule") return;
-    Object.defineProperty(exports, key, {
-      enumerable: true,
-      get: function () {
-        return _aureliaTaskQueue[key];
-      }
-    });
-  });
-  Object.keys(_aureliaPath).forEach(function (key) {
-    if (key === "default" || key === "__esModule") return;
-    Object.defineProperty(exports, key, {
-      enumerable: true,
-      get: function () {
-        return _aureliaPath[key];
-      }
-    });
-  });
-  Object.keys(_aureliaPal).forEach(function (key) {
-    if (key === "default" || key === "__esModule") return;
-    Object.defineProperty(exports, key, {
-      enumerable: true,
-      get: function () {
-        return _aureliaPal[key];
-      }
-    });
-  });
-
-  var TheLogManager = _interopRequireWildcard(_aureliaLogging);
-
-  function _interopRequireWildcard(obj) {
-    if (obj && obj.__esModule) {
-      return obj;
-    } else {
-      var newObj = {};
-
-      if (obj != null) {
-        for (var key in obj) {
-          if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key];
-        }
-      }
-
-      newObj.default = obj;
-      return newObj;
-    }
-  }
-
-  
-
-  function preventActionlessFormSubmit() {
-    _aureliaPal.DOM.addEventListener('submit', function (evt) {
-      var target = evt.target;
-      var action = target.action;
-
-      if (target.tagName.toLowerCase() === 'form' && !action) {
-        evt.preventDefault();
-      }
-    });
-  }
-
-  var Aurelia = exports.Aurelia = function () {
-    function Aurelia(loader, container, resources) {
-      
-
-      this.loader = loader || new _aureliaPal.PLATFORM.Loader();
-      this.container = container || new _aureliaDependencyInjection.Container().makeGlobal();
-      this.resources = resources || new _aureliaTemplating.ViewResources();
-      this.use = new FrameworkConfiguration(this);
-      this.logger = TheLogManager.getLogger('aurelia');
-      this.hostConfigured = false;
-      this.host = null;
-
-      this.use.instance(Aurelia, this);
-      this.use.instance(_aureliaLoader.Loader, this.loader);
-      this.use.instance(_aureliaTemplating.ViewResources, this.resources);
-    }
-
-    Aurelia.prototype.start = function start() {
-      var _this = this;
-
-      if (this._started) {
-        return this._started;
-      }
-
-      this.logger.info('Aurelia Starting');
-      return this._started = this.use.apply().then(function () {
-        preventActionlessFormSubmit();
-
-        if (!_this.container.hasResolver(_aureliaTemplating.BindingLanguage)) {
-          var message = 'You must configure Aurelia with a BindingLanguage implementation.';
-          _this.logger.error(message);
-          throw new Error(message);
-        }
-
-        _this.logger.info('Aurelia Started');
-        var evt = _aureliaPal.DOM.createCustomEvent('aurelia-started', { bubbles: true, cancelable: true });
-        _aureliaPal.DOM.dispatchEvent(evt);
-        return _this;
-      });
-    };
-
-    Aurelia.prototype.enhance = function enhance() {
-      var _this2 = this;
-
-      var bindingContext = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-      var applicationHost = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
-
-      this._configureHost(applicationHost || _aureliaPal.DOM.querySelectorAll('body')[0]);
-
-      return new Promise(function (resolve) {
-        var engine = _this2.container.get(_aureliaTemplating.TemplatingEngine);
-        _this2.root = engine.enhance({ container: _this2.container, element: _this2.host, resources: _this2.resources, bindingContext: bindingContext });
-        _this2.root.attached();
-        _this2._onAureliaComposed();
-        resolve(_this2);
-      });
-    };
-
-    Aurelia.prototype.setRoot = function setRoot() {
-      var _this3 = this;
-
-      var root = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
-      var applicationHost = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
-
-      var instruction = {};
-
-      if (this.root && this.root.viewModel && this.root.viewModel.router) {
-        this.root.viewModel.router.deactivate();
-        this.root.viewModel.router.reset();
-      }
-
-      this._configureHost(applicationHost);
-
-      var engine = this.container.get(_aureliaTemplating.TemplatingEngine);
-      var transaction = this.container.get(_aureliaTemplating.CompositionTransaction);
-      delete transaction.initialComposition;
-
-      if (!root) {
-        if (this.configModuleId) {
-          root = (0, _aureliaPath.relativeToFile)('./app', this.configModuleId);
-        } else {
-          root = 'app';
-        }
-      }
-
-      instruction.viewModel = root;
-      instruction.container = instruction.childContainer = this.container;
-      instruction.viewSlot = this.hostSlot;
-      instruction.host = this.host;
-
-      return engine.compose(instruction).then(function (r) {
-        _this3.root = r;
-        instruction.viewSlot.attached();
-        _this3._onAureliaComposed();
-        return _this3;
-      });
-    };
-
-    Aurelia.prototype._configureHost = function _configureHost(applicationHost) {
-      if (this.hostConfigured) {
-        return;
-      }
-      applicationHost = applicationHost || this.host;
-
-      if (!applicationHost || typeof applicationHost === 'string') {
-        this.host = _aureliaPal.DOM.getElementById(applicationHost || 'applicationHost');
-      } else {
-        this.host = applicationHost;
-      }
-
-      if (!this.host) {
-        throw new Error('No applicationHost was specified.');
-      }
-
-      this.hostConfigured = true;
-      this.host.aurelia = this;
-      this.hostSlot = new _aureliaTemplating.ViewSlot(this.host, true);
-      this.hostSlot.transformChildNodesIntoView();
-      this.container.registerInstance(_aureliaPal.DOM.boundary, this.host);
-    };
-
-    Aurelia.prototype._onAureliaComposed = function _onAureliaComposed() {
-      var evt = _aureliaPal.DOM.createCustomEvent('aurelia-composed', { bubbles: true, cancelable: true });
-      setTimeout(function () {
-        return _aureliaPal.DOM.dispatchEvent(evt);
-      }, 1);
-    };
-
-    return Aurelia;
-  }();
-
-  var logger = TheLogManager.getLogger('aurelia');
-  var extPattern = /\.[^/.]+$/;
-
-  function runTasks(config, tasks) {
-    var current = void 0;
-    var next = function next() {
-      current = tasks.shift();
-      if (current) {
-        return Promise.resolve(current(config)).then(next);
-      }
-
-      return Promise.resolve();
-    };
-
-    return next();
-  }
-
-  function loadPlugin(config, loader, info) {
-    logger.debug('Loading plugin ' + info.moduleId + '.');
-    config.resourcesRelativeTo = info.resourcesRelativeTo;
-
-    var id = info.moduleId;
-
-    if (info.resourcesRelativeTo.length > 1) {
-      return loader.normalize(info.moduleId, info.resourcesRelativeTo[1]).then(function (normalizedId) {
-        return _loadPlugin(normalizedId);
-      });
-    }
-
-    return _loadPlugin(id);
-
-    function _loadPlugin(moduleId) {
-      return loader.loadModule(moduleId).then(function (m) {
-        if ('configure' in m) {
-          return Promise.resolve(m.configure(config, info.config || {})).then(function () {
-            config.resourcesRelativeTo = null;
-            logger.debug('Configured plugin ' + info.moduleId + '.');
-          });
-        }
-
-        config.resourcesRelativeTo = null;
-        logger.debug('Loaded plugin ' + info.moduleId + '.');
-      });
-    }
-  }
-
-  function loadResources(aurelia, resourcesToLoad, appResources) {
-    var viewEngine = aurelia.container.get(_aureliaTemplating.ViewEngine);
-
-    return Promise.all(Object.keys(resourcesToLoad).map(function (n) {
-      return _normalize(resourcesToLoad[n]);
-    })).then(function (loads) {
-      var names = [];
-      var importIds = [];
-
-      loads.forEach(function (l) {
-        names.push(undefined);
-        importIds.push(l.importId);
-      });
-
-      return viewEngine.importViewResources(importIds, names, appResources);
-    });
-
-    function _normalize(load) {
-      var moduleId = load.moduleId;
-      var ext = getExt(moduleId);
-
-      if (isOtherResource(moduleId)) {
-        moduleId = removeExt(moduleId);
-      }
-
-      return aurelia.loader.normalize(moduleId, load.relativeTo).then(function (normalized) {
-        return {
-          name: load.moduleId,
-          importId: isOtherResource(load.moduleId) ? addOriginalExt(normalized, ext) : normalized
-        };
-      });
-    }
-
-    function isOtherResource(name) {
-      var ext = getExt(name);
-      if (!ext) return false;
-      if (ext === '') return false;
-      if (ext === '.js' || ext === '.ts') return false;
-      return true;
-    }
-
-    function removeExt(name) {
-      return name.replace(extPattern, '');
-    }
-
-    function addOriginalExt(normalized, ext) {
-      return removeExt(normalized) + '.' + ext;
-    }
-  }
-
-  function getExt(name) {
-    var match = name.match(extPattern);
-    if (match && match.length > 0) {
-      return match[0].split('.')[1];
-    }
-  }
-
-  function assertProcessed(plugins) {
-    if (plugins.processed) {
-      throw new Error('This config instance has already been applied. To load more plugins or global resources, create a new FrameworkConfiguration instance.');
-    }
-  }
-
-  var FrameworkConfiguration = function () {
-    function FrameworkConfiguration(aurelia) {
-      var _this4 = this;
-
-      
-
-      this.aurelia = aurelia;
-      this.container = aurelia.container;
-      this.info = [];
-      this.processed = false;
-      this.preTasks = [];
-      this.postTasks = [];
-      this.resourcesToLoad = {};
-      this.preTask(function () {
-        return aurelia.loader.normalize('aurelia-bootstrapper').then(function (name) {
-          return _this4.bootstrapperName = name;
-        });
-      });
-      this.postTask(function () {
-        return loadResources(aurelia, _this4.resourcesToLoad, aurelia.resources);
-      });
-    }
-
-    FrameworkConfiguration.prototype.instance = function instance(type, _instance) {
-      this.container.registerInstance(type, _instance);
-      return this;
-    };
-
-    FrameworkConfiguration.prototype.singleton = function singleton(type, implementation) {
-      this.container.registerSingleton(type, implementation);
-      return this;
-    };
-
-    FrameworkConfiguration.prototype.transient = function transient(type, implementation) {
-      this.container.registerTransient(type, implementation);
-      return this;
-    };
-
-    FrameworkConfiguration.prototype.preTask = function preTask(task) {
-      assertProcessed(this);
-      this.preTasks.push(task);
-      return this;
-    };
-
-    FrameworkConfiguration.prototype.postTask = function postTask(task) {
-      assertProcessed(this);
-      this.postTasks.push(task);
-      return this;
-    };
-
-    FrameworkConfiguration.prototype.feature = function feature(plugin) {
-      var config = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-
-      var hasIndex = /\/index$/i.test(plugin);
-      var moduleId = hasIndex || getExt(plugin) ? plugin : plugin + '/index';
-      var root = hasIndex ? plugin.substr(0, plugin.length - 6) : plugin;
-      return this.plugin({ moduleId: moduleId, resourcesRelativeTo: [root, ''], config: config });
-    };
-
-    FrameworkConfiguration.prototype.globalResources = function globalResources(resources) {
-      assertProcessed(this);
-
-      var toAdd = Array.isArray(resources) ? resources : arguments;
-      var resource = void 0;
-      var resourcesRelativeTo = this.resourcesRelativeTo || ['', ''];
-
-      for (var i = 0, ii = toAdd.length; i < ii; ++i) {
-        resource = toAdd[i];
-        if (typeof resource !== 'string') {
-          throw new Error('Invalid resource path [' + resource + ']. Resources must be specified as relative module IDs.');
-        }
-
-        var parent = resourcesRelativeTo[0];
-        var grandParent = resourcesRelativeTo[1];
-        var name = resource;
-
-        if ((resource.startsWith('./') || resource.startsWith('../')) && parent !== '') {
-          name = (0, _aureliaPath.join)(parent, resource);
-        }
-
-        this.resourcesToLoad[name] = { moduleId: name, relativeTo: grandParent };
-      }
-
-      return this;
-    };
-
-    FrameworkConfiguration.prototype.globalName = function globalName(resourcePath, newName) {
-      assertProcessed(this);
-      this.resourcesToLoad[resourcePath] = { moduleId: newName, relativeTo: '' };
-      return this;
-    };
-
-    FrameworkConfiguration.prototype.plugin = function plugin(_plugin, config) {
-      assertProcessed(this);
-
-      if (typeof _plugin === 'string') {
-        return this.plugin({ moduleId: _plugin, resourcesRelativeTo: [_plugin, ''], config: config || {} });
-      }
-
-      this.info.push(_plugin);
-      return this;
-    };
-
-    FrameworkConfiguration.prototype._addNormalizedPlugin = function _addNormalizedPlugin(name, config) {
-      var _this5 = this;
-
-      var plugin = { moduleId: name, resourcesRelativeTo: [name, ''], config: config || {} };
-      this.plugin(plugin);
-
-      this.preTask(function () {
-        var relativeTo = [name, _this5.bootstrapperName];
-        plugin.moduleId = name;
-        plugin.resourcesRelativeTo = relativeTo;
-        return Promise.resolve();
-      });
-
-      return this;
-    };
-
-    FrameworkConfiguration.prototype.defaultBindingLanguage = function defaultBindingLanguage() {
-      return this._addNormalizedPlugin('aurelia-templating-binding');
-    };
-
-    FrameworkConfiguration.prototype.router = function router() {
-      return this._addNormalizedPlugin('aurelia-templating-router');
-    };
-
-    FrameworkConfiguration.prototype.history = function history() {
-      return this._addNormalizedPlugin('aurelia-history-browser');
-    };
-
-    FrameworkConfiguration.prototype.defaultResources = function defaultResources() {
-      return this._addNormalizedPlugin('aurelia-templating-resources');
-    };
-
-    FrameworkConfiguration.prototype.eventAggregator = function eventAggregator() {
-      return this._addNormalizedPlugin('aurelia-event-aggregator');
-    };
-
-    FrameworkConfiguration.prototype.basicConfiguration = function basicConfiguration() {
-      return this.defaultBindingLanguage().defaultResources().eventAggregator();
-    };
-
-    FrameworkConfiguration.prototype.standardConfiguration = function standardConfiguration() {
-      return this.basicConfiguration().history().router();
-    };
-
-    FrameworkConfiguration.prototype.developmentLogging = function developmentLogging() {
-      var _this6 = this;
-
-      this.preTask(function () {
-        return _this6.aurelia.loader.normalize('aurelia-logging-console', _this6.bootstrapperName).then(function (name) {
-          return _this6.aurelia.loader.loadModule(name).then(function (m) {
-            TheLogManager.addAppender(new m.ConsoleAppender());
-            TheLogManager.setLevel(TheLogManager.logLevel.debug);
-          });
-        });
-      });
-
-      return this;
-    };
-
-    FrameworkConfiguration.prototype.apply = function apply() {
-      var _this7 = this;
-
-      if (this.processed) {
-        return Promise.resolve();
-      }
-
-      return runTasks(this, this.preTasks).then(function () {
-        var loader = _this7.aurelia.loader;
-        var info = _this7.info;
-        var current = void 0;
-
-        var next = function next() {
-          current = info.shift();
-          if (current) {
-            return loadPlugin(_this7, loader, current).then(next);
-          }
-
-          _this7.processed = true;
-          return Promise.resolve();
-        };
-
-        return next().then(function () {
-          return runTasks(_this7, _this7.postTasks);
-        });
-      });
-    };
-
-    return FrameworkConfiguration;
-  }();
-
-  exports.FrameworkConfiguration = FrameworkConfiguration;
-  var LogManager = exports.LogManager = TheLogManager;
 });
 define('aurelia-history',['exports'], function (exports) {
   'use strict';
@@ -13098,6 +13017,264 @@ define('aurelia-event-aggregator',['exports', 'aurelia-logging'], function (expo
 
   function configure(config) {
     config.instance(EventAggregator, includeEventsIn(config.aurelia));
+  }
+});
+define('aurelia-loader-default',['exports', 'aurelia-loader', 'aurelia-pal', 'aurelia-metadata'], function (exports, _aureliaLoader, _aureliaPal, _aureliaMetadata) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.DefaultLoader = exports.TextTemplateLoader = undefined;
+
+  function _possibleConstructorReturn(self, call) {
+    if (!self) {
+      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+    }
+
+    return call && (typeof call === "object" || typeof call === "function") ? call : self;
+  }
+
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== "function" && superClass !== null) {
+      throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
+    }
+
+    subClass.prototype = Object.create(superClass && superClass.prototype, {
+      constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+    if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+
+  
+
+  var TextTemplateLoader = exports.TextTemplateLoader = function () {
+    function TextTemplateLoader() {
+      
+    }
+
+    TextTemplateLoader.prototype.loadTemplate = function loadTemplate(loader, entry) {
+      return loader.loadText(entry.address).then(function (text) {
+        entry.template = _aureliaPal.DOM.createTemplateFromMarkup(text);
+      });
+    };
+
+    return TextTemplateLoader;
+  }();
+
+  function ensureOriginOnExports(executed, name) {
+    var target = executed;
+    var key = void 0;
+    var exportedValue = void 0;
+
+    if (target.__useDefault) {
+      target = target['default'];
+    }
+
+    _aureliaMetadata.Origin.set(target, new _aureliaMetadata.Origin(name, 'default'));
+
+    for (key in target) {
+      exportedValue = target[key];
+
+      if (typeof exportedValue === 'function') {
+        _aureliaMetadata.Origin.set(exportedValue, new _aureliaMetadata.Origin(name, key));
+      }
+    }
+
+    return executed;
+  }
+
+  var DefaultLoader = exports.DefaultLoader = function (_Loader) {
+    _inherits(DefaultLoader, _Loader);
+
+    function DefaultLoader() {
+      
+
+      var _this = _possibleConstructorReturn(this, _Loader.call(this));
+
+      _this.textPluginName = 'text';
+
+
+      _this.moduleRegistry = Object.create(null);
+      _this.useTemplateLoader(new TextTemplateLoader());
+
+      var that = _this;
+
+      _this.addPlugin('template-registry-entry', {
+        'fetch': function fetch(address) {
+          var entry = that.getOrCreateTemplateRegistryEntry(address);
+          return entry.templateIsLoaded ? entry : that.templateLoader.loadTemplate(that, entry).then(function (x) {
+            return entry;
+          });
+        }
+      });
+      return _this;
+    }
+
+    DefaultLoader.prototype.useTemplateLoader = function useTemplateLoader(templateLoader) {
+      this.templateLoader = templateLoader;
+    };
+
+    DefaultLoader.prototype.loadAllModules = function loadAllModules(ids) {
+      var loads = [];
+
+      for (var i = 0, ii = ids.length; i < ii; ++i) {
+        loads.push(this.loadModule(ids[i]));
+      }
+
+      return Promise.all(loads);
+    };
+
+    DefaultLoader.prototype.loadTemplate = function loadTemplate(url) {
+      return this._import(this.applyPluginToUrl(url, 'template-registry-entry'));
+    };
+
+    DefaultLoader.prototype.loadText = function loadText(url) {
+      return this._import(this.applyPluginToUrl(url, this.textPluginName)).then(function (textOrModule) {
+        if (typeof textOrModule === 'string') {
+          return textOrModule;
+        }
+
+        return textOrModule['default'];
+      });
+    };
+
+    return DefaultLoader;
+  }(_aureliaLoader.Loader);
+
+  _aureliaPal.PLATFORM.Loader = DefaultLoader;
+
+  if (!_aureliaPal.PLATFORM.global.System || !_aureliaPal.PLATFORM.global.System.import) {
+    if (_aureliaPal.PLATFORM.global.requirejs && requirejs.s && requirejs.s.contexts && requirejs.s.contexts._ && requirejs.s.contexts._.defined) {
+      _aureliaPal.PLATFORM.eachModule = function (callback) {
+        var defined = requirejs.s.contexts._.defined;
+        for (var key in defined) {
+          try {
+            if (callback(key, defined[key])) return;
+          } catch (e) {}
+        }
+      };
+    } else {
+      _aureliaPal.PLATFORM.eachModule = function (callback) {};
+    }
+
+    DefaultLoader.prototype._import = function (moduleId) {
+      return new Promise(function (resolve, reject) {
+        require([moduleId], resolve, reject);
+      });
+    };
+
+    DefaultLoader.prototype.loadModule = function (id) {
+      var _this2 = this;
+
+      var existing = this.moduleRegistry[id];
+      if (existing !== undefined) {
+        return Promise.resolve(existing);
+      }
+
+      return new Promise(function (resolve, reject) {
+        require([id], function (m) {
+          _this2.moduleRegistry[id] = m;
+          resolve(ensureOriginOnExports(m, id));
+        }, reject);
+      });
+    };
+
+    DefaultLoader.prototype.map = function (id, source) {};
+
+    DefaultLoader.prototype.normalize = function (moduleId, relativeTo) {
+      return Promise.resolve(moduleId);
+    };
+
+    DefaultLoader.prototype.normalizeSync = function (moduleId, relativeTo) {
+      return moduleId;
+    };
+
+    DefaultLoader.prototype.applyPluginToUrl = function (url, pluginName) {
+      return pluginName + '!' + url;
+    };
+
+    DefaultLoader.prototype.addPlugin = function (pluginName, implementation) {
+      var nonAnonDefine = define;
+      nonAnonDefine(pluginName, [], {
+        'load': function load(name, req, onload) {
+          var result = implementation.fetch(name);
+          Promise.resolve(result).then(onload);
+        }
+      });
+    };
+  } else {
+    _aureliaPal.PLATFORM.eachModule = function (callback) {
+      var modules = System._loader.modules;
+
+      for (var key in modules) {
+        try {
+          if (callback(key, modules[key].module)) return;
+        } catch (e) {}
+      }
+    };
+
+    System.set('text', System.newModule({
+      'translate': function translate(load) {
+        return 'module.exports = "' + load.source.replace(/(["\\])/g, '\\$1').replace(/[\f]/g, '\\f').replace(/[\b]/g, '\\b').replace(/[\n]/g, '\\n').replace(/[\t]/g, '\\t').replace(/[\r]/g, '\\r').replace(/[\u2028]/g, '\\u2028').replace(/[\u2029]/g, '\\u2029') + '";';
+      }
+    }));
+
+    DefaultLoader.prototype._import = function (moduleId) {
+      return System.import(moduleId);
+    };
+
+    DefaultLoader.prototype.loadModule = function (id) {
+      var _this3 = this;
+
+      return System.normalize(id).then(function (newId) {
+        var existing = _this3.moduleRegistry[newId];
+        if (existing !== undefined) {
+          return Promise.resolve(existing);
+        }
+
+        return System.import(newId).then(function (m) {
+          _this3.moduleRegistry[newId] = m;
+          return ensureOriginOnExports(m, newId);
+        });
+      });
+    };
+
+    DefaultLoader.prototype.map = function (id, source) {
+      System.map[id] = source;
+    };
+
+    DefaultLoader.prototype.normalizeSync = function (moduleId, relativeTo) {
+      return System.normalizeSync(moduleId, relativeTo);
+    };
+
+    DefaultLoader.prototype.normalize = function (moduleId, relativeTo) {
+      return System.normalize(moduleId, relativeTo);
+    };
+
+    DefaultLoader.prototype.applyPluginToUrl = function (url, pluginName) {
+      return url + '!' + pluginName;
+    };
+
+    DefaultLoader.prototype.addPlugin = function (pluginName, implementation) {
+      System.set(pluginName, System.newModule({
+        'fetch': function fetch(load, _fetch) {
+          var result = implementation.fetch(load.address);
+          return Promise.resolve(result).then(function (x) {
+            load.metadata.result = x;
+            return '';
+          });
+        },
+        'instantiate': function instantiate(load) {
+          return load.metadata.result;
+        }
+      }));
+    };
   }
 });
 define('aurelia-loader',['exports', 'aurelia-path', 'aurelia-metadata'], function (exports, _aureliaPath, _aureliaMetadata) {
@@ -13579,290 +13756,6 @@ define('aurelia-history-browser',['exports', 'aurelia-pal', 'aurelia-history'], 
     return protocol + '//' + hostname + (port ? ':' + port : '');
   }
 });
-define('aurelia-loader-default',['exports', 'aurelia-loader', 'aurelia-pal', 'aurelia-metadata'], function (exports, _aureliaLoader, _aureliaPal, _aureliaMetadata) {
-  'use strict';
-
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-  exports.DefaultLoader = exports.TextTemplateLoader = undefined;
-
-  function _possibleConstructorReturn(self, call) {
-    if (!self) {
-      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
-    }
-
-    return call && (typeof call === "object" || typeof call === "function") ? call : self;
-  }
-
-  function _inherits(subClass, superClass) {
-    if (typeof superClass !== "function" && superClass !== null) {
-      throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
-    }
-
-    subClass.prototype = Object.create(superClass && superClass.prototype, {
-      constructor: {
-        value: subClass,
-        enumerable: false,
-        writable: true,
-        configurable: true
-      }
-    });
-    if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
-  }
-
-  
-
-  var TextTemplateLoader = exports.TextTemplateLoader = function () {
-    function TextTemplateLoader() {
-      
-    }
-
-    TextTemplateLoader.prototype.loadTemplate = function loadTemplate(loader, entry) {
-      return loader.loadText(entry.address).then(function (text) {
-        entry.template = _aureliaPal.DOM.createTemplateFromMarkup(text);
-      });
-    };
-
-    return TextTemplateLoader;
-  }();
-
-  function ensureOriginOnExports(executed, name) {
-    var target = executed;
-    var key = void 0;
-    var exportedValue = void 0;
-
-    if (target.__useDefault) {
-      target = target['default'];
-    }
-
-    _aureliaMetadata.Origin.set(target, new _aureliaMetadata.Origin(name, 'default'));
-
-    for (key in target) {
-      exportedValue = target[key];
-
-      if (typeof exportedValue === 'function') {
-        _aureliaMetadata.Origin.set(exportedValue, new _aureliaMetadata.Origin(name, key));
-      }
-    }
-
-    return executed;
-  }
-
-  var DefaultLoader = exports.DefaultLoader = function (_Loader) {
-    _inherits(DefaultLoader, _Loader);
-
-    function DefaultLoader() {
-      
-
-      var _this = _possibleConstructorReturn(this, _Loader.call(this));
-
-      _this.textPluginName = 'text';
-
-
-      _this.moduleRegistry = Object.create(null);
-      _this.useTemplateLoader(new TextTemplateLoader());
-
-      var that = _this;
-
-      _this.addPlugin('template-registry-entry', {
-        'fetch': function fetch(address) {
-          var entry = that.getOrCreateTemplateRegistryEntry(address);
-          return entry.templateIsLoaded ? entry : that.templateLoader.loadTemplate(that, entry).then(function (x) {
-            return entry;
-          });
-        }
-      });
-      return _this;
-    }
-
-    DefaultLoader.prototype.useTemplateLoader = function useTemplateLoader(templateLoader) {
-      this.templateLoader = templateLoader;
-    };
-
-    DefaultLoader.prototype.loadAllModules = function loadAllModules(ids) {
-      var loads = [];
-
-      for (var i = 0, ii = ids.length; i < ii; ++i) {
-        loads.push(this.loadModule(ids[i]));
-      }
-
-      return Promise.all(loads);
-    };
-
-    DefaultLoader.prototype.loadTemplate = function loadTemplate(url) {
-      return this._import(this.applyPluginToUrl(url, 'template-registry-entry'));
-    };
-
-    DefaultLoader.prototype.loadText = function loadText(url) {
-      return this._import(this.applyPluginToUrl(url, this.textPluginName)).then(function (textOrModule) {
-        if (typeof textOrModule === 'string') {
-          return textOrModule;
-        }
-
-        return textOrModule['default'];
-      });
-    };
-
-    return DefaultLoader;
-  }(_aureliaLoader.Loader);
-
-  _aureliaPal.PLATFORM.Loader = DefaultLoader;
-
-  if (!_aureliaPal.PLATFORM.global.System || !_aureliaPal.PLATFORM.global.System.import) {
-    if (_aureliaPal.PLATFORM.global.requirejs && requirejs.s && requirejs.s.contexts && requirejs.s.contexts._ && requirejs.s.contexts._.defined) {
-      _aureliaPal.PLATFORM.eachModule = function (callback) {
-        var defined = requirejs.s.contexts._.defined;
-        for (var key in defined) {
-          try {
-            if (callback(key, defined[key])) return;
-          } catch (e) {}
-        }
-      };
-    } else {
-      _aureliaPal.PLATFORM.eachModule = function (callback) {};
-    }
-
-    DefaultLoader.prototype._import = function (moduleId) {
-      return new Promise(function (resolve, reject) {
-        require([moduleId], resolve, reject);
-      });
-    };
-
-    DefaultLoader.prototype.loadModule = function (id) {
-      var _this2 = this;
-
-      var existing = this.moduleRegistry[id];
-      if (existing !== undefined) {
-        return Promise.resolve(existing);
-      }
-
-      return new Promise(function (resolve, reject) {
-        require([id], function (m) {
-          _this2.moduleRegistry[id] = m;
-          resolve(ensureOriginOnExports(m, id));
-        }, reject);
-      });
-    };
-
-    DefaultLoader.prototype.map = function (id, source) {};
-
-    DefaultLoader.prototype.normalize = function (moduleId, relativeTo) {
-      return Promise.resolve(moduleId);
-    };
-
-    DefaultLoader.prototype.normalizeSync = function (moduleId, relativeTo) {
-      return moduleId;
-    };
-
-    DefaultLoader.prototype.applyPluginToUrl = function (url, pluginName) {
-      return pluginName + '!' + url;
-    };
-
-    DefaultLoader.prototype.addPlugin = function (pluginName, implementation) {
-      var nonAnonDefine = define;
-      nonAnonDefine(pluginName, [], {
-        'load': function load(name, req, onload) {
-          var result = implementation.fetch(name);
-          Promise.resolve(result).then(onload);
-        }
-      });
-    };
-  } else {
-    _aureliaPal.PLATFORM.eachModule = function (callback) {
-      if (System.registry) {
-        for (var _iterator = System.registry.entries(), _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
-          var _ref;
-
-          if (_isArray) {
-            if (_i >= _iterator.length) break;
-            _ref = _iterator[_i++];
-          } else {
-            _i = _iterator.next();
-            if (_i.done) break;
-            _ref = _i.value;
-          }
-
-          var _ref2 = _ref;
-          var k = _ref2[0];
-          var m = _ref2[1];
-
-          try {
-            if (callback(k, m)) return;
-          } catch (e) {}
-        }
-        return;
-      }
-
-      var modules = System._loader.modules;
-
-      for (var key in modules) {
-        try {
-          if (callback(key, modules[key].module)) return;
-        } catch (e) {}
-      }
-    };
-
-    System.set('text', System.newModule({
-      'translate': function translate(load) {
-        return 'module.exports = "' + load.source.replace(/(["\\])/g, '\\$1').replace(/[\f]/g, '\\f').replace(/[\b]/g, '\\b').replace(/[\n]/g, '\\n').replace(/[\t]/g, '\\t').replace(/[\r]/g, '\\r').replace(/[\u2028]/g, '\\u2028').replace(/[\u2029]/g, '\\u2029') + '";';
-      }
-    }));
-
-    DefaultLoader.prototype._import = function (moduleId) {
-      return System.import(moduleId);
-    };
-
-    DefaultLoader.prototype.loadModule = function (id) {
-      var _this3 = this;
-
-      return System.normalize(id).then(function (newId) {
-        var existing = _this3.moduleRegistry[newId];
-        if (existing !== undefined) {
-          return Promise.resolve(existing);
-        }
-
-        return System.import(newId).then(function (m) {
-          _this3.moduleRegistry[newId] = m;
-          return ensureOriginOnExports(m, newId);
-        });
-      });
-    };
-
-    DefaultLoader.prototype.map = function (id, source) {
-      var _map;
-
-      System.config({ map: (_map = {}, _map[id] = source, _map) });
-    };
-
-    DefaultLoader.prototype.normalizeSync = function (moduleId, relativeTo) {
-      return System.normalizeSync(moduleId, relativeTo);
-    };
-
-    DefaultLoader.prototype.normalize = function (moduleId, relativeTo) {
-      return System.normalize(moduleId, relativeTo);
-    };
-
-    DefaultLoader.prototype.applyPluginToUrl = function (url, pluginName) {
-      return url + '!' + pluginName;
-    };
-
-    DefaultLoader.prototype.addPlugin = function (pluginName, implementation) {
-      System.set(pluginName, System.newModule({
-        'fetch': function fetch(load, _fetch) {
-          var result = implementation.fetch(load.address);
-          return Promise.resolve(result).then(function (x) {
-            load.metadata.result = x;
-            return '';
-          });
-        },
-        'instantiate': function instantiate(load) {
-          return load.metadata.result;
-        }
-      }));
-    };
-  }
-});
 define('aurelia-logging',['exports'], function (exports) {
   'use strict';
 
@@ -13871,7 +13764,6 @@ define('aurelia-logging',['exports'], function (exports) {
   });
   exports.getLogger = getLogger;
   exports.addAppender = addAppender;
-  exports.removeAppender = removeAppender;
   exports.setLevel = setLevel;
   exports.getLevel = getLevel;
 
@@ -13887,51 +13779,85 @@ define('aurelia-logging',['exports'], function (exports) {
 
   var loggers = {};
   var appenders = [];
+  var slice = Array.prototype.slice;
+  var loggerConstructionKey = {};
   var globalDefaultLevel = logLevel.none;
 
-  function appendArgs() {
-    return [this].concat(Array.prototype.slice.call(arguments));
-  }
+  function log(logger, level, args) {
+    var i = appenders.length;
+    var current = void 0;
 
-  function logFactory(level) {
-    var threshold = logLevel[level];
-    return function () {
-      if (this.level < threshold) {
-        return;
-      }
+    args = slice.call(args);
+    args.unshift(logger);
 
-      var args = appendArgs.apply(this, arguments);
-      var i = appenders.length;
-      while (i--) {
-        var _appenders$i;
-
-        (_appenders$i = appenders[i])[level].apply(_appenders$i, args);
-      }
-    };
-  }
-
-  function connectLoggers() {
-    var proto = Logger.prototype;
-    proto.debug = logFactory('debug');
-    proto.info = logFactory('info');
-    proto.warn = logFactory('warn');
-    proto.error = logFactory('error');
-  }
-
-  function getLogger(id) {
-    return loggers[id] || new Logger(id);
-  }
-
-  function addAppender(appender) {
-    if (appenders.push(appender) === 1) {
-      connectLoggers();
+    while (i--) {
+      current = appenders[i];
+      current[level].apply(current, args);
     }
   }
 
-  function removeAppender(appender) {
-    appenders = appenders.filter(function (a) {
-      return a !== appender;
-    });
+  function debug() {
+    if (this.level < 4) {
+      return;
+    }
+
+    log(this, 'debug', arguments);
+  }
+
+  function info() {
+    if (this.level < 3) {
+      return;
+    }
+
+    log(this, 'info', arguments);
+  }
+
+  function warn() {
+    if (this.level < 2) {
+      return;
+    }
+
+    log(this, 'warn', arguments);
+  }
+
+  function error() {
+    if (this.level < 1) {
+      return;
+    }
+
+    log(this, 'error', arguments);
+  }
+
+  function connectLogger(logger) {
+    logger.debug = debug;
+    logger.info = info;
+    logger.warn = warn;
+    logger.error = error;
+  }
+
+  function createLogger(id) {
+    var logger = new Logger(id, loggerConstructionKey);
+    logger.setLevel(globalDefaultLevel);
+
+    if (appenders.length) {
+      connectLogger(logger);
+    }
+
+    return logger;
+  }
+
+  function getLogger(id) {
+    return loggers[id] || (loggers[id] = createLogger(id));
+  }
+
+  function addAppender(appender) {
+    appenders.push(appender);
+
+    if (appenders.length === 1) {
+      for (var key in loggers) {
+        connectLogger(loggers[key]);
+      }
+    }
   }
 
   function setLevel(level) {
@@ -13946,17 +13872,16 @@ define('aurelia-logging',['exports'], function (exports) {
   }
 
   var Logger = exports.Logger = function () {
-    function Logger(id) {
+    function Logger(id, key) {
       
 
-      var cached = loggers[id];
-      if (cached) {
-        return cached;
+      this.level = logLevel.none;
+
+      if (key !== loggerConstructionKey) {
+        throw new Error('Cannot instantiate "Logger". Use "getLogger" instead.');
       }
 
-      loggers[id] = this;
       this.id = id;
-      this.level = globalDefaultLevel;
     }
 
     Logger.prototype.debug = function debug(message) {};
@@ -14425,6 +14350,12 @@ define('aurelia-pal-browser',['exports', 'aurelia-pal'], function (exports, _aur
     value: true
   });
   exports._DOM = exports._FEATURE = exports._PLATFORM = undefined;
+  exports._ensureFunctionName = _ensureFunctionName;
+  exports._ensureClassList = _ensureClassList;
+  exports._ensurePerformance = _ensurePerformance;
+  exports._ensureCustomEvent = _ensureCustomEvent;
+  exports._ensureElementMatches = _ensureElementMatches;
+  exports._ensureHTMLTemplateElement = _ensureHTMLTemplateElement;
   exports.initialize = initialize;
 
   var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
@@ -14449,10 +14380,10 @@ define('aurelia-pal-browser',['exports', 'aurelia-pal'], function (exports, _aur
     }
   };
 
-  if (typeof FEATURE_NO_IE === 'undefined') {
-    var test = function test() {};
+  function _ensureFunctionName() {
+    function test() {}
 
-    if (test.name === undefined) {
+    if (!test.name) {
       Object.defineProperty(Function.prototype, 'name', {
         get: function get() {
           var name = this.toString().match(/^\s*function\s*(\S*)\s*\(/)[1];
@@ -14464,7 +14395,7 @@ define('aurelia-pal-browser',['exports', 'aurelia-pal'], function (exports, _aur
     }
   }
 
-  if (typeof FEATURE_NO_IE === 'undefined') {
+  function _ensureClassList() {
     if (!('classList' in document.createElement('_')) || document.createElementNS && !('classList' in document.createElementNS('http://www.w3.org/2000/svg', 'g'))) {
       (function () {
         var protoProp = 'prototype';
@@ -14628,7 +14559,7 @@ define('aurelia-pal-browser',['exports', 'aurelia-pal'], function (exports, _aur
     }
   }
 
-  if (typeof FEATURE_NO_IE === 'undefined') {
+  function _ensurePerformance() {
     // @license http://opensource.org/licenses/MIT
     if ('performance' in window === false) {
       window.performance = {};
@@ -14651,25 +14582,7 @@ define('aurelia-pal-browser',['exports', 'aurelia-pal'], function (exports, _aur
     _PLATFORM.performance = window.performance;
   }
 
-  if (typeof FEATURE_NO_IE === 'undefined') {
-    (function () {
-      var con = window.console = window.console || {};
-      var nop = function nop() {};
-
-      if (!con.memory) con.memory = {};
-      ('assert,clear,count,debug,dir,dirxml,error,exception,group,' + 'groupCollapsed,groupEnd,info,log,markTimeline,profile,profiles,profileEnd,' + 'show,table,time,timeEnd,timeline,timelineEnd,timeStamp,trace,warn').split(',').forEach(function (m) {
-        if (!con[m]) con[m] = nop;
-      });
-
-      if (_typeof(con.log) === 'object') {
-        'log,info,warn,error,assert,dir,clear,profile,profileEnd'.split(',').forEach(function (method) {
-          console[method] = this.bind(console[method], console);
-        }, Function.prototype.call);
-      }
-    })();
-  }
-
-  if (typeof FEATURE_NO_IE === 'undefined') {
+  function _ensureCustomEvent() {
     if (!window.CustomEvent || typeof window.CustomEvent !== 'function') {
       var _CustomEvent = function _CustomEvent(event, params) {
         params = params || {
@@ -14688,78 +14601,90 @@ define('aurelia-pal-browser',['exports', 'aurelia-pal'], function (exports, _aur
     }
   }
 
-  if (Element && !Element.prototype.matches) {
-    var proto = Element.prototype;
-    proto.matches = proto.matchesSelector || proto.mozMatchesSelector || proto.msMatchesSelector || proto.oMatchesSelector || proto.webkitMatchesSelector;
+  function _ensureElementMatches() {
+    if (Element && !Element.prototype.matches) {
+      var proto = Element.prototype;
+      proto.matches = proto.matchesSelector || proto.mozMatchesSelector || proto.msMatchesSelector || proto.oMatchesSelector || proto.webkitMatchesSelector;
+    }
   }
 
-  var _FEATURE = exports._FEATURE = {
-    shadowDOM: !!HTMLElement.prototype.attachShadow,
-    scopedCSS: 'scoped' in document.createElement('style'),
-    htmlTemplateElement: 'content' in document.createElement('template'),
-    mutationObserver: !!(window.MutationObserver || window.WebKitMutationObserver),
-    ensureHTMLTemplateElement: function ensureHTMLTemplateElement(t) {
-      return t;
+  var _FEATURE = exports._FEATURE = {};
+
+  _FEATURE.shadowDOM = function () {
+    return !!HTMLElement.prototype.attachShadow;
+  }();
+
+  _FEATURE.scopedCSS = function () {
+    return 'scoped' in document.createElement('style');
+  }();
+
+  _FEATURE.htmlTemplateElement = function () {
+    return 'content' in document.createElement('template');
+  }();
+
+  _FEATURE.mutationObserver = function () {
+    return !!(window.MutationObserver || window.WebKitMutationObserver);
+  }();
+
+  function _ensureHTMLTemplateElement() {
+    function isSVGTemplate(el) {
+      return el.tagName === 'template' && el.namespaceURI === 'http://www.w3.org/2000/svg';
     }
-  };
 
-  if (typeof FEATURE_NO_IE === 'undefined') {
-    (function () {
-      var isSVGTemplate = function isSVGTemplate(el) {
-        return el.tagName === 'template' && el.namespaceURI === 'http://www.w3.org/2000/svg';
-      };
+    function fixSVGTemplateElement(el) {
+      var template = el.ownerDocument.createElement('template');
+      var attrs = el.attributes;
+      var length = attrs.length;
+      var attr = void 0;
 
-      var fixSVGTemplateElement = function fixSVGTemplateElement(el) {
-        var template = el.ownerDocument.createElement('template');
-        var attrs = el.attributes;
-        var length = attrs.length;
-        var attr = void 0;
+      el.parentNode.insertBefore(template, el);
 
-        el.parentNode.insertBefore(template, el);
-
-        while (length-- > 0) {
-          attr = attrs[length];
-          template.setAttribute(attr.name, attr.value);
-          el.removeAttribute(attr.name);
-        }
-
-        el.parentNode.removeChild(el);
-
-        return fixHTMLTemplateElement(template);
-      };
-
-      var fixHTMLTemplateElement = function fixHTMLTemplateElement(template) {
-        var content = template.content = document.createDocumentFragment();
-        var child = void 0;
-
-        while (child = template.firstChild) {
-          content.appendChild(child);
-        }
-
-        return template;
-      };
-
-      var fixHTMLTemplateElementRoot = function fixHTMLTemplateElementRoot(template) {
-        var content = fixHTMLTemplateElement(template).content;
-        var childTemplates = content.querySelectorAll('template');
-
-        for (var i = 0, ii = childTemplates.length; i < ii; ++i) {
-          var child = childTemplates[i];
-
-          if (isSVGTemplate(child)) {
-            fixSVGTemplateElement(child);
-          } else {
-            fixHTMLTemplateElement(child);
-          }
-        }
-
-        return template;
-      };
-
-      if (!_FEATURE.htmlTemplateElement) {
-        _FEATURE.ensureHTMLTemplateElement = fixHTMLTemplateElementRoot;
+      while (length-- > 0) {
+        attr = attrs[length];
+        template.setAttribute(attr.name, attr.value);
+        el.removeAttribute(attr.name);
       }
-    })();
+
+      el.parentNode.removeChild(el);
+
+      return fixHTMLTemplateElement(template);
+    }
+
+    function fixHTMLTemplateElement(template) {
+      var content = template.content = document.createDocumentFragment();
+      var child = void 0;
+
+      while (child = template.firstChild) {
+        content.appendChild(child);
+      }
+
+      return template;
+    }
+
+    function fixHTMLTemplateElementRoot(template) {
+      var content = fixHTMLTemplateElement(template).content;
+      var childTemplates = content.querySelectorAll('template');
+
+      for (var i = 0, ii = childTemplates.length; i < ii; ++i) {
+        var child = childTemplates[i];
+
+        if (isSVGTemplate(child)) {
+          fixSVGTemplateElement(child);
+        } else {
+          fixHTMLTemplateElement(child);
+        }
+      }
+
+      return template;
+    }
+
+    if (_FEATURE.htmlTemplateElement) {
+      _FEATURE.ensureHTMLTemplateElement = function (template) {
+        return template;
+      };
+    } else {
+      _FEATURE.ensureHTMLTemplateElement = fixHTMLTemplateElementRoot;
+    }
   }
 
   var shadowPoly = window.ShadowDOMPolyfill || null;
@@ -14872,10 +14797,39 @@ define('aurelia-pal-browser',['exports', 'aurelia-pal'], function (exports, _aur
       return;
     }
 
+    _ensureCustomEvent();
+    _ensureFunctionName();
+    _ensureHTMLTemplateElement();
+    _ensureElementMatches();
+    _ensureClassList();
+    _ensurePerformance();
+
     (0, _aureliaPal.initializePAL)(function (platform, feature, dom) {
       Object.assign(platform, _PLATFORM);
       Object.assign(feature, _FEATURE);
       Object.assign(dom, _DOM);
+
+      (function (global) {
+        global.console = global.console || {};
+        var con = global.console;
+        var prop = void 0;
+        var method = void 0;
+        var empty = {};
+        var dummy = function dummy() {};
+        var properties = 'memory'.split(',');
+        var methods = ('assert,clear,count,debug,dir,dirxml,error,exception,group,' + 'groupCollapsed,groupEnd,info,log,markTimeline,profile,profiles,profileEnd,' + 'show,table,time,timeEnd,timeline,timelineEnd,timeStamp,trace,warn').split(',');
+        while (prop = properties.pop()) {
+          if (!con[prop]) con[prop] = empty;
+        }while (method = methods.pop()) {
+          if (!con[method]) con[method] = dummy;
+        }
+      })(platform.global);
+
+      if (platform.global.console && _typeof(console.log) === 'object') {
+        ['log', 'info', 'warn', 'error', 'assert', 'dir', 'clear', 'profile', 'profileEnd'].forEach(function (method) {
+          console[method] = this.bind(console[method], console);
+        }, Function.prototype.call);
+      }
 
       Object.defineProperty(dom, 'title', {
         get: function get() {
@@ -15124,275 +15078,266 @@ define('aurelia-polyfills',['aurelia-pal'], function (_aureliaPal) {
     return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
   };
 
-  if (typeof FEATURE_NO_ES2015 === 'undefined') {
+  (function (Object, GOPS) {
+    'use strict';
 
-    (function (Object, GOPS) {
-      'use strict';
+    if (GOPS in Object) return;
 
-      if (GOPS in Object) return;
-
-      var setDescriptor,
-          G = _aureliaPal.PLATFORM.global,
-          id = 0,
-          random = '' + Math.random(),
-          prefix = '__\x01symbol:',
-          prefixLength = prefix.length,
-          internalSymbol = '__\x01symbol@@' + random,
-          DP = 'defineProperty',
-          DPies = 'defineProperties',
-          GOPN = 'getOwnPropertyNames',
-          GOPD = 'getOwnPropertyDescriptor',
-          PIE = 'propertyIsEnumerable',
-          gOPN = Object[GOPN],
-          gOPD = Object[GOPD],
-          create = Object.create,
-          keys = Object.keys,
-          defineProperty = Object[DP],
-          $defineProperties = Object[DPies],
-          descriptor = gOPD(Object, GOPN),
-          ObjectProto = Object.prototype,
-          hOP = ObjectProto.hasOwnProperty,
-          pIE = ObjectProto[PIE],
-          toString = ObjectProto.toString,
-          indexOf = Array.prototype.indexOf || function (v) {
-        for (var i = this.length; i-- && this[i] !== v;) {}
-        return i;
-      },
-          addInternalIfNeeded = function addInternalIfNeeded(o, uid, enumerable) {
-        if (!hOP.call(o, internalSymbol)) {
-          defineProperty(o, internalSymbol, {
-            enumerable: false,
-            configurable: false,
-            writable: false,
-            value: {}
-          });
-        }
-        o[internalSymbol]['@@' + uid] = enumerable;
-      },
-          createWithSymbols = function createWithSymbols(proto, descriptors) {
-        var self = create(proto);
-        if (descriptors !== null && (typeof descriptors === 'undefined' ? 'undefined' : _typeof(descriptors)) === 'object') {
-          gOPN(descriptors).forEach(function (key) {
-            if (propertyIsEnumerable.call(descriptors, key)) {
-              $defineProperty(self, key, descriptors[key]);
-            }
-          });
-        }
-        return self;
-      },
-          copyAsNonEnumerable = function copyAsNonEnumerable(descriptor) {
-        var newDescriptor = create(descriptor);
-        newDescriptor.enumerable = false;
-        return newDescriptor;
-      },
-          get = function get() {},
-          onlyNonSymbols = function onlyNonSymbols(name) {
-        return name != internalSymbol && !hOP.call(source, name);
-      },
-          onlySymbols = function onlySymbols(name) {
-        return name != internalSymbol && hOP.call(source, name);
-      },
-          propertyIsEnumerable = function propertyIsEnumerable(key) {
-        var uid = '' + key;
-        return onlySymbols(uid) ? hOP.call(this, uid) && this[internalSymbol]['@@' + uid] : pIE.call(this, key);
-      },
-          setAndGetSymbol = function setAndGetSymbol(uid) {
-        var descriptor = {
+    var setDescriptor,
+        G = _aureliaPal.PLATFORM.global,
+        id = 0,
+        random = '' + Math.random(),
+        prefix = '__\x01symbol:',
+        prefixLength = prefix.length,
+        internalSymbol = '__\x01symbol@@' + random,
+        DP = 'defineProperty',
+        DPies = 'defineProperties',
+        GOPN = 'getOwnPropertyNames',
+        GOPD = 'getOwnPropertyDescriptor',
+        PIE = 'propertyIsEnumerable',
+        gOPN = Object[GOPN],
+        gOPD = Object[GOPD],
+        create = Object.create,
+        keys = Object.keys,
+        defineProperty = Object[DP],
+        $defineProperties = Object[DPies],
+        descriptor = gOPD(Object, GOPN),
+        ObjectProto = Object.prototype,
+        hOP = ObjectProto.hasOwnProperty,
+        pIE = ObjectProto[PIE],
+        toString = ObjectProto.toString,
+        indexOf = Array.prototype.indexOf || function (v) {
+      for (var i = this.length; i-- && this[i] !== v;) {}
+      return i;
+    },
+        addInternalIfNeeded = function addInternalIfNeeded(o, uid, enumerable) {
+      if (!hOP.call(o, internalSymbol)) {
+        defineProperty(o, internalSymbol, {
           enumerable: false,
-          configurable: true,
-          get: get,
-          set: function set(value) {
-            setDescriptor(this, uid, {
-              enumerable: false,
-              configurable: true,
-              writable: true,
-              value: value
-            });
-            addInternalIfNeeded(this, uid, true);
-          }
-        };
-        defineProperty(ObjectProto, uid, descriptor);
-        return source[uid] = defineProperty(Object(uid), 'constructor', sourceConstructor);
-      },
-          _Symbol = function _Symbol2(description) {
-        if (this && this !== G) {
-          throw new TypeError('Symbol is not a constructor');
-        }
-        return setAndGetSymbol(prefix.concat(description || '', random, ++id));
-      },
-          source = create(null),
-          sourceConstructor = { value: _Symbol },
-          sourceMap = function sourceMap(uid) {
-        return source[uid];
-      },
-          $defineProperty = function defineProp(o, key, descriptor) {
-        var uid = '' + key;
-        if (onlySymbols(uid)) {
-          setDescriptor(o, uid, descriptor.enumerable ? copyAsNonEnumerable(descriptor) : descriptor);
-          addInternalIfNeeded(o, uid, !!descriptor.enumerable);
-        } else {
-          defineProperty(o, key, descriptor);
-        }
-        return o;
-      },
-          $getOwnPropertySymbols = function getOwnPropertySymbols(o) {
-        var cof = toString.call(o);
-        o = cof === '[object String]' ? o.split('') : Object(o);
-        return gOPN(o).filter(onlySymbols).map(sourceMap);
-      };
-
-      descriptor.value = $defineProperty;
-      defineProperty(Object, DP, descriptor);
-
-      descriptor.value = $getOwnPropertySymbols;
-      defineProperty(Object, GOPS, descriptor);
-
-      descriptor.value = function getOwnPropertyNames(o) {
-        return gOPN(o).filter(onlyNonSymbols);
-      };
-      defineProperty(Object, GOPN, descriptor);
-
-      descriptor.value = function defineProperties(o, descriptors) {
-        var symbols = $getOwnPropertySymbols(descriptors);
-        if (symbols.length) {
-          keys(descriptors).concat(symbols).forEach(function (uid) {
-            if (propertyIsEnumerable.call(descriptors, uid)) {
-              $defineProperty(o, uid, descriptors[uid]);
-            }
-          });
-        } else {
-          $defineProperties(o, descriptors);
-        }
-        return o;
-      };
-      defineProperty(Object, DPies, descriptor);
-
-      descriptor.value = propertyIsEnumerable;
-      defineProperty(ObjectProto, PIE, descriptor);
-
-      descriptor.value = _Symbol;
-      defineProperty(G, 'Symbol', descriptor);
-
-      descriptor.value = function (key) {
-        var uid = prefix.concat(prefix, key, random);
-        return uid in ObjectProto ? source[uid] : setAndGetSymbol(uid);
-      };
-      defineProperty(_Symbol, 'for', descriptor);
-
-      descriptor.value = function (symbol) {
-        return hOP.call(source, symbol) ? symbol.slice(prefixLength * 2, -random.length) : void 0;
-      };
-      defineProperty(_Symbol, 'keyFor', descriptor);
-
-      descriptor.value = function getOwnPropertyDescriptor(o, key) {
-        var descriptor = gOPD(o, key);
-        if (descriptor && onlySymbols(key)) {
-          descriptor.enumerable = propertyIsEnumerable.call(o, key);
-        }
-        return descriptor;
-      };
-      defineProperty(Object, GOPD, descriptor);
-
-      descriptor.value = function (proto, descriptors) {
-        return arguments.length === 1 ? create(proto) : createWithSymbols(proto, descriptors);
-      };
-      defineProperty(Object, 'create', descriptor);
-
-      descriptor.value = function () {
-        var str = toString.call(this);
-        return str === '[object String]' && onlySymbols(this) ? '[object Symbol]' : str;
-      };
-      defineProperty(ObjectProto, 'toString', descriptor);
-
-      try {
-        setDescriptor = create(defineProperty({}, prefix, {
-          get: function get() {
-            return defineProperty(this, prefix, { value: false })[prefix];
-          }
-        }))[prefix] || defineProperty;
-      } catch (o_O) {
-        setDescriptor = function setDescriptor(o, key, descriptor) {
-          var protoDescriptor = gOPD(ObjectProto, key);
-          delete ObjectProto[key];
-          defineProperty(o, key, descriptor);
-          defineProperty(ObjectProto, key, protoDescriptor);
-        };
+          configurable: false,
+          writable: false,
+          value: {}
+        });
       }
-    })(Object, 'getOwnPropertySymbols');
-
-    (function (O, S) {
-      var dP = O.defineProperty,
-          ObjectProto = O.prototype,
-          toString = ObjectProto.toString,
-          toStringTag = 'toStringTag',
-          descriptor;
-      ['iterator', 'match', 'replace', 'search', 'split', 'hasInstance', 'isConcatSpreadable', 'unscopables', 'species', 'toPrimitive', toStringTag].forEach(function (name) {
-        if (!(name in Symbol)) {
-          dP(Symbol, name, { value: Symbol(name) });
-          switch (name) {
-            case toStringTag:
-              descriptor = O.getOwnPropertyDescriptor(ObjectProto, 'toString');
-              descriptor.value = function () {
-                var str = toString.call(this),
-                    tst = typeof this === 'undefined' || this === null ? undefined : this[Symbol.toStringTag];
-                return typeof tst === 'undefined' ? str : '[object ' + tst + ']';
-              };
-              dP(ObjectProto, 'toString', descriptor);
-              break;
-          }
+      o[internalSymbol]['@@' + uid] = enumerable;
+    },
+        createWithSymbols = function createWithSymbols(proto, descriptors) {
+      var self = create(proto);
+      gOPN(descriptors).forEach(function (key) {
+        if (propertyIsEnumerable.call(descriptors, key)) {
+          $defineProperty(self, key, descriptors[key]);
         }
       });
-    })(Object, Symbol);
-
-    (function (Si, AP, SP) {
-
-      function returnThis() {
-        return this;
+      return self;
+    },
+        copyAsNonEnumerable = function copyAsNonEnumerable(descriptor) {
+      var newDescriptor = create(descriptor);
+      newDescriptor.enumerable = false;
+      return newDescriptor;
+    },
+        get = function get() {},
+        onlyNonSymbols = function onlyNonSymbols(name) {
+      return name != internalSymbol && !hOP.call(source, name);
+    },
+        onlySymbols = function onlySymbols(name) {
+      return name != internalSymbol && hOP.call(source, name);
+    },
+        propertyIsEnumerable = function propertyIsEnumerable(key) {
+      var uid = '' + key;
+      return onlySymbols(uid) ? hOP.call(this, uid) && this[internalSymbol]['@@' + uid] : pIE.call(this, key);
+    },
+        setAndGetSymbol = function setAndGetSymbol(uid) {
+      var descriptor = {
+        enumerable: false,
+        configurable: true,
+        get: get,
+        set: function set(value) {
+          setDescriptor(this, uid, {
+            enumerable: false,
+            configurable: true,
+            writable: true,
+            value: value
+          });
+          addInternalIfNeeded(this, uid, true);
+        }
+      };
+      defineProperty(ObjectProto, uid, descriptor);
+      return source[uid] = defineProperty(Object(uid), 'constructor', sourceConstructor);
+    },
+        _Symbol = function _Symbol2(description) {
+      if (this && this !== G) {
+        throw new TypeError('Symbol is not a constructor');
       }
-
-      if (!AP[Si]) AP[Si] = function () {
-        var i = 0,
-            self = this,
-            iterator = {
-          next: function next() {
-            var done = self.length <= i;
-            return done ? { done: done } : { done: done, value: self[i++] };
-          }
-        };
-        iterator[Si] = returnThis;
-        return iterator;
-      };
-
-      if (!SP[Si]) SP[Si] = function () {
-        var fromCodePoint = String.fromCodePoint,
-            self = this,
-            i = 0,
-            length = self.length,
-            iterator = {
-          next: function next() {
-            var done = length <= i,
-                c = done ? '' : fromCodePoint(self.codePointAt(i));
-            i += c.length;
-            return done ? { done: done } : { done: done, value: c };
-          }
-        };
-        iterator[Si] = returnThis;
-        return iterator;
-      };
-    })(Symbol.iterator, Array.prototype, String.prototype);
-  }
-
-  if (typeof FEATURE_NO_ES2015 === 'undefined') {
-
-    Number.isNaN = Number.isNaN || function (value) {
-      return value !== value;
+      return setAndGetSymbol(prefix.concat(description || '', random, ++id));
+    },
+        source = create(null),
+        sourceConstructor = { value: _Symbol },
+        sourceMap = function sourceMap(uid) {
+      return source[uid];
+    },
+        $defineProperty = function defineProp(o, key, descriptor) {
+      var uid = '' + key;
+      if (onlySymbols(uid)) {
+        setDescriptor(o, uid, descriptor.enumerable ? copyAsNonEnumerable(descriptor) : descriptor);
+        addInternalIfNeeded(o, uid, !!descriptor.enumerable);
+      } else {
+        defineProperty(o, key, descriptor);
+      }
+      return o;
+    },
+        $getOwnPropertySymbols = function getOwnPropertySymbols(o) {
+      var cof = toString.call(o);
+      o = cof === '[object String]' ? o.split('') : Object(o);
+      return gOPN(o).filter(onlySymbols).map(sourceMap);
     };
 
-    Number.isFinite = Number.isFinite || function (value) {
-      return typeof value === "number" && isFinite(value);
-    };
-  }
+    descriptor.value = $defineProperty;
+    defineProperty(Object, DP, descriptor);
 
+    descriptor.value = $getOwnPropertySymbols;
+    defineProperty(Object, GOPS, descriptor);
+
+    descriptor.value = function getOwnPropertyNames(o) {
+      return gOPN(o).filter(onlyNonSymbols);
+    };
+    defineProperty(Object, GOPN, descriptor);
+
+    descriptor.value = function defineProperties(o, descriptors) {
+      var symbols = $getOwnPropertySymbols(descriptors);
+      if (symbols.length) {
+        keys(descriptors).concat(symbols).forEach(function (uid) {
+          if (propertyIsEnumerable.call(descriptors, uid)) {
+            $defineProperty(o, uid, descriptors[uid]);
+          }
+        });
+      } else {
+        $defineProperties(o, descriptors);
+      }
+      return o;
+    };
+    defineProperty(Object, DPies, descriptor);
+
+    descriptor.value = propertyIsEnumerable;
+    defineProperty(ObjectProto, PIE, descriptor);
+
+    descriptor.value = _Symbol;
+    defineProperty(G, 'Symbol', descriptor);
+
+    descriptor.value = function (key) {
+      var uid = prefix.concat(prefix, key, random);
+      return uid in ObjectProto ? source[uid] : setAndGetSymbol(uid);
+    };
+    defineProperty(_Symbol, 'for', descriptor);
+
+    descriptor.value = function (symbol) {
+      return hOP.call(source, symbol) ? symbol.slice(prefixLength * 2, -random.length) : void 0;
+    };
+    defineProperty(_Symbol, 'keyFor', descriptor);
+
+    descriptor.value = function getOwnPropertyDescriptor(o, key) {
+      var descriptor = gOPD(o, key);
+      if (descriptor && onlySymbols(key)) {
+        descriptor.enumerable = propertyIsEnumerable.call(o, key);
+      }
+      return descriptor;
+    };
+    defineProperty(Object, GOPD, descriptor);
+
+    descriptor.value = function (proto, descriptors) {
+      return arguments.length === 1 ? create(proto) : createWithSymbols(proto, descriptors);
+    };
+    defineProperty(Object, 'create', descriptor);
+
+    descriptor.value = function () {
+      var str = toString.call(this);
+      return str === '[object String]' && onlySymbols(this) ? '[object Symbol]' : str;
+    };
+    defineProperty(ObjectProto, 'toString', descriptor);
+
+    try {
+      setDescriptor = create(defineProperty({}, prefix, {
+        get: function get() {
+          return defineProperty(this, prefix, { value: false })[prefix];
+        }
+      }))[prefix] || defineProperty;
+    } catch (o_O) {
+      setDescriptor = function setDescriptor(o, key, descriptor) {
+        var protoDescriptor = gOPD(ObjectProto, key);
+        delete ObjectProto[key];
+        defineProperty(o, key, descriptor);
+        defineProperty(ObjectProto, key, protoDescriptor);
+      };
+    }
+  })(Object, 'getOwnPropertySymbols');
+
+  (function (O, S) {
+    var dP = O.defineProperty,
+        ObjectProto = O.prototype,
+        toString = ObjectProto.toString,
+        toStringTag = 'toStringTag',
+        descriptor;
+    ['iterator', 'match', 'replace', 'search', 'split', 'hasInstance', 'isConcatSpreadable', 'unscopables', 'species', 'toPrimitive', toStringTag].forEach(function (name) {
+      if (!(name in Symbol)) {
+        dP(Symbol, name, { value: Symbol(name) });
+        switch (name) {
+          case toStringTag:
+            descriptor = O.getOwnPropertyDescriptor(ObjectProto, 'toString');
+            descriptor.value = function () {
+              var str = toString.call(this),
+                  tst = typeof this === 'undefined' || this === null ? undefined : this[Symbol.toStringTag];
+              return typeof tst === 'undefined' ? str : '[object ' + tst + ']';
+            };
+            dP(ObjectProto, 'toString', descriptor);
+            break;
+        }
+      }
+    });
+  })(Object, Symbol);
+
+  (function (Si, AP, SP) {
+
+    function returnThis() {
+      return this;
+    }
+
+    if (!AP[Si]) AP[Si] = function () {
+      var i = 0,
+          self = this,
+          iterator = {
+        next: function next() {
+          var done = self.length <= i;
+          return done ? { done: done } : { done: done, value: self[i++] };
+        }
+      };
+      iterator[Si] = returnThis;
+      return iterator;
+    };
+
+    if (!SP[Si]) SP[Si] = function () {
+      var fromCodePoint = String.fromCodePoint,
+          self = this,
+          i = 0,
+          length = self.length,
+          iterator = {
+        next: function next() {
+          var done = length <= i,
+              c = done ? '' : fromCodePoint(self.codePointAt(i));
+          i += c.length;
+          return done ? { done: done } : { done: done, value: c };
+        }
+      };
+      iterator[Si] = returnThis;
+      return iterator;
+    };
+  })(Symbol.iterator, Array.prototype, String.prototype);
+
+  Number.isNaN = Number.isNaN || function (value) {
+    return value !== value;
+  };
+
+  Number.isFinite = Number.isFinite || function (value) {
+    return typeof value === "number" && isFinite(value);
+  };
   if (!String.prototype.endsWith || function () {
     try {
       return !"ab".endsWith("a", 1);
@@ -15424,112 +15369,109 @@ define('aurelia-polyfills',['aurelia-pal'], function (_aureliaPal) {
     };
   }
 
-  if (typeof FEATURE_NO_ES2015 === 'undefined') {
-
-    if (!Array.from) {
-      Array.from = function () {
-        var toInteger = function toInteger(it) {
-          return isNaN(it = +it) ? 0 : (it > 0 ? Math.floor : Math.ceil)(it);
-        };
-        var toLength = function toLength(it) {
-          return it > 0 ? Math.min(toInteger(it), 0x1fffffffffffff) : 0;
-        };
-        var iterCall = function iterCall(iter, fn, val, index) {
-          try {
-            return fn(val, index);
-          } catch (E) {
-            if (typeof iter.return == 'function') iter.return();
-            throw E;
-          }
-        };
-
-        return function from(arrayLike) {
-          var O = Object(arrayLike),
-              C = typeof this == 'function' ? this : Array,
-              aLen = arguments.length,
-              mapfn = aLen > 1 ? arguments[1] : undefined,
-              mapping = mapfn !== undefined,
-              index = 0,
-              iterFn = O[Symbol.iterator],
-              length,
-              result,
-              step,
-              iterator;
-          if (mapping) mapfn = mapfn.bind(aLen > 2 ? arguments[2] : undefined);
-          if (iterFn != undefined && !Array.isArray(arrayLike)) {
-            for (iterator = iterFn.call(O), result = new C(); !(step = iterator.next()).done; index++) {
-              result[index] = mapping ? iterCall(iterator, mapfn, step.value, index) : step.value;
-            }
-          } else {
-            length = toLength(O.length);
-            for (result = new C(length); length > index; index++) {
-              result[index] = mapping ? mapfn(O[index], index) : O[index];
-            }
-          }
-          result.length = index;
-          return result;
-        };
-      }();
-    }
-
-    if (!Array.prototype.find) {
-      Object.defineProperty(Array.prototype, 'find', {
-        configurable: true,
-        writable: true,
-        enumerable: false,
-        value: function value(predicate) {
-          if (this === null) {
-            throw new TypeError('Array.prototype.find called on null or undefined');
-          }
-          if (typeof predicate !== 'function') {
-            throw new TypeError('predicate must be a function');
-          }
-          var list = Object(this);
-          var length = list.length >>> 0;
-          var thisArg = arguments[1];
-          var value;
-
-          for (var i = 0; i < length; i++) {
-            value = list[i];
-            if (predicate.call(thisArg, value, i, list)) {
-              return value;
-            }
-          }
-          return undefined;
+  if (!Array.from) {
+    Array.from = function () {
+      var toInteger = function toInteger(it) {
+        return isNaN(it = +it) ? 0 : (it > 0 ? Math.floor : Math.ceil)(it);
+      };
+      var toLength = function toLength(it) {
+        return it > 0 ? Math.min(toInteger(it), 0x1fffffffffffff) : 0;
+      };
+      var iterCall = function iterCall(iter, fn, val, index) {
+        try {
+          return fn(val, index);
+        } catch (E) {
+          if (typeof iter.return == 'function') iter.return();
+          throw E;
         }
-      });
-    }
+      };
 
-    if (!Array.prototype.findIndex) {
-      Object.defineProperty(Array.prototype, 'findIndex', {
-        configurable: true,
-        writable: true,
-        enumerable: false,
-        value: function value(predicate) {
-          if (this === null) {
-            throw new TypeError('Array.prototype.findIndex called on null or undefined');
+      return function from(arrayLike) {
+        var O = Object(arrayLike),
+            C = typeof this == 'function' ? this : Array,
+            aLen = arguments.length,
+            mapfn = aLen > 1 ? arguments[1] : undefined,
+            mapping = mapfn !== undefined,
+            index = 0,
+            iterFn = O[Symbol.iterator],
+            length,
+            result,
+            step,
+            iterator;
+        if (mapping) mapfn = mapfn.bind(aLen > 2 ? arguments[2] : undefined);
+        if (iterFn != undefined && !Array.isArray(arrayLike)) {
+          for (iterator = iterFn.call(O), result = new C(); !(step = iterator.next()).done; index++) {
+            result[index] = mapping ? iterCall(iterator, mapfn, step.value, index) : step.value;
           }
-          if (typeof predicate !== 'function') {
-            throw new TypeError('predicate must be a function');
+        } else {
+          length = toLength(O.length);
+          for (result = new C(length); length > index; index++) {
+            result[index] = mapping ? mapfn(O[index], index) : O[index];
           }
-          var list = Object(this);
-          var length = list.length >>> 0;
-          var thisArg = arguments[1];
-          var value;
-
-          for (var i = 0; i < length; i++) {
-            value = list[i];
-            if (predicate.call(thisArg, value, i, list)) {
-              return i;
-            }
-          }
-          return -1;
         }
-      });
-    }
+        result.length = index;
+        return result;
+      };
+    }();
   }
 
-  if (typeof FEATURE_NO_ES2016 === 'undefined' && !Array.prototype.includes) {
+  if (!Array.prototype.find) {
+    Object.defineProperty(Array.prototype, 'find', {
+      configurable: true,
+      writable: true,
+      enumerable: false,
+      value: function value(predicate) {
+        if (this === null) {
+          throw new TypeError('Array.prototype.find called on null or undefined');
+        }
+        if (typeof predicate !== 'function') {
+          throw new TypeError('predicate must be a function');
+        }
+        var list = Object(this);
+        var length = list.length >>> 0;
+        var thisArg = arguments[1];
+        var value;
+
+        for (var i = 0; i < length; i++) {
+          value = list[i];
+          if (predicate.call(thisArg, value, i, list)) {
+            return value;
+          }
+        }
+        return undefined;
+      }
+    });
+  }
+
+  if (!Array.prototype.findIndex) {
+    Object.defineProperty(Array.prototype, 'findIndex', {
+      configurable: true,
+      writable: true,
+      enumerable: false,
+      value: function value(predicate) {
+        if (this === null) {
+          throw new TypeError('Array.prototype.findIndex called on null or undefined');
+        }
+        if (typeof predicate !== 'function') {
+          throw new TypeError('predicate must be a function');
+        }
+        var list = Object(this);
+        var length = list.length >>> 0;
+        var thisArg = arguments[1];
+        var value;
+
+        for (var i = 0; i < length; i++) {
+          value = list[i];
+          if (predicate.call(thisArg, value, i, list)) {
+            return i;
+          }
+        }
+        return -1;
+      }
+    });
+  }
+
+  if (!Array.prototype.includes) {
     Object.defineProperty(Array.prototype, 'includes', {
       configurable: true,
       writable: true,
@@ -15563,2276 +15505,377 @@ define('aurelia-polyfills',['aurelia-pal'], function (_aureliaPal) {
     });
   }
 
-  if (typeof FEATURE_NO_ES2015 === 'undefined') {
-
-    (function () {
-      var needsFix = false;
-
-      try {
-        var s = Object.keys('a');
-        needsFix = s.length !== 1 || s[0] !== '0';
-      } catch (e) {
-        needsFix = true;
-      }
-
-      if (needsFix) {
-        Object.keys = function () {
-          var hasOwnProperty = Object.prototype.hasOwnProperty,
-              hasDontEnumBug = !{ toString: null }.propertyIsEnumerable('toString'),
-              dontEnums = ['toString', 'toLocaleString', 'valueOf', 'hasOwnProperty', 'isPrototypeOf', 'propertyIsEnumerable', 'constructor'],
-              dontEnumsLength = dontEnums.length;
-
-          return function (obj) {
-            if (obj === undefined || obj === null) {
-              throw TypeError('Cannot convert undefined or null to object');
-            }
-
-            obj = Object(obj);
-
-            var result = [],
-                prop,
-                i;
-
-            for (prop in obj) {
-              if (hasOwnProperty.call(obj, prop)) {
-                result.push(prop);
-              }
-            }
-
-            if (hasDontEnumBug) {
-              for (i = 0; i < dontEnumsLength; i++) {
-                if (hasOwnProperty.call(obj, dontEnums[i])) {
-                  result.push(dontEnums[i]);
-                }
-              }
-            }
-
-            return result;
-          };
-        }();
-      }
-    })();
-
-    (function (O) {
-      if ('assign' in O) {
-        return;
-      }
-
-      O.defineProperty(O, 'assign', {
-        configurable: true,
-        writable: true,
-        value: function () {
-          var gOPS = O.getOwnPropertySymbols,
-              pIE = O.propertyIsEnumerable,
-              filterOS = gOPS ? function (self) {
-            return gOPS(self).filter(pIE, self);
-          } : function () {
-            return Array.prototype;
-          };
-
-          return function assign(where) {
-            if (gOPS && !(where instanceof O)) {
-              console.warn('problematic Symbols', where);
-            }
-
-            function set(keyOrSymbol) {
-              where[keyOrSymbol] = arg[keyOrSymbol];
-            }
-
-            for (var i = 1, ii = arguments.length; i < ii; ++i) {
-              var arg = arguments[i];
-
-              if (arg === null || arg === undefined) {
-                continue;
-              }
-
-              O.keys(arg).concat(filterOS(arg)).forEach(set);
-            }
-
-            return where;
-          };
-        }()
-      });
-    })(Object);
-  }
-
-  if (typeof FEATURE_NO_ES2015 === 'undefined') {
-
-    (function (global) {
-      var i;
-
-      var defineProperty = Object.defineProperty,
-          is = function is(a, b) {
-        return a === b || a !== a && b !== b;
-      };
-
-      if (typeof WeakMap == 'undefined') {
-        global.WeakMap = createCollection({
-          'delete': sharedDelete,
-
-          clear: sharedClear,
-
-          get: sharedGet,
-
-          has: mapHas,
-
-          set: sharedSet
-        }, true);
-      }
-
-      if (typeof Map == 'undefined' || typeof new Map().values !== 'function' || !new Map().values().next) {
-        var _createCollection;
-
-        global.Map = createCollection((_createCollection = {
-          'delete': sharedDelete,
-
-          has: mapHas,
-
-          get: sharedGet,
-
-          set: sharedSet,
-
-          keys: sharedKeys,
-
-          values: sharedValues,
-
-          entries: mapEntries,
-
-          forEach: sharedForEach,
-
-          clear: sharedClear
-        }, _createCollection[Symbol.iterator] = mapEntries, _createCollection));
-      }
-
-      if (typeof Set == 'undefined' || typeof new Set().values !== 'function' || !new Set().values().next) {
-        var _createCollection2;
-
-        global.Set = createCollection((_createCollection2 = {
-          has: setHas,
-
-          add: sharedAdd,
-
-          'delete': sharedDelete,
-
-          clear: sharedClear,
-
-          keys: sharedValues,
-          values: sharedValues,
-
-          entries: setEntries,
-
-          forEach: sharedForEach
-        }, _createCollection2[Symbol.iterator] = sharedValues, _createCollection2));
-      }
-
-      if (typeof WeakSet == 'undefined') {
-        global.WeakSet = createCollection({
-          'delete': sharedDelete,
-
-          add: sharedAdd,
-
-          clear: sharedClear,
-
-          has: setHas
-        }, true);
-      }
-
-      function createCollection(proto, objectOnly) {
-        function Collection(a) {
-          if (!this || this.constructor !== Collection) return new Collection(a);
-          this._keys = [];
-          this._values = [];
-          this._itp = [];
-          this.objectOnly = objectOnly;
-
-          if (a) init.call(this, a);
-        }
-
-        if (!objectOnly) {
-          defineProperty(proto, 'size', {
-            get: sharedSize
-          });
-        }
-
-        proto.constructor = Collection;
-        Collection.prototype = proto;
-
-        return Collection;
-      }
-
-      function init(a) {
-        var i;
-
-        if (this.add) a.forEach(this.add, this);else a.forEach(function (a) {
-            this.set(a[0], a[1]);
-          }, this);
-      }
-
-      function sharedDelete(key) {
-        if (this.has(key)) {
-          this._keys.splice(i, 1);
-          this._values.splice(i, 1);
-
-          this._itp.forEach(function (p) {
-            if (i < p[0]) p[0]--;
-          });
-        }
-
-        return -1 < i;
-      };
-
-      function sharedGet(key) {
-        return this.has(key) ? this._values[i] : undefined;
-      }
-
-      function has(list, key) {
-        if (this.objectOnly && key !== Object(key)) throw new TypeError("Invalid value used as weak collection key");
-
-        if (key != key || key === 0) for (i = list.length; i-- && !is(list[i], key);) {} else i = list.indexOf(key);
-        return -1 < i;
-      }
-
-      function setHas(value) {
-        return has.call(this, this._values, value);
-      }
-
-      function mapHas(value) {
-        return has.call(this, this._keys, value);
-      }
-
-      function sharedSet(key, value) {
-        this.has(key) ? this._values[i] = value : this._values[this._keys.push(key) - 1] = value;
-        return this;
-      }
-
-      function sharedAdd(value) {
-        if (!this.has(value)) this._values.push(value);
-        return this;
-      }
-
-      function sharedClear() {
-        (this._keys || 0).length = this._values.length = 0;
-      }
-
-      function sharedKeys() {
-        return sharedIterator(this._itp, this._keys);
-      }
-
-      function sharedValues() {
-        return sharedIterator(this._itp, this._values);
-      }
-
-      function mapEntries() {
-        return sharedIterator(this._itp, this._keys, this._values);
-      }
-
-      function setEntries() {
-        return sharedIterator(this._itp, this._values, this._values);
-      }
-
-      function sharedIterator(itp, array, array2) {
-        var _ref;
-
-        var p = [0],
-            done = false;
-        itp.push(p);
-        return _ref = {}, _ref[Symbol.iterator] = function () {
-          return this;
-        }, _ref.next = function next() {
-          var v,
-              k = p[0];
-          if (!done && k < array.length) {
-            v = array2 ? [array[k], array2[k]] : array[k];
-            p[0]++;
-          } else {
-            done = true;
-            itp.splice(itp.indexOf(p), 1);
-          }
-          return { done: done, value: v };
-        }, _ref;
-      }
-
-      function sharedSize() {
-        return this._values.length;
-      }
-
-      function sharedForEach(callback, context) {
-        var it = this.entries();
-        for (;;) {
-          var r = it.next();
-          if (r.done) break;
-          callback.call(context, r.value[1], r.value[0], this);
-        }
-      }
-    })(_aureliaPal.PLATFORM.global);
-  }
-
-  if (typeof FEATURE_NO_ES2015 === 'undefined') {
-    (function () {
-
-      var bind = Function.prototype.bind;
-
-      if (typeof _aureliaPal.PLATFORM.global.Reflect === 'undefined') {
-        _aureliaPal.PLATFORM.global.Reflect = {};
-      }
-
-      if (typeof Reflect.defineProperty !== 'function') {
-        Reflect.defineProperty = function (target, propertyKey, descriptor) {
-          if ((typeof target === 'undefined' ? 'undefined' : _typeof(target)) === 'object' ? target === null : typeof target !== 'function') {
-            throw new TypeError('Reflect.defineProperty called on non-object');
-          }
-          try {
-            Object.defineProperty(target, propertyKey, descriptor);
-            return true;
-          } catch (e) {
-            return false;
-          }
-        };
-      }
-
-      if (typeof Reflect.construct !== 'function') {
-        Reflect.construct = function (Target, args) {
-          if (args) {
-            switch (args.length) {
-              case 0:
-                return new Target();
-              case 1:
-                return new Target(args[0]);
-              case 2:
-                return new Target(args[0], args[1]);
-              case 3:
-                return new Target(args[0], args[1], args[2]);
-              case 4:
-                return new Target(args[0], args[1], args[2], args[3]);
-            }
-          }
-
-          var a = [null];
-          a.push.apply(a, args);
-          return new (bind.apply(Target, a))();
-        };
-      }
-
-      if (typeof Reflect.ownKeys !== 'function') {
-        Reflect.ownKeys = function (o) {
-          return Object.getOwnPropertyNames(o).concat(Object.getOwnPropertySymbols(o));
-        };
-      }
-    })();
-  }
-
-  if (typeof FEATURE_NO_ESNEXT === 'undefined') {
-    (function () {
-
-      var emptyMetadata = Object.freeze({});
-      var metadataContainerKey = '__metadata__';
-
-      if (typeof Reflect.getOwnMetadata !== 'function') {
-        Reflect.getOwnMetadata = function (metadataKey, target, targetKey) {
-          if (target.hasOwnProperty(metadataContainerKey)) {
-            return (target[metadataContainerKey][targetKey] || emptyMetadata)[metadataKey];
-          }
-        };
-      }
-
-      if (typeof Reflect.defineMetadata !== 'function') {
-        Reflect.defineMetadata = function (metadataKey, metadataValue, target, targetKey) {
-          var metadataContainer = target.hasOwnProperty(metadataContainerKey) ? target[metadataContainerKey] : target[metadataContainerKey] = {};
-          var targetContainer = metadataContainer[targetKey] || (metadataContainer[targetKey] = {});
-          targetContainer[metadataKey] = metadataValue;
-        };
-      }
-
-      if (typeof Reflect.metadata !== 'function') {
-        Reflect.metadata = function (metadataKey, metadataValue) {
-          return function (target, targetKey) {
-            Reflect.defineMetadata(metadataKey, metadataValue, target, targetKey);
-          };
-        };
-      }
-    })();
-  }
-});
-define('aurelia-router',['exports', 'aurelia-logging', 'aurelia-route-recognizer', 'aurelia-dependency-injection', 'aurelia-history', 'aurelia-event-aggregator'], function (exports, _aureliaLogging, _aureliaRouteRecognizer, _aureliaDependencyInjection, _aureliaHistory, _aureliaEventAggregator) {
-  'use strict';
-
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-  exports.AppRouter = exports.PipelineProvider = exports.LoadRouteStep = exports.RouteLoader = exports.ActivateNextStep = exports.DeactivatePreviousStep = exports.CanActivateNextStep = exports.CanDeactivatePreviousStep = exports.Router = exports.BuildNavigationPlanStep = exports.activationStrategy = exports.RouterConfiguration = exports.RedirectToRoute = exports.Redirect = exports.NavModel = exports.NavigationInstruction = exports.CommitChangesStep = exports.Pipeline = exports.pipelineStatus = undefined;
-  exports._normalizeAbsolutePath = _normalizeAbsolutePath;
-  exports._createRootedPath = _createRootedPath;
-  exports._resolveUrl = _resolveUrl;
-  exports.isNavigationCommand = isNavigationCommand;
-  exports._buildNavigationPlan = _buildNavigationPlan;
-
-  var LogManager = _interopRequireWildcard(_aureliaLogging);
-
-  function _interopRequireWildcard(obj) {
-    if (obj && obj.__esModule) {
-      return obj;
-    } else {
-      var newObj = {};
-
-      if (obj != null) {
-        for (var key in obj) {
-          if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key];
-        }
-      }
-
-      newObj.default = obj;
-      return newObj;
-    }
-  }
-
-  function _possibleConstructorReturn(self, call) {
-    if (!self) {
-      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
-    }
-
-    return call && (typeof call === "object" || typeof call === "function") ? call : self;
-  }
-
-  function _inherits(subClass, superClass) {
-    if (typeof superClass !== "function" && superClass !== null) {
-      throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
-    }
-
-    subClass.prototype = Object.create(superClass && superClass.prototype, {
-      constructor: {
-        value: subClass,
-        enumerable: false,
-        writable: true,
-        configurable: true
-      }
-    });
-    if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
-  }
-
-  var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
-    return typeof obj;
-  } : function (obj) {
-    return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
-  };
-
-  var _createClass = function () {
-    function defineProperties(target, props) {
-      for (var i = 0; i < props.length; i++) {
-        var descriptor = props[i];
-        descriptor.enumerable = descriptor.enumerable || false;
-        descriptor.configurable = true;
-        if ("value" in descriptor) descriptor.writable = true;
-        Object.defineProperty(target, descriptor.key, descriptor);
-      }
-    }
-
-    return function (Constructor, protoProps, staticProps) {
-      if (protoProps) defineProperties(Constructor.prototype, protoProps);
-      if (staticProps) defineProperties(Constructor, staticProps);
-      return Constructor;
-    };
-  }();
-
-  
-
-  function _normalizeAbsolutePath(path, hasPushState) {
-    var absolute = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];
-
-    if (!hasPushState && path[0] !== '#') {
-      path = '#' + path;
-    }
-
-    if (hasPushState && absolute) {
-      path = path.substring(1, path.length);
-    }
-
-    return path;
-  }
-
-  function _createRootedPath(fragment, baseUrl, hasPushState, absolute) {
-    if (isAbsoluteUrl.test(fragment)) {
-      return fragment;
-    }
-
-    var path = '';
-
-    if (baseUrl.length && baseUrl[0] !== '/') {
-      path += '/';
-    }
-
-    path += baseUrl;
-
-    if ((!path.length || path[path.length - 1] !== '/') && fragment[0] !== '/') {
-      path += '/';
-    }
-
-    if (path.length && path[path.length - 1] === '/' && fragment[0] === '/') {
-      path = path.substring(0, path.length - 1);
-    }
-
-    return _normalizeAbsolutePath(path + fragment, hasPushState, absolute);
-  }
-
-  function _resolveUrl(fragment, baseUrl, hasPushState) {
-    if (isRootedPath.test(fragment)) {
-      return _normalizeAbsolutePath(fragment, hasPushState);
-    }
-
-    return _createRootedPath(fragment, baseUrl, hasPushState);
-  }
-
-  var isRootedPath = /^#?\//;
-  var isAbsoluteUrl = /^([a-z][a-z0-9+\-.]*:)?\/\//i;
-
-  var pipelineStatus = exports.pipelineStatus = {
-    completed: 'completed',
-    canceled: 'canceled',
-    rejected: 'rejected',
-    running: 'running'
-  };
-
-  var Pipeline = exports.Pipeline = function () {
-    function Pipeline() {
-      
-
-      this.steps = [];
-    }
-
-    Pipeline.prototype.addStep = function addStep(step) {
-      var run = void 0;
-
-      if (typeof step === 'function') {
-        run = step;
-      } else if (typeof step.getSteps === 'function') {
-        var steps = step.getSteps();
-        for (var i = 0, l = steps.length; i < l; i++) {
-          this.addStep(steps[i]);
-        }
-
-        return this;
-      } else {
-        run = step.run.bind(step);
-      }
-
-      this.steps.push(run);
-
-      return this;
-    };
-
-    Pipeline.prototype.run = function run(instruction) {
-      var index = -1;
-      var steps = this.steps;
-
-      function next() {
-        index++;
-
-        if (index < steps.length) {
-          var currentStep = steps[index];
-
-          try {
-            return currentStep(instruction, next);
-          } catch (e) {
-            return next.reject(e);
-          }
-        } else {
-          return next.complete();
-        }
-      }
-
-      next.complete = createCompletionHandler(next, pipelineStatus.completed);
-      next.cancel = createCompletionHandler(next, pipelineStatus.canceled);
-      next.reject = createCompletionHandler(next, pipelineStatus.rejected);
-
-      return next();
-    };
-
-    return Pipeline;
-  }();
-
-  function createCompletionHandler(next, status) {
-    return function (output) {
-      return Promise.resolve({ status: status, output: output, completed: status === pipelineStatus.completed });
-    };
-  }
-
-  var CommitChangesStep = exports.CommitChangesStep = function () {
-    function CommitChangesStep() {
-      
-    }
-
-    CommitChangesStep.prototype.run = function run(navigationInstruction, next) {
-      return navigationInstruction._commitChanges(true).then(function () {
-        navigationInstruction._updateTitle();
-        return next();
-      });
-    };
-
-    return CommitChangesStep;
-  }();
-
-  var NavigationInstruction = exports.NavigationInstruction = function () {
-    function NavigationInstruction(init) {
-      
-
-      this.plan = null;
-      this.options = {};
-
-      Object.assign(this, init);
-
-      this.params = this.params || {};
-      this.viewPortInstructions = {};
-
-      var ancestorParams = [];
-      var current = this;
-      do {
-        var currentParams = Object.assign({}, current.params);
-        if (current.config && current.config.hasChildRouter) {
-          delete currentParams[current.getWildCardName()];
-        }
-
-        ancestorParams.unshift(currentParams);
-        current = current.parentInstruction;
-      } while (current);
-
-      var allParams = Object.assign.apply(Object, [{}, this.queryParams].concat(ancestorParams));
-      this.lifecycleArgs = [allParams, this.config, this];
-    }
-
-    NavigationInstruction.prototype.getAllInstructions = function getAllInstructions() {
-      var instructions = [this];
-      for (var key in this.viewPortInstructions) {
-        var childInstruction = this.viewPortInstructions[key].childNavigationInstruction;
-        if (childInstruction) {
-          instructions.push.apply(instructions, childInstruction.getAllInstructions());
-        }
-      }
-
-      return instructions;
-    };
-
-    NavigationInstruction.prototype.getAllPreviousInstructions = function getAllPreviousInstructions() {
-      return this.getAllInstructions().map(function (c) {
-        return c.previousInstruction;
-      }).filter(function (c) {
-        return c;
-      });
-    };
-
-    NavigationInstruction.prototype.addViewPortInstruction = function addViewPortInstruction(viewPortName, strategy, moduleId, component) {
-      var config = Object.assign({}, this.lifecycleArgs[1], { currentViewPort: viewPortName });
-      var viewportInstruction = this.viewPortInstructions[viewPortName] = {
-        name: viewPortName,
-        strategy: strategy,
-        moduleId: moduleId,
-        component: component,
-        childRouter: component.childRouter,
-        lifecycleArgs: [].concat(this.lifecycleArgs[0], config, this.lifecycleArgs[2])
-      };
-
-      return viewportInstruction;
-    };
-
-    NavigationInstruction.prototype.getWildCardName = function getWildCardName() {
-      var wildcardIndex = this.config.route.lastIndexOf('*');
-      return this.config.route.substr(wildcardIndex + 1);
-    };
-
-    NavigationInstruction.prototype.getWildcardPath = function getWildcardPath() {
-      var wildcardName = this.getWildCardName();
-      var path = this.params[wildcardName] || '';
-
-      if (this.queryString) {
-        path += '?' + this.queryString;
-      }
-
-      return path;
-    };
-
-    NavigationInstruction.prototype.getBaseUrl = function getBaseUrl() {
-      var _this = this;
-
-      var fragment = this.fragment;
-
-      if (fragment === '') {
-        var nonEmptyRoute = this.router.routes.find(function (route) {
-          return route.name === _this.config.name && route.route !== '';
-        });
-        if (nonEmptyRoute) {
-          fragment = nonEmptyRoute.route;
-        }
-      }
-
-      if (!this.params) {
-        return fragment;
-      }
-
-      var wildcardName = this.getWildCardName();
-      var path = this.params[wildcardName] || '';
-
-      if (!path) {
-        return fragment;
-      }
-
-      path = encodeURI(path);
-      return fragment.substr(0, fragment.lastIndexOf(path));
-    };
-
-    NavigationInstruction.prototype._commitChanges = function _commitChanges(waitToSwap) {
-      var _this2 = this;
-
-      var router = this.router;
-      router.currentInstruction = this;
-
-      if (this.previousInstruction) {
-        this.previousInstruction.config.navModel.isActive = false;
-      }
-
-      this.config.navModel.isActive = true;
-
-      router._refreshBaseUrl();
-      router.refreshNavigation();
-
-      var loads = [];
-      var delaySwaps = [];
-
-      var _loop = function _loop(viewPortName) {
-        var viewPortInstruction = _this2.viewPortInstructions[viewPortName];
-        var viewPort = router.viewPorts[viewPortName];
-
-        if (!viewPort) {
-          throw new Error('There was no router-view found in the view for ' + viewPortInstruction.moduleId + '.');
-        }
-
-        if (viewPortInstruction.strategy === activationStrategy.replace) {
-          if (waitToSwap) {
-            delaySwaps.push({ viewPort: viewPort, viewPortInstruction: viewPortInstruction });
-          }
-
-          loads.push(viewPort.process(viewPortInstruction, waitToSwap).then(function (x) {
-            if (viewPortInstruction.childNavigationInstruction) {
-              return viewPortInstruction.childNavigationInstruction._commitChanges();
-            }
-
-            return undefined;
-          }));
-        } else {
-          if (viewPortInstruction.childNavigationInstruction) {
-            loads.push(viewPortInstruction.childNavigationInstruction._commitChanges(waitToSwap));
-          }
-        }
-      };
-
-      for (var viewPortName in this.viewPortInstructions) {
-        _loop(viewPortName);
-      }
-
-      return Promise.all(loads).then(function () {
-        delaySwaps.forEach(function (x) {
-          return x.viewPort.swap(x.viewPortInstruction);
-        });
-        return null;
-      }).then(function () {
-        return prune(_this2);
-      });
-    };
-
-    NavigationInstruction.prototype._updateTitle = function _updateTitle() {
-      var title = this._buildTitle();
-      if (title) {
-        this.router.history.setTitle(title);
-      }
-    };
-
-    NavigationInstruction.prototype._buildTitle = function _buildTitle() {
-      var separator = arguments.length <= 0 || arguments[0] === undefined ? ' | ' : arguments[0];
-
-      var title = '';
-      var childTitles = [];
-
-      if (this.config.navModel.title) {
-        title = this.router.transformTitle(this.config.navModel.title);
-      }
-
-      for (var viewPortName in this.viewPortInstructions) {
-        var _viewPortInstruction = this.viewPortInstructions[viewPortName];
-
-        if (_viewPortInstruction.childNavigationInstruction) {
-          var childTitle = _viewPortInstruction.childNavigationInstruction._buildTitle(separator);
-          if (childTitle) {
-            childTitles.push(childTitle);
-          }
-        }
-      }
-
-      if (childTitles.length) {
-        title = childTitles.join(separator) + (title ? separator : '') + title;
-      }
-
-      if (this.router.title) {
-        title += (title ? separator : '') + this.router.transformTitle(this.router.title);
-      }
-
-      return title;
-    };
-
-    return NavigationInstruction;
-  }();
-
-  function prune(instruction) {
-    instruction.previousInstruction = null;
-    instruction.plan = null;
-  }
-
-  var NavModel = exports.NavModel = function () {
-    function NavModel(router, relativeHref) {
-      
-
-      this.isActive = false;
-      this.title = null;
-      this.href = null;
-      this.relativeHref = null;
-      this.settings = {};
-      this.config = null;
-
-      this.router = router;
-      this.relativeHref = relativeHref;
-    }
-
-    NavModel.prototype.setTitle = function setTitle(title) {
-      this.title = title;
-
-      if (this.isActive) {
-        this.router.updateTitle();
-      }
-    };
-
-    return NavModel;
-  }();
-
-  function isNavigationCommand(obj) {
-    return obj && typeof obj.navigate === 'function';
-  }
-
-  var Redirect = exports.Redirect = function () {
-    function Redirect(url) {
-      var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-
-      
-
-      this.url = url;
-      this.options = Object.assign({ trigger: true, replace: true }, options);
-      this.shouldContinueProcessing = false;
-    }
-
-    Redirect.prototype.setRouter = function setRouter(router) {
-      this.router = router;
-    };
-
-    Redirect.prototype.navigate = function navigate(appRouter) {
-      var navigatingRouter = this.options.useAppRouter ? appRouter : this.router || appRouter;
-      navigatingRouter.navigate(this.url, this.options);
-    };
-
-    return Redirect;
-  }();
-
-  var RedirectToRoute = exports.RedirectToRoute = function () {
-    function RedirectToRoute(route) {
-      var params = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-      var options = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
-
-      
-
-      this.route = route;
-      this.params = params;
-      this.options = Object.assign({ trigger: true, replace: true }, options);
-      this.shouldContinueProcessing = false;
-    }
-
-    RedirectToRoute.prototype.setRouter = function setRouter(router) {
-      this.router = router;
-    };
-
-    RedirectToRoute.prototype.navigate = function navigate(appRouter) {
-      var navigatingRouter = this.options.useAppRouter ? appRouter : this.router || appRouter;
-      navigatingRouter.navigateToRoute(this.route, this.params, this.options);
-    };
-
-    return RedirectToRoute;
-  }();
-
-  var RouterConfiguration = exports.RouterConfiguration = function () {
-    function RouterConfiguration() {
-      
-
-      this.instructions = [];
-      this.options = {};
-      this.pipelineSteps = [];
-    }
-
-    RouterConfiguration.prototype.addPipelineStep = function addPipelineStep(name, step) {
-      this.pipelineSteps.push({ name: name, step: step });
-      return this;
-    };
-
-    RouterConfiguration.prototype.addAuthorizeStep = function addAuthorizeStep(step) {
-      return this.addPipelineStep('authorize', step);
-    };
-
-    RouterConfiguration.prototype.addPreActivateStep = function addPreActivateStep(step) {
-      return this.addPipelineStep('preActivate', step);
-    };
-
-    RouterConfiguration.prototype.addPreRenderStep = function addPreRenderStep(step) {
-      return this.addPipelineStep('preRender', step);
-    };
-
-    RouterConfiguration.prototype.addPostRenderStep = function addPostRenderStep(step) {
-      return this.addPipelineStep('postRender', step);
-    };
-
-    RouterConfiguration.prototype.fallbackRoute = function fallbackRoute(fragment) {
-      this._fallbackRoute = fragment;
-      return this;
-    };
-
-    RouterConfiguration.prototype.map = function map(route) {
-      if (Array.isArray(route)) {
-        route.forEach(this.map.bind(this));
-        return this;
-      }
-
-      return this.mapRoute(route);
-    };
-
-    RouterConfiguration.prototype.mapRoute = function mapRoute(config) {
-      this.instructions.push(function (router) {
-        var routeConfigs = [];
-
-        if (Array.isArray(config.route)) {
-          for (var i = 0, ii = config.route.length; i < ii; ++i) {
-            var current = Object.assign({}, config);
-            current.route = config.route[i];
-            routeConfigs.push(current);
-          }
-        } else {
-          routeConfigs.push(Object.assign({}, config));
-        }
-
-        var navModel = void 0;
-        for (var _i = 0, _ii = routeConfigs.length; _i < _ii; ++_i) {
-          var _routeConfig = routeConfigs[_i];
-          _routeConfig.settings = _routeConfig.settings || {};
-          if (!navModel) {
-            navModel = router.createNavModel(_routeConfig);
-          }
-
-          router.addRoute(_routeConfig, navModel);
-        }
-      });
-
-      return this;
-    };
-
-    RouterConfiguration.prototype.mapUnknownRoutes = function mapUnknownRoutes(config) {
-      this.unknownRouteConfig = config;
-      return this;
-    };
-
-    RouterConfiguration.prototype.exportToRouter = function exportToRouter(router) {
-      var instructions = this.instructions;
-      for (var i = 0, ii = instructions.length; i < ii; ++i) {
-        instructions[i](router);
-      }
-
-      if (this.title) {
-        router.title = this.title;
-      }
-
-      if (this.unknownRouteConfig) {
-        router.handleUnknownRoutes(this.unknownRouteConfig);
-      }
-
-      if (this._fallbackRoute) {
-        router.fallbackRoute = this._fallbackRoute;
-      }
-
-      router.options = this.options;
-
-      var pipelineSteps = this.pipelineSteps;
-      if (pipelineSteps.length) {
-        if (!router.isRoot) {
-          throw new Error('Pipeline steps can only be added to the root router');
-        }
-
-        var pipelineProvider = router.pipelineProvider;
-        for (var _i2 = 0, _ii2 = pipelineSteps.length; _i2 < _ii2; ++_i2) {
-          var _pipelineSteps$_i = pipelineSteps[_i2];
-          var _name = _pipelineSteps$_i.name;
-          var step = _pipelineSteps$_i.step;
-
-          pipelineProvider.addStep(_name, step);
-        }
-      }
-    };
-
-    return RouterConfiguration;
-  }();
-
-  var activationStrategy = exports.activationStrategy = {
-    noChange: 'no-change',
-    invokeLifecycle: 'invoke-lifecycle',
-    replace: 'replace'
-  };
-
-  var BuildNavigationPlanStep = exports.BuildNavigationPlanStep = function () {
-    function BuildNavigationPlanStep() {
-      
-    }
-
-    BuildNavigationPlanStep.prototype.run = function run(navigationInstruction, next) {
-      return _buildNavigationPlan(navigationInstruction).then(function (plan) {
-        navigationInstruction.plan = plan;
-        return next();
-      }).catch(next.cancel);
-    };
-
-    return BuildNavigationPlanStep;
-  }();
-
-  function _buildNavigationPlan(instruction, forceLifecycleMinimum) {
-    var prev = instruction.previousInstruction;
-    var config = instruction.config;
-    var plan = {};
-
-    if ('redirect' in config) {
-      var redirectLocation = _resolveUrl(config.redirect, getInstructionBaseUrl(instruction));
-      if (instruction.queryString) {
-        redirectLocation += '?' + instruction.queryString;
-      }
-
-      return Promise.reject(new Redirect(redirectLocation));
-    }
-
-    if (prev) {
-      var newParams = hasDifferentParameterValues(prev, instruction);
-      var pending = [];
-
-      var _loop2 = function _loop2(viewPortName) {
-        var prevViewPortInstruction = prev.viewPortInstructions[viewPortName];
-        var nextViewPortConfig = config.viewPorts[viewPortName];
-
-        if (!nextViewPortConfig) throw new Error('Invalid Route Config: Configuration for viewPort "' + viewPortName + '" was not found for route: "' + instruction.config.route + '."');
-
-        var viewPortPlan = plan[viewPortName] = {
-          name: viewPortName,
-          config: nextViewPortConfig,
-          prevComponent: prevViewPortInstruction.component,
-          prevModuleId: prevViewPortInstruction.moduleId
-        };
-
-        if (prevViewPortInstruction.moduleId !== nextViewPortConfig.moduleId) {
-          viewPortPlan.strategy = activationStrategy.replace;
-        } else if ('determineActivationStrategy' in prevViewPortInstruction.component.viewModel) {
-          var _prevViewPortInstruct;
-
-          viewPortPlan.strategy = (_prevViewPortInstruct = prevViewPortInstruction.component.viewModel).determineActivationStrategy.apply(_prevViewPortInstruct, instruction.lifecycleArgs);
-        } else if (config.activationStrategy) {
-          viewPortPlan.strategy = config.activationStrategy;
-        } else if (newParams || forceLifecycleMinimum) {
-          viewPortPlan.strategy = activationStrategy.invokeLifecycle;
-        } else {
-          viewPortPlan.strategy = activationStrategy.noChange;
-        }
-
-        if (viewPortPlan.strategy !== activationStrategy.replace && prevViewPortInstruction.childRouter) {
-          var path = instruction.getWildcardPath();
-          var task = prevViewPortInstruction.childRouter._createNavigationInstruction(path, instruction).then(function (childInstruction) {
-            viewPortPlan.childNavigationInstruction = childInstruction;
-
-            return _buildNavigationPlan(childInstruction, viewPortPlan.strategy === activationStrategy.invokeLifecycle).then(function (childPlan) {
-              childInstruction.plan = childPlan;
-            });
-          });
-
-          pending.push(task);
-        }
-      };
-
-      for (var viewPortName in prev.viewPortInstructions) {
-        _loop2(viewPortName);
-      }
-
-      return Promise.all(pending).then(function () {
-        return plan;
-      });
-    }
-
-    for (var _viewPortName in config.viewPorts) {
-      plan[_viewPortName] = {
-        name: _viewPortName,
-        strategy: activationStrategy.replace,
-        config: instruction.config.viewPorts[_viewPortName]
-      };
-    }
-
-    return Promise.resolve(plan);
-  }
-
-  function hasDifferentParameterValues(prev, next) {
-    var prevParams = prev.params;
-    var nextParams = next.params;
-    var nextWildCardName = next.config.hasChildRouter ? next.getWildCardName() : null;
-
-    for (var key in nextParams) {
-      if (key === nextWildCardName) {
-        continue;
-      }
-
-      if (prevParams[key] !== nextParams[key]) {
-        return true;
-      }
-    }
-
-    for (var _key in prevParams) {
-      if (_key === nextWildCardName) {
-        continue;
-      }
-
-      if (prevParams[_key] !== nextParams[_key]) {
-        return true;
-      }
-    }
-
-    if (!next.options.compareQueryParams) {
-      return false;
-    }
-
-    var prevQueryParams = prev.queryParams;
-    var nextQueryParams = next.queryParams;
-    for (var _key2 in nextQueryParams) {
-      if (prevQueryParams[_key2] !== nextQueryParams[_key2]) {
-        return true;
-      }
-    }
-
-    for (var _key3 in prevQueryParams) {
-      if (prevQueryParams[_key3] !== nextQueryParams[_key3]) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  function getInstructionBaseUrl(instruction) {
-    var instructionBaseUrlParts = [];
-    instruction = instruction.parentInstruction;
-
-    while (instruction) {
-      instructionBaseUrlParts.unshift(instruction.getBaseUrl());
-      instruction = instruction.parentInstruction;
-    }
-
-    instructionBaseUrlParts.unshift('/');
-    return instructionBaseUrlParts.join('');
-  }
-
-  var Router = exports.Router = function () {
-    function Router(container, history) {
-      var _this3 = this;
-
-      
-
-      this.parent = null;
-      this.options = {};
-
-      this.transformTitle = function (title) {
-        if (_this3.parent) {
-          return _this3.parent.transformTitle(title);
-        }
-        return title;
-      };
-
-      this.container = container;
-      this.history = history;
-      this.reset();
-    }
-
-    Router.prototype.reset = function reset() {
-      var _this4 = this;
-
-      this.viewPorts = {};
-      this.routes = [];
-      this.baseUrl = '';
-      this.isConfigured = false;
-      this.isNavigating = false;
-      this.isExplicitNavigation = false;
-      this.isExplicitNavigationBack = false;
-      this.navigation = [];
-      this.currentInstruction = null;
-      this._fallbackOrder = 100;
-      this._recognizer = new _aureliaRouteRecognizer.RouteRecognizer();
-      this._childRecognizer = new _aureliaRouteRecognizer.RouteRecognizer();
-      this._configuredPromise = new Promise(function (resolve) {
-        _this4._resolveConfiguredPromise = resolve;
-      });
-    };
-
-    Router.prototype.registerViewPort = function registerViewPort(viewPort, name) {
-      name = name || 'default';
-      this.viewPorts[name] = viewPort;
-    };
-
-    Router.prototype.ensureConfigured = function ensureConfigured() {
-      return this._configuredPromise;
-    };
-
-    Router.prototype.configure = function configure(callbackOrConfig) {
-      var _this5 = this;
-
-      this.isConfigured = true;
-
-      var result = callbackOrConfig;
-      var config = void 0;
-      if (typeof callbackOrConfig === 'function') {
-        config = new RouterConfiguration();
-        result = callbackOrConfig(config);
-      }
-
-      return Promise.resolve(result).then(function (c) {
-        if (c && c.exportToRouter) {
-          config = c;
-        }
-
-        config.exportToRouter(_this5);
-        _this5.isConfigured = true;
-        _this5._resolveConfiguredPromise();
-      });
-    };
-
-    Router.prototype.navigate = function navigate(fragment, options) {
-      if (!this.isConfigured && this.parent) {
-        return this.parent.navigate(fragment, options);
-      }
-
-      this.isExplicitNavigation = true;
-      return this.history.navigate(_resolveUrl(fragment, this.baseUrl, this.history._hasPushState), options);
-    };
-
-    Router.prototype.navigateToRoute = function navigateToRoute(route, params, options) {
-      var path = this.generate(route, params);
-      return this.navigate(path, options);
-    };
-
-    Router.prototype.navigateBack = function navigateBack() {
-      this.isExplicitNavigationBack = true;
-      this.history.navigateBack();
-    };
-
-    Router.prototype.createChild = function createChild(container) {
-      var childRouter = new Router(container || this.container.createChild(), this.history);
-      childRouter.parent = this;
-      return childRouter;
-    };
-
-    Router.prototype.generate = function generate(name, params) {
-      var options = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
-
-      var hasRoute = this._recognizer.hasRoute(name);
-      if ((!this.isConfigured || !hasRoute) && this.parent) {
-        return this.parent.generate(name, params);
-      }
-
-      if (!hasRoute) {
-        throw new Error('A route with name \'' + name + '\' could not be found. Check that `name: \'' + name + '\'` was specified in the route\'s config.');
-      }
-
-      var path = this._recognizer.generate(name, params);
-      var rootedPath = _createRootedPath(path, this.baseUrl, this.history._hasPushState, options.absolute);
-      return options.absolute ? '' + this.history.getAbsoluteRoot() + rootedPath : rootedPath;
-    };
-
-    Router.prototype.createNavModel = function createNavModel(config) {
-      var navModel = new NavModel(this, 'href' in config ? config.href : config.route);
-      navModel.title = config.title;
-      navModel.order = config.nav;
-      navModel.href = config.href;
-      navModel.settings = config.settings;
-      navModel.config = config;
-
-      return navModel;
-    };
-
-    Router.prototype.addRoute = function addRoute(config, navModel) {
-      validateRouteConfig(config, this.routes);
-
-      if (!('viewPorts' in config) && !config.navigationStrategy) {
-        config.viewPorts = {
-          'default': {
-            moduleId: config.moduleId,
-            view: config.view
-          }
-        };
-      }
-
-      if (!navModel) {
-        navModel = this.createNavModel(config);
-      }
-
-      this.routes.push(config);
-
-      var path = config.route;
-      if (path.charAt(0) === '/') {
-        path = path.substr(1);
-      }
-      var caseSensitive = config.caseSensitive === true;
-      var state = this._recognizer.add({ path: path, handler: config, caseSensitive: caseSensitive });
-
-      if (path) {
-        var _settings = config.settings;
-        delete config.settings;
-        var withChild = JSON.parse(JSON.stringify(config));
-        config.settings = _settings;
-        withChild.route = path + '/*childRoute';
-        withChild.hasChildRouter = true;
-        this._childRecognizer.add({
-          path: withChild.route,
-          handler: withChild,
-          caseSensitive: caseSensitive
-        });
-
-        withChild.navModel = navModel;
-        withChild.settings = config.settings;
-        withChild.navigationStrategy = config.navigationStrategy;
-      }
-
-      config.navModel = navModel;
-
-      if ((navModel.order || navModel.order === 0) && this.navigation.indexOf(navModel) === -1) {
-        if (!navModel.href && navModel.href !== '' && (state.types.dynamics || state.types.stars)) {
-          throw new Error('Invalid route config for "' + config.route + '" : dynamic routes must specify an "href:" to be included in the navigation model.');
-        }
-
-        if (typeof navModel.order !== 'number') {
-          navModel.order = ++this._fallbackOrder;
-        }
-
-        this.navigation.push(navModel);
-        this.navigation = this.navigation.sort(function (a, b) {
-          return a.order - b.order;
-        });
-      }
-    };
-
-    Router.prototype.hasRoute = function hasRoute(name) {
-      return !!(this._recognizer.hasRoute(name) || this.parent && this.parent.hasRoute(name));
-    };
-
-    Router.prototype.hasOwnRoute = function hasOwnRoute(name) {
-      return this._recognizer.hasRoute(name);
-    };
-
-    Router.prototype.handleUnknownRoutes = function handleUnknownRoutes(config) {
-      var _this6 = this;
-
-      if (!config) {
-        throw new Error('Invalid unknown route handler');
-      }
-
-      this.catchAllHandler = function (instruction) {
-        return _this6._createRouteConfig(config, instruction).then(function (c) {
-          instruction.config = c;
-          return instruction;
-        });
-      };
-    };
-
-    Router.prototype.updateTitle = function updateTitle() {
-      if (this.parent) {
-        return this.parent.updateTitle();
-      }
-
-      if (this.currentInstruction) {
-        this.currentInstruction._updateTitle();
-      }
-      return undefined;
-    };
-
-    Router.prototype.refreshNavigation = function refreshNavigation() {
-      var nav = this.navigation;
-
-      for (var i = 0, length = nav.length; i < length; i++) {
-        var current = nav[i];
-        if (!current.config.href) {
-          current.href = _createRootedPath(current.relativeHref, this.baseUrl, this.history._hasPushState);
-        } else {
-          current.href = _normalizeAbsolutePath(current.config.href, this.history._hasPushState);
-        }
-      }
-    };
-
-    Router.prototype._refreshBaseUrl = function _refreshBaseUrl() {
-      if (this.parent) {
-        var baseUrl = this.parent.currentInstruction.getBaseUrl();
-        this.baseUrl = this.parent.baseUrl + baseUrl;
-      }
-    };
-
-    Router.prototype._createNavigationInstruction = function _createNavigationInstruction() {
-      var url = arguments.length <= 0 || arguments[0] === undefined ? '' : arguments[0];
-      var parentInstruction = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
-
-      var fragment = url;
-      var queryString = '';
-
-      var queryIndex = url.indexOf('?');
-      if (queryIndex !== -1) {
-        fragment = url.substr(0, queryIndex);
-        queryString = url.substr(queryIndex + 1);
-      }
-
-      var results = this._recognizer.recognize(url);
-      if (!results || !results.length) {
-        results = this._childRecognizer.recognize(url);
-      }
-
-      var instructionInit = {
-        fragment: fragment,
-        queryString: queryString,
-        config: null,
-        parentInstruction: parentInstruction,
-        previousInstruction: this.currentInstruction,
-        router: this,
-        options: {
-          compareQueryParams: this.options.compareQueryParams
-        }
-      };
-
-      if (results && results.length) {
-        var first = results[0];
-        var _instruction = new NavigationInstruction(Object.assign({}, instructionInit, {
-          params: first.params,
-          queryParams: first.queryParams || results.queryParams,
-          config: first.config || first.handler
-        }));
-
-        if (typeof first.handler === 'function') {
-          return evaluateNavigationStrategy(_instruction, first.handler, first);
-        } else if (first.handler && typeof first.handler.navigationStrategy === 'function') {
-          return evaluateNavigationStrategy(_instruction, first.handler.navigationStrategy, first.handler);
-        }
-
-        return Promise.resolve(_instruction);
-      } else if (this.catchAllHandler) {
-        var _instruction2 = new NavigationInstruction(Object.assign({}, instructionInit, {
-          params: { path: fragment },
-          queryParams: results && results.queryParams,
-          config: null }));
-
-        return evaluateNavigationStrategy(_instruction2, this.catchAllHandler);
-      }
-
-      return Promise.reject(new Error('Route not found: ' + url));
-    };
-
-    Router.prototype._createRouteConfig = function _createRouteConfig(config, instruction) {
-      var _this7 = this;
-
-      return Promise.resolve(config).then(function (c) {
-        if (typeof c === 'string') {
-          return { moduleId: c };
-        } else if (typeof c === 'function') {
-          return c(instruction);
-        }
-
-        return c;
-      }).then(function (c) {
-        return typeof c === 'string' ? { moduleId: c } : c;
-      }).then(function (c) {
-        c.route = instruction.params.path;
-        validateRouteConfig(c, _this7.routes);
-
-        if (!c.navModel) {
-          c.navModel = _this7.createNavModel(c);
-        }
-
-        return c;
-      });
-    };
-
-    _createClass(Router, [{
-      key: 'isRoot',
-      get: function get() {
-        return !this.parent;
-      }
-    }]);
-
-    return Router;
-  }();
-
-  function validateRouteConfig(config, routes) {
-    if ((typeof config === 'undefined' ? 'undefined' : _typeof(config)) !== 'object') {
-      throw new Error('Invalid Route Config');
-    }
-
-    if (typeof config.route !== 'string') {
-      var _name2 = config.name || '(no name)';
-      throw new Error('Invalid Route Config for "' + _name2 + '": You must specify a "route:" pattern.');
-    }
-
-    if (!('redirect' in config || config.moduleId || config.navigationStrategy || config.viewPorts)) {
-      throw new Error('Invalid Route Config for "' + config.route + '": You must specify a "moduleId:", "redirect:", "navigationStrategy:", or "viewPorts:".');
-    }
-  }
-
-  function evaluateNavigationStrategy(instruction, evaluator, context) {
-    return Promise.resolve(evaluator.call(context, instruction)).then(function () {
-      if (!('viewPorts' in instruction.config)) {
-        instruction.config.viewPorts = {
-          'default': {
-            moduleId: instruction.config.moduleId
-          }
-        };
-      }
-
-      return instruction;
-    });
-  }
-
-  var CanDeactivatePreviousStep = exports.CanDeactivatePreviousStep = function () {
-    function CanDeactivatePreviousStep() {
-      
-    }
-
-    CanDeactivatePreviousStep.prototype.run = function run(navigationInstruction, next) {
-      return processDeactivatable(navigationInstruction.plan, 'canDeactivate', next);
-    };
-
-    return CanDeactivatePreviousStep;
-  }();
-
-  var CanActivateNextStep = exports.CanActivateNextStep = function () {
-    function CanActivateNextStep() {
-      
-    }
-
-    CanActivateNextStep.prototype.run = function run(navigationInstruction, next) {
-      return processActivatable(navigationInstruction, 'canActivate', next);
-    };
-
-    return CanActivateNextStep;
-  }();
-
-  var DeactivatePreviousStep = exports.DeactivatePreviousStep = function () {
-    function DeactivatePreviousStep() {
-      
-    }
-
-    DeactivatePreviousStep.prototype.run = function run(navigationInstruction, next) {
-      return processDeactivatable(navigationInstruction.plan, 'deactivate', next, true);
-    };
-
-    return DeactivatePreviousStep;
-  }();
-
-  var ActivateNextStep = exports.ActivateNextStep = function () {
-    function ActivateNextStep() {
-      
-    }
-
-    ActivateNextStep.prototype.run = function run(navigationInstruction, next) {
-      return processActivatable(navigationInstruction, 'activate', next, true);
-    };
-
-    return ActivateNextStep;
-  }();
-
-  function processDeactivatable(plan, callbackName, next, ignoreResult) {
-    var infos = findDeactivatable(plan, callbackName);
-    var i = infos.length;
-
-    function inspect(val) {
-      if (ignoreResult || shouldContinue(val)) {
-        return iterate();
-      }
-
-      return next.cancel(val);
-    }
-
-    function iterate() {
-      if (i--) {
-        try {
-          var viewModel = infos[i];
-          var _result = viewModel[callbackName]();
-          return processPotential(_result, inspect, next.cancel);
-        } catch (error) {
-          return next.cancel(error);
-        }
-      }
-
-      return next();
-    }
-
-    return iterate();
-  }
-
-  function findDeactivatable(plan, callbackName) {
-    var list = arguments.length <= 2 || arguments[2] === undefined ? [] : arguments[2];
-
-    for (var viewPortName in plan) {
-      var _viewPortPlan = plan[viewPortName];
-      var prevComponent = _viewPortPlan.prevComponent;
-
-      if ((_viewPortPlan.strategy === activationStrategy.invokeLifecycle || _viewPortPlan.strategy === activationStrategy.replace) && prevComponent) {
-        var viewModel = prevComponent.viewModel;
-
-        if (callbackName in viewModel) {
-          list.push(viewModel);
-        }
-      }
-
-      if (_viewPortPlan.childNavigationInstruction) {
-        findDeactivatable(_viewPortPlan.childNavigationInstruction.plan, callbackName, list);
-      } else if (prevComponent) {
-        addPreviousDeactivatable(prevComponent, callbackName, list);
-      }
-    }
-
-    return list;
-  }
-
-  function addPreviousDeactivatable(component, callbackName, list) {
-    var childRouter = component.childRouter;
-
-    if (childRouter && childRouter.currentInstruction) {
-      var viewPortInstructions = childRouter.currentInstruction.viewPortInstructions;
-
-      for (var viewPortName in viewPortInstructions) {
-        var _viewPortInstruction2 = viewPortInstructions[viewPortName];
-        var prevComponent = _viewPortInstruction2.component;
-        var prevViewModel = prevComponent.viewModel;
-
-        if (callbackName in prevViewModel) {
-          list.push(prevViewModel);
-        }
-
-        addPreviousDeactivatable(prevComponent, callbackName, list);
-      }
-    }
-  }
-
-  function processActivatable(navigationInstruction, callbackName, next, ignoreResult) {
-    var infos = findActivatable(navigationInstruction, callbackName);
-    var length = infos.length;
-    var i = -1;
-
-    function inspect(val, router) {
-      if (ignoreResult || shouldContinue(val, router)) {
-        return iterate();
-      }
-
-      return next.cancel(val);
-    }
-
-    function iterate() {
-      i++;
-
-      if (i < length) {
-        try {
-          var _ret3 = function () {
-            var _current$viewModel;
-
-            var current = infos[i];
-            var result = (_current$viewModel = current.viewModel)[callbackName].apply(_current$viewModel, current.lifecycleArgs);
-            return {
-              v: processPotential(result, function (val) {
-                return inspect(val, current.router);
-              }, next.cancel)
-            };
-          }();
-
-          if ((typeof _ret3 === 'undefined' ? 'undefined' : _typeof(_ret3)) === "object") return _ret3.v;
-        } catch (error) {
-          return next.cancel(error);
-        }
-      }
-
-      return next();
-    }
-
-    return iterate();
-  }
-
-  function findActivatable(navigationInstruction, callbackName) {
-    var list = arguments.length <= 2 || arguments[2] === undefined ? [] : arguments[2];
-    var router = arguments[3];
-
-    var plan = navigationInstruction.plan;
-
-    Object.keys(plan).filter(function (viewPortName) {
-      var viewPortPlan = plan[viewPortName];
-      var viewPortInstruction = navigationInstruction.viewPortInstructions[viewPortName];
-      var viewModel = viewPortInstruction.component.viewModel;
-
-      if ((viewPortPlan.strategy === activationStrategy.invokeLifecycle || viewPortPlan.strategy === activationStrategy.replace) && callbackName in viewModel) {
-        list.push({
-          viewModel: viewModel,
-          lifecycleArgs: viewPortInstruction.lifecycleArgs,
-          router: router
-        });
-      }
-
-      if (viewPortPlan.childNavigationInstruction) {
-        findActivatable(viewPortPlan.childNavigationInstruction, callbackName, list, viewPortInstruction.component.childRouter || router);
-      }
-    });
-
-    return list;
-  }
-
-  function shouldContinue(output, router) {
-    if (output instanceof Error) {
-      return false;
-    }
-
-    if (isNavigationCommand(output)) {
-      if (typeof output.setRouter === 'function') {
-        output.setRouter(router);
-      }
-
-      return !!output.shouldContinueProcessing;
-    }
-
-    if (output === undefined) {
-      return true;
-    }
-
-    return output;
-  }
-
-  var SafeSubscription = function () {
-    function SafeSubscription(subscriptionFunc) {
-      
-
-      this._subscribed = true;
-      this._subscription = subscriptionFunc(this);
-
-      if (!this._subscribed) this.unsubscribe();
-    }
-
-    SafeSubscription.prototype.unsubscribe = function unsubscribe() {
-      if (this._subscribed && this._subscription) this._subscription.unsubscribe();
-
-      this._subscribed = false;
-    };
-
-    _createClass(SafeSubscription, [{
-      key: 'subscribed',
-      get: function get() {
-        return this._subscribed;
-      }
-    }]);
-
-    return SafeSubscription;
-  }();
-
-  function processPotential(obj, resolve, reject) {
-    if (obj && typeof obj.then === 'function') {
-      return Promise.resolve(obj).then(resolve).catch(reject);
-    }
-
-    if (obj && typeof obj.subscribe === 'function') {
-      var _ret4 = function () {
-        var obs = obj;
-        return {
-          v: new SafeSubscription(function (sub) {
-            return obs.subscribe({
-              next: function next() {
-                if (sub.subscribed) {
-                  sub.unsubscribe();
-                  resolve(obj);
-                }
-              },
-              error: function error(_error) {
-                if (sub.subscribed) {
-                  sub.unsubscribe();
-                  reject(_error);
-                }
-              },
-              complete: function complete() {
-                if (sub.subscribed) {
-                  sub.unsubscribe();
-                  resolve(obj);
-                }
-              }
-            });
-          })
-        };
-      }();
-
-      if ((typeof _ret4 === 'undefined' ? 'undefined' : _typeof(_ret4)) === "object") return _ret4.v;
-    }
+  (function () {
+    var needsFix = false;
 
     try {
-      return resolve(obj);
-    } catch (error) {
-      return reject(error);
-    }
-  }
-
-  var RouteLoader = exports.RouteLoader = function () {
-    function RouteLoader() {
-      
+      var s = Object.keys('a');
+      needsFix = s.length !== 1 || s[0] !== '0';
+    } catch (e) {
+      needsFix = true;
     }
 
-    RouteLoader.prototype.loadRoute = function loadRoute(router, config, navigationInstruction) {
-      throw Error('Route loaders must implement "loadRoute(router, config, navigationInstruction)".');
-    };
+    if (needsFix) {
+      Object.keys = function () {
+        var hasOwnProperty = Object.prototype.hasOwnProperty,
+            hasDontEnumBug = !{ toString: null }.propertyIsEnumerable('toString'),
+            dontEnums = ['toString', 'toLocaleString', 'valueOf', 'hasOwnProperty', 'isPrototypeOf', 'propertyIsEnumerable', 'constructor'],
+            dontEnumsLength = dontEnums.length;
 
-    return RouteLoader;
-  }();
+        return function (obj) {
+          if (obj === undefined || obj === null) {
+            throw TypeError('Cannot convert undefined or null to object');
+          }
 
-  var LoadRouteStep = exports.LoadRouteStep = function () {
-    LoadRouteStep.inject = function inject() {
-      return [RouteLoader];
-    };
+          obj = Object(obj);
 
-    function LoadRouteStep(routeLoader) {
-      
+          var result = [],
+              prop,
+              i;
 
-      this.routeLoader = routeLoader;
-    }
-
-    LoadRouteStep.prototype.run = function run(navigationInstruction, next) {
-      return loadNewRoute(this.routeLoader, navigationInstruction).then(next).catch(next.cancel);
-    };
-
-    return LoadRouteStep;
-  }();
-
-  function loadNewRoute(routeLoader, navigationInstruction) {
-    var toLoad = determineWhatToLoad(navigationInstruction);
-    var loadPromises = toLoad.map(function (current) {
-      return loadRoute(routeLoader, current.navigationInstruction, current.viewPortPlan);
-    });
-
-    return Promise.all(loadPromises);
-  }
-
-  function determineWhatToLoad(navigationInstruction) {
-    var toLoad = arguments.length <= 1 || arguments[1] === undefined ? [] : arguments[1];
-
-    var plan = navigationInstruction.plan;
-
-    for (var viewPortName in plan) {
-      var _viewPortPlan2 = plan[viewPortName];
-
-      if (_viewPortPlan2.strategy === activationStrategy.replace) {
-        toLoad.push({ viewPortPlan: _viewPortPlan2, navigationInstruction: navigationInstruction });
-
-        if (_viewPortPlan2.childNavigationInstruction) {
-          determineWhatToLoad(_viewPortPlan2.childNavigationInstruction, toLoad);
-        }
-      } else {
-        var _viewPortInstruction3 = navigationInstruction.addViewPortInstruction(viewPortName, _viewPortPlan2.strategy, _viewPortPlan2.prevModuleId, _viewPortPlan2.prevComponent);
-
-        if (_viewPortPlan2.childNavigationInstruction) {
-          _viewPortInstruction3.childNavigationInstruction = _viewPortPlan2.childNavigationInstruction;
-          determineWhatToLoad(_viewPortPlan2.childNavigationInstruction, toLoad);
-        }
-      }
-    }
-
-    return toLoad;
-  }
-
-  function loadRoute(routeLoader, navigationInstruction, viewPortPlan) {
-    var moduleId = viewPortPlan.config.moduleId;
-
-    return loadComponent(routeLoader, navigationInstruction, viewPortPlan.config).then(function (component) {
-      var viewPortInstruction = navigationInstruction.addViewPortInstruction(viewPortPlan.name, viewPortPlan.strategy, moduleId, component);
-
-      var childRouter = component.childRouter;
-      if (childRouter) {
-        var path = navigationInstruction.getWildcardPath();
-
-        return childRouter._createNavigationInstruction(path, navigationInstruction).then(function (childInstruction) {
-          viewPortPlan.childNavigationInstruction = childInstruction;
-
-          return _buildNavigationPlan(childInstruction).then(function (childPlan) {
-            childInstruction.plan = childPlan;
-            viewPortInstruction.childNavigationInstruction = childInstruction;
-
-            return loadNewRoute(routeLoader, childInstruction);
-          });
-        });
-      }
-
-      return undefined;
-    });
-  }
-
-  function loadComponent(routeLoader, navigationInstruction, config) {
-    var router = navigationInstruction.router;
-    var lifecycleArgs = navigationInstruction.lifecycleArgs;
-
-    return routeLoader.loadRoute(router, config, navigationInstruction).then(function (component) {
-      var viewModel = component.viewModel;
-      var childContainer = component.childContainer;
-
-      component.router = router;
-      component.config = config;
-
-      if ('configureRouter' in viewModel) {
-        var _ret5 = function () {
-          var childRouter = childContainer.getChildRouter();
-          component.childRouter = childRouter;
-
-          return {
-            v: childRouter.configure(function (c) {
-              return viewModel.configureRouter.apply(viewModel, [c, childRouter].concat(lifecycleArgs));
-            }).then(function () {
-              return component;
-            })
-          };
-        }();
-
-        if ((typeof _ret5 === 'undefined' ? 'undefined' : _typeof(_ret5)) === "object") return _ret5.v;
-      }
-
-      return component;
-    });
-  }
-
-  var PipelineSlot = function () {
-    function PipelineSlot(container, name, alias) {
-      
-
-      this.steps = [];
-
-      this.container = container;
-      this.slotName = name;
-      this.slotAlias = alias;
-    }
-
-    PipelineSlot.prototype.getSteps = function getSteps() {
-      var _this8 = this;
-
-      return this.steps.map(function (x) {
-        return _this8.container.get(x);
-      });
-    };
-
-    return PipelineSlot;
-  }();
-
-  var PipelineProvider = exports.PipelineProvider = function () {
-    PipelineProvider.inject = function inject() {
-      return [_aureliaDependencyInjection.Container];
-    };
-
-    function PipelineProvider(container) {
-      
-
-      this.container = container;
-      this.steps = [BuildNavigationPlanStep, CanDeactivatePreviousStep, LoadRouteStep, this._createPipelineSlot('authorize'), CanActivateNextStep, this._createPipelineSlot('preActivate', 'modelbind'), DeactivatePreviousStep, ActivateNextStep, this._createPipelineSlot('preRender', 'precommit'), CommitChangesStep, this._createPipelineSlot('postRender', 'postcomplete')];
-    }
-
-    PipelineProvider.prototype.createPipeline = function createPipeline() {
-      var _this9 = this;
-
-      var pipeline = new Pipeline();
-      this.steps.forEach(function (step) {
-        return pipeline.addStep(_this9.container.get(step));
-      });
-      return pipeline;
-    };
-
-    PipelineProvider.prototype._findStep = function _findStep(name) {
-      return this.steps.find(function (x) {
-        return x.slotName === name || x.slotAlias === name;
-      });
-    };
-
-    PipelineProvider.prototype.addStep = function addStep(name, step) {
-      var found = this._findStep(name);
-      if (found) {
-        if (!found.steps.includes(step)) {
-          found.steps.push(step);
-        }
-      } else {
-        throw new Error('Invalid pipeline slot name: ' + name + '.');
-      }
-    };
-
-    PipelineProvider.prototype.removeStep = function removeStep(name, step) {
-      var slot = this._findStep(name);
-      if (slot) {
-        slot.steps.splice(slot.steps.indexOf(step), 1);
-      }
-    };
-
-    PipelineProvider.prototype._clearSteps = function _clearSteps() {
-      var name = arguments.length <= 0 || arguments[0] === undefined ? '' : arguments[0];
-
-      var slot = this._findStep(name);
-      if (slot) {
-        slot.steps = [];
-      }
-    };
-
-    PipelineProvider.prototype.reset = function reset() {
-      this._clearSteps('authorize');
-      this._clearSteps('preActivate');
-      this._clearSteps('preRender');
-      this._clearSteps('postRender');
-    };
-
-    PipelineProvider.prototype._createPipelineSlot = function _createPipelineSlot(name, alias) {
-      return new PipelineSlot(this.container, name, alias);
-    };
-
-    return PipelineProvider;
-  }();
-
-  var logger = LogManager.getLogger('app-router');
-
-  var AppRouter = exports.AppRouter = function (_Router) {
-    _inherits(AppRouter, _Router);
-
-    AppRouter.inject = function inject() {
-      return [_aureliaDependencyInjection.Container, _aureliaHistory.History, PipelineProvider, _aureliaEventAggregator.EventAggregator];
-    };
-
-    function AppRouter(container, history, pipelineProvider, events) {
-      
-
-      var _this10 = _possibleConstructorReturn(this, _Router.call(this, container, history));
-
-      _this10.pipelineProvider = pipelineProvider;
-      _this10.events = events;
-      return _this10;
-    }
-
-    AppRouter.prototype.reset = function reset() {
-      _Router.prototype.reset.call(this);
-      this.maxInstructionCount = 10;
-      if (!this._queue) {
-        this._queue = [];
-      } else {
-        this._queue.length = 0;
-      }
-    };
-
-    AppRouter.prototype.loadUrl = function loadUrl(url) {
-      var _this11 = this;
-
-      return this._createNavigationInstruction(url).then(function (instruction) {
-        return _this11._queueInstruction(instruction);
-      }).catch(function (error) {
-        logger.error(error);
-        restorePreviousLocation(_this11);
-      });
-    };
-
-    AppRouter.prototype.registerViewPort = function registerViewPort(viewPort, name) {
-      var _this12 = this;
-
-      _Router.prototype.registerViewPort.call(this, viewPort, name);
-
-      if (!this.isActive) {
-        var _ret6 = function () {
-          var viewModel = _this12._findViewModel(viewPort);
-          if ('configureRouter' in viewModel) {
-            if (!_this12.isConfigured) {
-              var _ret7 = function () {
-                var resolveConfiguredPromise = _this12._resolveConfiguredPromise;
-                _this12._resolveConfiguredPromise = function () {};
-                return {
-                  v: {
-                    v: _this12.configure(function (config) {
-                      return viewModel.configureRouter(config, _this12);
-                    }).then(function () {
-                      _this12.activate();
-                      resolveConfiguredPromise();
-                    })
-                  }
-                };
-              }();
-
-              if ((typeof _ret7 === 'undefined' ? 'undefined' : _typeof(_ret7)) === "object") return _ret7.v;
+          for (prop in obj) {
+            if (hasOwnProperty.call(obj, prop)) {
+              result.push(prop);
             }
-          } else {
-            _this12.activate();
-          }
-        }();
-
-        if ((typeof _ret6 === 'undefined' ? 'undefined' : _typeof(_ret6)) === "object") return _ret6.v;
-      } else {
-        this._dequeueInstruction();
-      }
-
-      return Promise.resolve();
-    };
-
-    AppRouter.prototype.activate = function activate(options) {
-      if (this.isActive) {
-        return;
-      }
-
-      this.isActive = true;
-      this.options = Object.assign({ routeHandler: this.loadUrl.bind(this) }, this.options, options);
-      this.history.activate(this.options);
-      this._dequeueInstruction();
-    };
-
-    AppRouter.prototype.deactivate = function deactivate() {
-      this.isActive = false;
-      this.history.deactivate();
-    };
-
-    AppRouter.prototype._queueInstruction = function _queueInstruction(instruction) {
-      var _this13 = this;
-
-      return new Promise(function (resolve) {
-        instruction.resolve = resolve;
-        _this13._queue.unshift(instruction);
-        _this13._dequeueInstruction();
-      });
-    };
-
-    AppRouter.prototype._dequeueInstruction = function _dequeueInstruction() {
-      var _this14 = this;
-
-      var instructionCount = arguments.length <= 0 || arguments[0] === undefined ? 0 : arguments[0];
-
-      return Promise.resolve().then(function () {
-        if (_this14.isNavigating && !instructionCount) {
-          return undefined;
-        }
-
-        var instruction = _this14._queue.shift();
-        _this14._queue.length = 0;
-
-        if (!instruction) {
-          return undefined;
-        }
-
-        _this14.isNavigating = true;
-        instruction.previousInstruction = _this14.currentInstruction;
-
-        if (!instructionCount) {
-          _this14.events.publish('router:navigation:processing', { instruction: instruction });
-        } else if (instructionCount === _this14.maxInstructionCount - 1) {
-          logger.error(instructionCount + 1 + ' navigation instructions have been attempted without success. Restoring last known good location.');
-          restorePreviousLocation(_this14);
-          return _this14._dequeueInstruction(instructionCount + 1);
-        } else if (instructionCount > _this14.maxInstructionCount) {
-          throw new Error('Maximum navigation attempts exceeded. Giving up.');
-        }
-
-        var pipeline = _this14.pipelineProvider.createPipeline();
-
-        return pipeline.run(instruction).then(function (result) {
-          return processResult(instruction, result, instructionCount, _this14);
-        }).catch(function (error) {
-          return { output: error instanceof Error ? error : new Error(error) };
-        }).then(function (result) {
-          return resolveInstruction(instruction, result, !!instructionCount, _this14);
-        });
-      });
-    };
-
-    AppRouter.prototype._findViewModel = function _findViewModel(viewPort) {
-      if (this.container.viewModel) {
-        return this.container.viewModel;
-      }
-
-      if (viewPort.container) {
-        var container = viewPort.container;
-
-        while (container) {
-          if (container.viewModel) {
-            this.container.viewModel = container.viewModel;
-            return container.viewModel;
           }
 
-          container = container.parent;
-        }
-      }
+          if (hasDontEnumBug) {
+            for (i = 0; i < dontEnumsLength; i++) {
+              if (hasOwnProperty.call(obj, dontEnums[i])) {
+                result.push(dontEnums[i]);
+              }
+            }
+          }
 
-      return undefined;
-    };
+          return result;
+        };
+      }();
+    }
+  })();
 
-    return AppRouter;
-  }(Router);
-
-  function processResult(instruction, result, instructionCount, router) {
-    if (!(result && 'completed' in result && 'output' in result)) {
-      result = result || {};
-      result.output = new Error('Expected router pipeline to return a navigation result, but got [' + JSON.stringify(result) + '] instead.');
+  (function (O) {
+    if ('assign' in O) {
+      return;
     }
 
-    var finalResult = null;
-    if (isNavigationCommand(result.output)) {
-      result.output.navigate(router);
-    } else {
-      finalResult = result;
+    O.defineProperty(O, 'assign', {
+      configurable: true,
+      writable: true,
+      value: function () {
+        var gOPS = O.getOwnPropertySymbols,
+            pIE = O.propertyIsEnumerable,
+            filterOS = gOPS ? function (self) {
+          return gOPS(self).filter(pIE, self);
+        } : function () {
+          return Array.prototype;
+        };
 
-      if (!result.completed) {
-        if (result.output instanceof Error) {
-          logger.error(result.output);
-        }
+        return function assign(where) {
+          if (gOPS && !(where instanceof O)) {
+            console.warn('problematic Symbols', where);
+          }
 
-        restorePreviousLocation(router);
-      }
-    }
+          function set(keyOrSymbol) {
+            where[keyOrSymbol] = arg[keyOrSymbol];
+          }
 
-    return router._dequeueInstruction(instructionCount + 1).then(function (innerResult) {
-      return finalResult || innerResult || result;
+          for (var i = 1, ii = arguments.length; i < ii; ++i) {
+            var arg = arguments[i];
+
+            if (arg === null || arg === undefined) {
+              continue;
+            }
+
+            O.keys(arg).concat(filterOS(arg)).forEach(set);
+          }
+
+          return where;
+        };
+      }()
     });
-  }
+  })(Object);
 
-  function resolveInstruction(instruction, result, isInnerInstruction, router) {
-    instruction.resolve(result);
+  (function (global) {
+    var i;
 
-    var eventArgs = { instruction: instruction, result: result };
-    if (!isInnerInstruction) {
-      router.isNavigating = false;
-      router.isExplicitNavigation = false;
-      router.isExplicitNavigationBack = false;
+    var defineProperty = Object.defineProperty,
+        is = function is(a, b) {
+      return a === b || a !== a && b !== b;
+    };
 
-      var eventName = void 0;
+    if (typeof WeakMap == 'undefined') {
+      global.WeakMap = createCollection({
+        'delete': sharedDelete,
 
-      if (result.output instanceof Error) {
-        eventName = 'error';
-      } else if (!result.completed) {
-        eventName = 'canceled';
-      } else {
-        var _queryString = instruction.queryString ? '?' + instruction.queryString : '';
-        router.history.previousLocation = instruction.fragment + _queryString;
-        eventName = 'success';
+        clear: sharedClear,
+
+        get: sharedGet,
+
+        has: mapHas,
+
+        set: sharedSet
+      }, true);
+    }
+
+    if (typeof Map == 'undefined' || typeof new Map().values !== 'function' || !new Map().values().next) {
+      var _createCollection;
+
+      global.Map = createCollection((_createCollection = {
+        'delete': sharedDelete,
+
+        has: mapHas,
+
+        get: sharedGet,
+
+        set: sharedSet,
+
+        keys: sharedKeys,
+
+        values: sharedValues,
+
+        entries: mapEntries,
+
+        forEach: sharedForEach,
+
+        clear: sharedClear
+      }, _createCollection[Symbol.iterator] = mapEntries, _createCollection));
+    }
+
+    if (typeof Set == 'undefined' || typeof new Set().values !== 'function' || !new Set().values().next) {
+      var _createCollection2;
+
+      global.Set = createCollection((_createCollection2 = {
+        has: setHas,
+
+        add: sharedAdd,
+
+        'delete': sharedDelete,
+
+        clear: sharedClear,
+
+        keys: sharedValues,
+        values: sharedValues,
+
+        entries: setEntries,
+
+        forEach: sharedForEach
+      }, _createCollection2[Symbol.iterator] = sharedValues, _createCollection2));
+    }
+
+    if (typeof WeakSet == 'undefined') {
+      global.WeakSet = createCollection({
+        'delete': sharedDelete,
+
+        add: sharedAdd,
+
+        clear: sharedClear,
+
+        has: setHas
+      }, true);
+    }
+
+    function createCollection(proto, objectOnly) {
+      function Collection(a) {
+        if (!this || this.constructor !== Collection) return new Collection(a);
+        this._keys = [];
+        this._values = [];
+        this._itp = [];
+        this.objectOnly = objectOnly;
+
+        if (a) init.call(this, a);
       }
 
-      router.events.publish('router:navigation:' + eventName, eventArgs);
-      router.events.publish('router:navigation:complete', eventArgs);
-    } else {
-      router.events.publish('router:navigation:child:complete', eventArgs);
+      if (!objectOnly) {
+        defineProperty(proto, 'size', {
+          get: sharedSize
+        });
+      }
+
+      proto.constructor = Collection;
+      Collection.prototype = proto;
+
+      return Collection;
     }
 
-    return result;
+    function init(a) {
+      var i;
+
+      if (this.add) a.forEach(this.add, this);else a.forEach(function (a) {
+          this.set(a[0], a[1]);
+        }, this);
+    }
+
+    function sharedDelete(key) {
+      if (this.has(key)) {
+        this._keys.splice(i, 1);
+        this._values.splice(i, 1);
+
+        this._itp.forEach(function (p) {
+          if (i < p[0]) p[0]--;
+        });
+      }
+
+      return -1 < i;
+    };
+
+    function sharedGet(key) {
+      return this.has(key) ? this._values[i] : undefined;
+    }
+
+    function has(list, key) {
+      if (this.objectOnly && key !== Object(key)) throw new TypeError("Invalid value used as weak collection key");
+
+      if (key != key || key === 0) for (i = list.length; i-- && !is(list[i], key);) {} else i = list.indexOf(key);
+      return -1 < i;
+    }
+
+    function setHas(value) {
+      return has.call(this, this._values, value);
+    }
+
+    function mapHas(value) {
+      return has.call(this, this._keys, value);
+    }
+
+    function sharedSet(key, value) {
+      this.has(key) ? this._values[i] = value : this._values[this._keys.push(key) - 1] = value;
+      return this;
+    }
+
+    function sharedAdd(value) {
+      if (!this.has(value)) this._values.push(value);
+      return this;
+    }
+
+    function sharedClear() {
+      (this._keys || 0).length = this._values.length = 0;
+    }
+
+    function sharedKeys() {
+      return sharedIterator(this._itp, this._keys);
+    }
+
+    function sharedValues() {
+      return sharedIterator(this._itp, this._values);
+    }
+
+    function mapEntries() {
+      return sharedIterator(this._itp, this._keys, this._values);
+    }
+
+    function setEntries() {
+      return sharedIterator(this._itp, this._values, this._values);
+    }
+
+    function sharedIterator(itp, array, array2) {
+      var _ref;
+
+      var p = [0],
+          done = false;
+      itp.push(p);
+      return _ref = {}, _ref[Symbol.iterator] = function () {
+        return this;
+      }, _ref.next = function next() {
+        var v,
+            k = p[0];
+        if (!done && k < array.length) {
+          v = array2 ? [array[k], array2[k]] : array[k];
+          p[0]++;
+        } else {
+          done = true;
+          itp.splice(itp.indexOf(p), 1);
+        }
+        return { done: done, value: v };
+      }, _ref;
+    }
+
+    function sharedSize() {
+      return this._values.length;
+    }
+
+    function sharedForEach(callback, context) {
+      var it = this.entries();
+      for (;;) {
+        var r = it.next();
+        if (r.done) break;
+        callback.call(context, r.value[1], r.value[0], this);
+      }
+    }
+  })(_aureliaPal.PLATFORM.global);
+
+  var emptyMetadata = Object.freeze({});
+  var metadataContainerKey = '__metadata__';
+  var bind = Function.prototype.bind;
+
+  if (typeof _aureliaPal.PLATFORM.global.Reflect === 'undefined') {
+    _aureliaPal.PLATFORM.global.Reflect = {};
   }
 
-  function restorePreviousLocation(router) {
-    var previousLocation = router.history.previousLocation;
-    if (previousLocation) {
-      router.navigate(router.history.previousLocation, { trigger: false, replace: true });
-    } else if (router.fallbackRoute) {
-      router.navigate(router.fallbackRoute, { trigger: true, replace: true });
-    } else {
-      logger.error('Router navigation failed, and no previous location or fallbackRoute could be restored.');
-    }
+  if (typeof Reflect.getOwnMetadata !== 'function') {
+    Reflect.getOwnMetadata = function (metadataKey, target, targetKey) {
+      if (target.hasOwnProperty(metadataContainerKey)) {
+        return (target[metadataContainerKey][targetKey] || emptyMetadata)[metadataKey];
+      }
+    };
+  }
+
+  if (typeof Reflect.defineMetadata !== 'function') {
+    Reflect.defineMetadata = function (metadataKey, metadataValue, target, targetKey) {
+      var metadataContainer = target.hasOwnProperty(metadataContainerKey) ? target[metadataContainerKey] : target[metadataContainerKey] = {};
+      var targetContainer = metadataContainer[targetKey] || (metadataContainer[targetKey] = {});
+      targetContainer[metadataKey] = metadataValue;
+    };
+  }
+
+  if (typeof Reflect.metadata !== 'function') {
+    Reflect.metadata = function (metadataKey, metadataValue) {
+      return function (target, targetKey) {
+        Reflect.defineMetadata(metadataKey, metadataValue, target, targetKey);
+      };
+    };
+  }
+
+  if (typeof Reflect.defineProperty !== 'function') {
+    Reflect.defineProperty = function (target, propertyKey, descriptor) {
+      if ((typeof target === 'undefined' ? 'undefined' : _typeof(target)) === 'object' ? target === null : typeof target !== 'function') {
+        throw new TypeError('Reflect.defineProperty called on non-object');
+      }
+      try {
+        Object.defineProperty(target, propertyKey, descriptor);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    };
+  }
+
+  if (typeof Reflect.construct !== 'function') {
+    Reflect.construct = function (Target, args) {
+      if (args) {
+        switch (args.length) {
+          case 0:
+            return new Target();
+          case 1:
+            return new Target(args[0]);
+          case 2:
+            return new Target(args[0], args[1]);
+          case 3:
+            return new Target(args[0], args[1], args[2]);
+          case 4:
+            return new Target(args[0], args[1], args[2], args[3]);
+        }
+      }
+
+      var a = [null];
+      a.push.apply(a, args);
+      return new (bind.apply(Target, a))();
+    };
+  }
+
+  if (typeof Reflect.ownKeys !== 'function') {
+    Reflect.ownKeys = function (o) {
+      return Object.getOwnPropertyNames(o).concat(Object.getOwnPropertySymbols(o));
+    };
   }
 });
 define('aurelia-route-recognizer',['exports', 'aurelia-path'], function (exports, _aureliaPath) {
@@ -18351,6 +16394,1863 @@ define('aurelia-route-recognizer',['exports', 'aurelia-path'], function (exports
     return state;
   }
 });
+define('aurelia-router',['exports', 'aurelia-logging', 'aurelia-route-recognizer', 'aurelia-dependency-injection', 'aurelia-history', 'aurelia-event-aggregator'], function (exports, _aureliaLogging, _aureliaRouteRecognizer, _aureliaDependencyInjection, _aureliaHistory, _aureliaEventAggregator) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.AppRouter = exports.PipelineProvider = exports.LoadRouteStep = exports.RouteLoader = exports.ActivateNextStep = exports.DeactivatePreviousStep = exports.CanActivateNextStep = exports.CanDeactivatePreviousStep = exports.Router = exports.BuildNavigationPlanStep = exports.activationStrategy = exports.RouterConfiguration = exports.RedirectToRoute = exports.Redirect = exports.NavModel = exports.NavigationInstruction = exports.CommitChangesStep = exports.Pipeline = exports.pipelineStatus = undefined;
+  exports._normalizeAbsolutePath = _normalizeAbsolutePath;
+  exports._createRootedPath = _createRootedPath;
+  exports._resolveUrl = _resolveUrl;
+  exports.isNavigationCommand = isNavigationCommand;
+  exports._buildNavigationPlan = _buildNavigationPlan;
+
+  var LogManager = _interopRequireWildcard(_aureliaLogging);
+
+  function _interopRequireWildcard(obj) {
+    if (obj && obj.__esModule) {
+      return obj;
+    } else {
+      var newObj = {};
+
+      if (obj != null) {
+        for (var key in obj) {
+          if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key];
+        }
+      }
+
+      newObj.default = obj;
+      return newObj;
+    }
+  }
+
+  function _possibleConstructorReturn(self, call) {
+    if (!self) {
+      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+    }
+
+    return call && (typeof call === "object" || typeof call === "function") ? call : self;
+  }
+
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== "function" && superClass !== null) {
+      throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
+    }
+
+    subClass.prototype = Object.create(superClass && superClass.prototype, {
+      constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+    if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+
+  var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+    return typeof obj;
+  } : function (obj) {
+    return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
+  };
+
+  var _createClass = function () {
+    function defineProperties(target, props) {
+      for (var i = 0; i < props.length; i++) {
+        var descriptor = props[i];
+        descriptor.enumerable = descriptor.enumerable || false;
+        descriptor.configurable = true;
+        if ("value" in descriptor) descriptor.writable = true;
+        Object.defineProperty(target, descriptor.key, descriptor);
+      }
+    }
+
+    return function (Constructor, protoProps, staticProps) {
+      if (protoProps) defineProperties(Constructor.prototype, protoProps);
+      if (staticProps) defineProperties(Constructor, staticProps);
+      return Constructor;
+    };
+  }();
+
+  
+
+  function _normalizeAbsolutePath(path, hasPushState) {
+    var absolute = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];
+
+    if (!hasPushState && path[0] !== '#') {
+      path = '#' + path;
+    }
+
+    if (hasPushState && absolute) {
+      path = path.substring(1, path.length);
+    }
+
+    return path;
+  }
+
+  function _createRootedPath(fragment, baseUrl, hasPushState, absolute) {
+    if (isAbsoluteUrl.test(fragment)) {
+      return fragment;
+    }
+
+    var path = '';
+
+    if (baseUrl.length && baseUrl[0] !== '/') {
+      path += '/';
+    }
+
+    path += baseUrl;
+
+    if ((!path.length || path[path.length - 1] !== '/') && fragment[0] !== '/') {
+      path += '/';
+    }
+
+    if (path.length && path[path.length - 1] === '/' && fragment[0] === '/') {
+      path = path.substring(0, path.length - 1);
+    }
+
+    return _normalizeAbsolutePath(path + fragment, hasPushState, absolute);
+  }
+
+  function _resolveUrl(fragment, baseUrl, hasPushState) {
+    if (isRootedPath.test(fragment)) {
+      return _normalizeAbsolutePath(fragment, hasPushState);
+    }
+
+    return _createRootedPath(fragment, baseUrl, hasPushState);
+  }
+
+  var isRootedPath = /^#?\//;
+  var isAbsoluteUrl = /^([a-z][a-z0-9+\-.]*:)?\/\//i;
+
+  var pipelineStatus = exports.pipelineStatus = {
+    completed: 'completed',
+    canceled: 'canceled',
+    rejected: 'rejected',
+    running: 'running'
+  };
+
+  var Pipeline = exports.Pipeline = function () {
+    function Pipeline() {
+      
+
+      this.steps = [];
+    }
+
+    Pipeline.prototype.addStep = function addStep(step) {
+      var run = void 0;
+
+      if (typeof step === 'function') {
+        run = step;
+      } else if (typeof step.getSteps === 'function') {
+        var steps = step.getSteps();
+        for (var i = 0, l = steps.length; i < l; i++) {
+          this.addStep(steps[i]);
+        }
+
+        return this;
+      } else {
+        run = step.run.bind(step);
+      }
+
+      this.steps.push(run);
+
+      return this;
+    };
+
+    Pipeline.prototype.run = function run(instruction) {
+      var index = -1;
+      var steps = this.steps;
+
+      function next() {
+        index++;
+
+        if (index < steps.length) {
+          var currentStep = steps[index];
+
+          try {
+            return currentStep(instruction, next);
+          } catch (e) {
+            return next.reject(e);
+          }
+        } else {
+          return next.complete();
+        }
+      }
+
+      next.complete = createCompletionHandler(next, pipelineStatus.completed);
+      next.cancel = createCompletionHandler(next, pipelineStatus.canceled);
+      next.reject = createCompletionHandler(next, pipelineStatus.rejected);
+
+      return next();
+    };
+
+    return Pipeline;
+  }();
+
+  function createCompletionHandler(next, status) {
+    return function (output) {
+      return Promise.resolve({ status: status, output: output, completed: status === pipelineStatus.completed });
+    };
+  }
+
+  var CommitChangesStep = exports.CommitChangesStep = function () {
+    function CommitChangesStep() {
+      
+    }
+
+    CommitChangesStep.prototype.run = function run(navigationInstruction, next) {
+      return navigationInstruction._commitChanges(true).then(function () {
+        navigationInstruction._updateTitle();
+        return next();
+      });
+    };
+
+    return CommitChangesStep;
+  }();
+
+  var NavigationInstruction = exports.NavigationInstruction = function () {
+    function NavigationInstruction(init) {
+      
+
+      this.plan = null;
+      this.options = {};
+
+      Object.assign(this, init);
+
+      this.params = this.params || {};
+      this.viewPortInstructions = {};
+
+      var ancestorParams = [];
+      var current = this;
+      do {
+        var currentParams = Object.assign({}, current.params);
+        if (current.config && current.config.hasChildRouter) {
+          delete currentParams[current.getWildCardName()];
+        }
+
+        ancestorParams.unshift(currentParams);
+        current = current.parentInstruction;
+      } while (current);
+
+      var allParams = Object.assign.apply(Object, [{}, this.queryParams].concat(ancestorParams));
+      this.lifecycleArgs = [allParams, this.config, this];
+    }
+
+    NavigationInstruction.prototype.getAllInstructions = function getAllInstructions() {
+      var instructions = [this];
+      for (var key in this.viewPortInstructions) {
+        var childInstruction = this.viewPortInstructions[key].childNavigationInstruction;
+        if (childInstruction) {
+          instructions.push.apply(instructions, childInstruction.getAllInstructions());
+        }
+      }
+
+      return instructions;
+    };
+
+    NavigationInstruction.prototype.getAllPreviousInstructions = function getAllPreviousInstructions() {
+      return this.getAllInstructions().map(function (c) {
+        return c.previousInstruction;
+      }).filter(function (c) {
+        return c;
+      });
+    };
+
+    NavigationInstruction.prototype.addViewPortInstruction = function addViewPortInstruction(viewPortName, strategy, moduleId, component) {
+      var viewportInstruction = this.viewPortInstructions[viewPortName] = {
+        name: viewPortName,
+        strategy: strategy,
+        moduleId: moduleId,
+        component: component,
+        childRouter: component.childRouter,
+        lifecycleArgs: this.lifecycleArgs.slice()
+      };
+
+      return viewportInstruction;
+    };
+
+    NavigationInstruction.prototype.getWildCardName = function getWildCardName() {
+      var wildcardIndex = this.config.route.lastIndexOf('*');
+      return this.config.route.substr(wildcardIndex + 1);
+    };
+
+    NavigationInstruction.prototype.getWildcardPath = function getWildcardPath() {
+      var wildcardName = this.getWildCardName();
+      var path = this.params[wildcardName] || '';
+
+      if (this.queryString) {
+        path += '?' + this.queryString;
+      }
+
+      return path;
+    };
+
+    NavigationInstruction.prototype.getBaseUrl = function getBaseUrl() {
+      if (!this.params) {
+        return this.fragment;
+      }
+
+      var wildcardName = this.getWildCardName();
+      var path = this.params[wildcardName] || '';
+
+      if (!path) {
+        return this.fragment;
+      }
+
+      path = encodeURI(path);
+      return this.fragment.substr(0, this.fragment.lastIndexOf(path));
+    };
+
+    NavigationInstruction.prototype._commitChanges = function _commitChanges(waitToSwap) {
+      var _this = this;
+
+      var router = this.router;
+      router.currentInstruction = this;
+
+      if (this.previousInstruction) {
+        this.previousInstruction.config.navModel.isActive = false;
+      }
+
+      this.config.navModel.isActive = true;
+
+      router._refreshBaseUrl();
+      router.refreshNavigation();
+
+      var loads = [];
+      var delaySwaps = [];
+
+      var _loop = function _loop(viewPortName) {
+        var viewPortInstruction = _this.viewPortInstructions[viewPortName];
+        var viewPort = router.viewPorts[viewPortName];
+
+        if (!viewPort) {
+          throw new Error('There was no router-view found in the view for ' + viewPortInstruction.moduleId + '.');
+        }
+
+        if (viewPortInstruction.strategy === activationStrategy.replace) {
+          if (waitToSwap) {
+            delaySwaps.push({ viewPort: viewPort, viewPortInstruction: viewPortInstruction });
+          }
+
+          loads.push(viewPort.process(viewPortInstruction, waitToSwap).then(function (x) {
+            if (viewPortInstruction.childNavigationInstruction) {
+              return viewPortInstruction.childNavigationInstruction._commitChanges();
+            }
+
+            return undefined;
+          }));
+        } else {
+          if (viewPortInstruction.childNavigationInstruction) {
+            loads.push(viewPortInstruction.childNavigationInstruction._commitChanges(waitToSwap));
+          }
+        }
+      };
+
+      for (var viewPortName in this.viewPortInstructions) {
+        _loop(viewPortName);
+      }
+
+      return Promise.all(loads).then(function () {
+        delaySwaps.forEach(function (x) {
+          return x.viewPort.swap(x.viewPortInstruction);
+        });
+        return null;
+      }).then(function () {
+        return prune(_this);
+      });
+    };
+
+    NavigationInstruction.prototype._updateTitle = function _updateTitle() {
+      var title = this._buildTitle();
+      if (title) {
+        this.router.history.setTitle(title);
+      }
+    };
+
+    NavigationInstruction.prototype._buildTitle = function _buildTitle() {
+      var separator = arguments.length <= 0 || arguments[0] === undefined ? ' | ' : arguments[0];
+
+      var title = '';
+      var childTitles = [];
+
+      if (this.config.navModel.title) {
+        title = this.router.transformTitle(this.config.navModel.title);
+      }
+
+      for (var viewPortName in this.viewPortInstructions) {
+        var _viewPortInstruction = this.viewPortInstructions[viewPortName];
+
+        if (_viewPortInstruction.childNavigationInstruction) {
+          var childTitle = _viewPortInstruction.childNavigationInstruction._buildTitle(separator);
+          if (childTitle) {
+            childTitles.push(childTitle);
+          }
+        }
+      }
+
+      if (childTitles.length) {
+        title = childTitles.join(separator) + (title ? separator : '') + title;
+      }
+
+      if (this.router.title) {
+        title += (title ? separator : '') + this.router.transformTitle(this.router.title);
+      }
+
+      return title;
+    };
+
+    return NavigationInstruction;
+  }();
+
+  function prune(instruction) {
+    instruction.previousInstruction = null;
+    instruction.plan = null;
+  }
+
+  var NavModel = exports.NavModel = function () {
+    function NavModel(router, relativeHref) {
+      
+
+      this.isActive = false;
+      this.title = null;
+      this.href = null;
+      this.relativeHref = null;
+      this.settings = {};
+      this.config = null;
+
+      this.router = router;
+      this.relativeHref = relativeHref;
+    }
+
+    NavModel.prototype.setTitle = function setTitle(title) {
+      this.title = title;
+
+      if (this.isActive) {
+        this.router.updateTitle();
+      }
+    };
+
+    return NavModel;
+  }();
+
+  function isNavigationCommand(obj) {
+    return obj && typeof obj.navigate === 'function';
+  }
+
+  var Redirect = exports.Redirect = function () {
+    function Redirect(url) {
+      var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+      
+
+      this.url = url;
+      this.options = Object.assign({ trigger: true, replace: true }, options);
+      this.shouldContinueProcessing = false;
+    }
+
+    Redirect.prototype.setRouter = function setRouter(router) {
+      this.router = router;
+    };
+
+    Redirect.prototype.navigate = function navigate(appRouter) {
+      var navigatingRouter = this.options.useAppRouter ? appRouter : this.router || appRouter;
+      navigatingRouter.navigate(this.url, this.options);
+    };
+
+    return Redirect;
+  }();
+
+  var RedirectToRoute = exports.RedirectToRoute = function () {
+    function RedirectToRoute(route) {
+      var params = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+      var options = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+
+      
+
+      this.route = route;
+      this.params = params;
+      this.options = Object.assign({ trigger: true, replace: true }, options);
+      this.shouldContinueProcessing = false;
+    }
+
+    RedirectToRoute.prototype.setRouter = function setRouter(router) {
+      this.router = router;
+    };
+
+    RedirectToRoute.prototype.navigate = function navigate(appRouter) {
+      var navigatingRouter = this.options.useAppRouter ? appRouter : this.router || appRouter;
+      navigatingRouter.navigateToRoute(this.route, this.params, this.options);
+    };
+
+    return RedirectToRoute;
+  }();
+
+  var RouterConfiguration = exports.RouterConfiguration = function () {
+    function RouterConfiguration() {
+      
+
+      this.instructions = [];
+      this.options = {};
+      this.pipelineSteps = [];
+    }
+
+    RouterConfiguration.prototype.addPipelineStep = function addPipelineStep(name, step) {
+      this.pipelineSteps.push({ name: name, step: step });
+      return this;
+    };
+
+    RouterConfiguration.prototype.addAuthorizeStep = function addAuthorizeStep(step) {
+      return this.addPipelineStep('authorize', step);
+    };
+
+    RouterConfiguration.prototype.addPreActivateStep = function addPreActivateStep(step) {
+      return this.addPipelineStep('preActivate', step);
+    };
+
+    RouterConfiguration.prototype.addPreRenderStep = function addPreRenderStep(step) {
+      return this.addPipelineStep('preRender', step);
+    };
+
+    RouterConfiguration.prototype.addPostRenderStep = function addPostRenderStep(step) {
+      return this.addPipelineStep('postRender', step);
+    };
+
+    RouterConfiguration.prototype.fallbackRoute = function fallbackRoute(fragment) {
+      this._fallbackRoute = fragment;
+      return this;
+    };
+
+    RouterConfiguration.prototype.map = function map(route) {
+      if (Array.isArray(route)) {
+        route.forEach(this.map.bind(this));
+        return this;
+      }
+
+      return this.mapRoute(route);
+    };
+
+    RouterConfiguration.prototype.mapRoute = function mapRoute(config) {
+      this.instructions.push(function (router) {
+        var routeConfigs = [];
+
+        if (Array.isArray(config.route)) {
+          for (var i = 0, ii = config.route.length; i < ii; ++i) {
+            var current = Object.assign({}, config);
+            current.route = config.route[i];
+            routeConfigs.push(current);
+          }
+        } else {
+          routeConfigs.push(Object.assign({}, config));
+        }
+
+        var navModel = void 0;
+        for (var _i = 0, _ii = routeConfigs.length; _i < _ii; ++_i) {
+          var _routeConfig = routeConfigs[_i];
+          _routeConfig.settings = _routeConfig.settings || {};
+          if (!navModel) {
+            navModel = router.createNavModel(_routeConfig);
+          }
+
+          router.addRoute(_routeConfig, navModel);
+        }
+      });
+
+      return this;
+    };
+
+    RouterConfiguration.prototype.mapUnknownRoutes = function mapUnknownRoutes(config) {
+      this.unknownRouteConfig = config;
+      return this;
+    };
+
+    RouterConfiguration.prototype.exportToRouter = function exportToRouter(router) {
+      var instructions = this.instructions;
+      for (var i = 0, ii = instructions.length; i < ii; ++i) {
+        instructions[i](router);
+      }
+
+      if (this.title) {
+        router.title = this.title;
+      }
+
+      if (this.unknownRouteConfig) {
+        router.handleUnknownRoutes(this.unknownRouteConfig);
+      }
+
+      if (this._fallbackRoute) {
+        router.fallbackRoute = this._fallbackRoute;
+      }
+
+      router.options = this.options;
+
+      var pipelineSteps = this.pipelineSteps;
+      if (pipelineSteps.length) {
+        if (!router.isRoot) {
+          throw new Error('Pipeline steps can only be added to the root router');
+        }
+
+        var pipelineProvider = router.pipelineProvider;
+        for (var _i2 = 0, _ii2 = pipelineSteps.length; _i2 < _ii2; ++_i2) {
+          var _pipelineSteps$_i = pipelineSteps[_i2];
+          var _name = _pipelineSteps$_i.name;
+          var step = _pipelineSteps$_i.step;
+
+          pipelineProvider.addStep(_name, step);
+        }
+      }
+    };
+
+    return RouterConfiguration;
+  }();
+
+  var activationStrategy = exports.activationStrategy = {
+    noChange: 'no-change',
+    invokeLifecycle: 'invoke-lifecycle',
+    replace: 'replace'
+  };
+
+  var BuildNavigationPlanStep = exports.BuildNavigationPlanStep = function () {
+    function BuildNavigationPlanStep() {
+      
+    }
+
+    BuildNavigationPlanStep.prototype.run = function run(navigationInstruction, next) {
+      return _buildNavigationPlan(navigationInstruction).then(function (plan) {
+        navigationInstruction.plan = plan;
+        return next();
+      }).catch(next.cancel);
+    };
+
+    return BuildNavigationPlanStep;
+  }();
+
+  function _buildNavigationPlan(instruction, forceLifecycleMinimum) {
+    var prev = instruction.previousInstruction;
+    var config = instruction.config;
+    var plan = {};
+
+    if ('redirect' in config) {
+      var redirectLocation = _resolveUrl(config.redirect, getInstructionBaseUrl(instruction));
+      if (instruction.queryString) {
+        redirectLocation += '?' + instruction.queryString;
+      }
+
+      return Promise.reject(new Redirect(redirectLocation));
+    }
+
+    if (prev) {
+      var newParams = hasDifferentParameterValues(prev, instruction);
+      var pending = [];
+
+      var _loop2 = function _loop2(viewPortName) {
+        var prevViewPortInstruction = prev.viewPortInstructions[viewPortName];
+        var nextViewPortConfig = config.viewPorts[viewPortName];
+
+        if (!nextViewPortConfig) throw new Error('Invalid Route Config: Configuration for viewPort "' + viewPortName + '" was not found for route: "' + instruction.config.route + '."');
+
+        var viewPortPlan = plan[viewPortName] = {
+          name: viewPortName,
+          config: nextViewPortConfig,
+          prevComponent: prevViewPortInstruction.component,
+          prevModuleId: prevViewPortInstruction.moduleId
+        };
+
+        if (prevViewPortInstruction.moduleId !== nextViewPortConfig.moduleId) {
+          viewPortPlan.strategy = activationStrategy.replace;
+        } else if ('determineActivationStrategy' in prevViewPortInstruction.component.viewModel) {
+          var _prevViewPortInstruct;
+
+          viewPortPlan.strategy = (_prevViewPortInstruct = prevViewPortInstruction.component.viewModel).determineActivationStrategy.apply(_prevViewPortInstruct, instruction.lifecycleArgs);
+        } else if (config.activationStrategy) {
+          viewPortPlan.strategy = config.activationStrategy;
+        } else if (newParams || forceLifecycleMinimum) {
+          viewPortPlan.strategy = activationStrategy.invokeLifecycle;
+        } else {
+          viewPortPlan.strategy = activationStrategy.noChange;
+        }
+
+        if (viewPortPlan.strategy !== activationStrategy.replace && prevViewPortInstruction.childRouter) {
+          var path = instruction.getWildcardPath();
+          var task = prevViewPortInstruction.childRouter._createNavigationInstruction(path, instruction).then(function (childInstruction) {
+            viewPortPlan.childNavigationInstruction = childInstruction;
+
+            return _buildNavigationPlan(childInstruction, viewPortPlan.strategy === activationStrategy.invokeLifecycle).then(function (childPlan) {
+              childInstruction.plan = childPlan;
+            });
+          });
+
+          pending.push(task);
+        }
+      };
+
+      for (var viewPortName in prev.viewPortInstructions) {
+        _loop2(viewPortName);
+      }
+
+      return Promise.all(pending).then(function () {
+        return plan;
+      });
+    }
+
+    for (var _viewPortName in config.viewPorts) {
+      plan[_viewPortName] = {
+        name: _viewPortName,
+        strategy: activationStrategy.replace,
+        config: instruction.config.viewPorts[_viewPortName]
+      };
+    }
+
+    return Promise.resolve(plan);
+  }
+
+  function hasDifferentParameterValues(prev, next) {
+    var prevParams = prev.params;
+    var nextParams = next.params;
+    var nextWildCardName = next.config.hasChildRouter ? next.getWildCardName() : null;
+
+    for (var key in nextParams) {
+      if (key === nextWildCardName) {
+        continue;
+      }
+
+      if (prevParams[key] !== nextParams[key]) {
+        return true;
+      }
+    }
+
+    for (var _key in prevParams) {
+      if (_key === nextWildCardName) {
+        continue;
+      }
+
+      if (prevParams[_key] !== nextParams[_key]) {
+        return true;
+      }
+    }
+
+    if (!next.options.compareQueryParams) {
+      return false;
+    }
+
+    var prevQueryParams = prev.queryParams;
+    var nextQueryParams = next.queryParams;
+    for (var _key2 in nextQueryParams) {
+      if (prevQueryParams[_key2] !== nextQueryParams[_key2]) {
+        return true;
+      }
+    }
+
+    for (var _key3 in prevQueryParams) {
+      if (prevQueryParams[_key3] !== nextQueryParams[_key3]) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  function getInstructionBaseUrl(instruction) {
+    var instructionBaseUrlParts = [];
+    instruction = instruction.parentInstruction;
+
+    while (instruction) {
+      instructionBaseUrlParts.unshift(instruction.getBaseUrl());
+      instruction = instruction.parentInstruction;
+    }
+
+    instructionBaseUrlParts.unshift('/');
+    return instructionBaseUrlParts.join('');
+  }
+
+  var Router = exports.Router = function () {
+    function Router(container, history) {
+      var _this2 = this;
+
+      
+
+      this.parent = null;
+      this.options = {};
+
+      this.transformTitle = function (title) {
+        if (_this2.parent) {
+          return _this2.parent.transformTitle(title);
+        }
+        return title;
+      };
+
+      this.container = container;
+      this.history = history;
+      this.reset();
+    }
+
+    Router.prototype.reset = function reset() {
+      var _this3 = this;
+
+      this.viewPorts = {};
+      this.routes = [];
+      this.baseUrl = '';
+      this.isConfigured = false;
+      this.isNavigating = false;
+      this.navigation = [];
+      this.currentInstruction = null;
+      this._fallbackOrder = 100;
+      this._recognizer = new _aureliaRouteRecognizer.RouteRecognizer();
+      this._childRecognizer = new _aureliaRouteRecognizer.RouteRecognizer();
+      this._configuredPromise = new Promise(function (resolve) {
+        _this3._resolveConfiguredPromise = resolve;
+      });
+    };
+
+    Router.prototype.registerViewPort = function registerViewPort(viewPort, name) {
+      name = name || 'default';
+      this.viewPorts[name] = viewPort;
+    };
+
+    Router.prototype.ensureConfigured = function ensureConfigured() {
+      return this._configuredPromise;
+    };
+
+    Router.prototype.configure = function configure(callbackOrConfig) {
+      var _this4 = this;
+
+      this.isConfigured = true;
+
+      var result = callbackOrConfig;
+      var config = void 0;
+      if (typeof callbackOrConfig === 'function') {
+        config = new RouterConfiguration();
+        result = callbackOrConfig(config);
+      }
+
+      return Promise.resolve(result).then(function (c) {
+        if (c && c.exportToRouter) {
+          config = c;
+        }
+
+        config.exportToRouter(_this4);
+        _this4.isConfigured = true;
+        _this4._resolveConfiguredPromise();
+      });
+    };
+
+    Router.prototype.navigate = function navigate(fragment, options) {
+      if (!this.isConfigured && this.parent) {
+        return this.parent.navigate(fragment, options);
+      }
+
+      return this.history.navigate(_resolveUrl(fragment, this.baseUrl, this.history._hasPushState), options);
+    };
+
+    Router.prototype.navigateToRoute = function navigateToRoute(route, params, options) {
+      var path = this.generate(route, params);
+      return this.navigate(path, options);
+    };
+
+    Router.prototype.navigateBack = function navigateBack() {
+      this.history.navigateBack();
+    };
+
+    Router.prototype.createChild = function createChild(container) {
+      var childRouter = new Router(container || this.container.createChild(), this.history);
+      childRouter.parent = this;
+      return childRouter;
+    };
+
+    Router.prototype.generate = function generate(name, params) {
+      var options = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+
+      var hasRoute = this._recognizer.hasRoute(name);
+      if ((!this.isConfigured || !hasRoute) && this.parent) {
+        return this.parent.generate(name, params);
+      }
+
+      if (!hasRoute) {
+        throw new Error('A route with name \'' + name + '\' could not be found. Check that `name: \'' + name + '\'` was specified in the route\'s config.');
+      }
+
+      var path = this._recognizer.generate(name, params);
+      var rootedPath = _createRootedPath(path, this.baseUrl, this.history._hasPushState, options.absolute);
+      return options.absolute ? '' + this.history.getAbsoluteRoot() + rootedPath : rootedPath;
+    };
+
+    Router.prototype.createNavModel = function createNavModel(config) {
+      var navModel = new NavModel(this, 'href' in config ? config.href : config.route);
+      navModel.title = config.title;
+      navModel.order = config.nav;
+      navModel.href = config.href;
+      navModel.settings = config.settings;
+      navModel.config = config;
+
+      return navModel;
+    };
+
+    Router.prototype.addRoute = function addRoute(config, navModel) {
+      validateRouteConfig(config, this.routes);
+
+      if (!('viewPorts' in config) && !config.navigationStrategy) {
+        config.viewPorts = {
+          'default': {
+            moduleId: config.moduleId,
+            view: config.view
+          }
+        };
+      }
+
+      if (!navModel) {
+        navModel = this.createNavModel(config);
+      }
+
+      this.routes.push(config);
+
+      var path = config.route;
+      if (path.charAt(0) === '/') {
+        path = path.substr(1);
+      }
+      var caseSensitive = config.caseSensitive === true;
+      var state = this._recognizer.add({ path: path, handler: config, caseSensitive: caseSensitive });
+
+      if (path) {
+        var _settings = config.settings;
+        delete config.settings;
+        var withChild = JSON.parse(JSON.stringify(config));
+        config.settings = _settings;
+        withChild.route = path + '/*childRoute';
+        withChild.hasChildRouter = true;
+        this._childRecognizer.add({
+          path: withChild.route,
+          handler: withChild,
+          caseSensitive: caseSensitive
+        });
+
+        withChild.navModel = navModel;
+        withChild.settings = config.settings;
+        withChild.navigationStrategy = config.navigationStrategy;
+      }
+
+      config.navModel = navModel;
+
+      if ((navModel.order || navModel.order === 0) && this.navigation.indexOf(navModel) === -1) {
+        if (!navModel.href && navModel.href !== '' && (state.types.dynamics || state.types.stars)) {
+          throw new Error('Invalid route config for "' + config.route + '" : dynamic routes must specify an "href:" to be included in the navigation model.');
+        }
+
+        if (typeof navModel.order !== 'number') {
+          navModel.order = ++this._fallbackOrder;
+        }
+
+        this.navigation.push(navModel);
+        this.navigation = this.navigation.sort(function (a, b) {
+          return a.order - b.order;
+        });
+      }
+    };
+
+    Router.prototype.hasRoute = function hasRoute(name) {
+      return !!(this._recognizer.hasRoute(name) || this.parent && this.parent.hasRoute(name));
+    };
+
+    Router.prototype.hasOwnRoute = function hasOwnRoute(name) {
+      return this._recognizer.hasRoute(name);
+    };
+
+    Router.prototype.handleUnknownRoutes = function handleUnknownRoutes(config) {
+      var _this5 = this;
+
+      if (!config) {
+        throw new Error('Invalid unknown route handler');
+      }
+
+      this.catchAllHandler = function (instruction) {
+        return _this5._createRouteConfig(config, instruction).then(function (c) {
+          instruction.config = c;
+          return instruction;
+        });
+      };
+    };
+
+    Router.prototype.updateTitle = function updateTitle() {
+      if (this.parent) {
+        return this.parent.updateTitle();
+      }
+
+      this.currentInstruction._updateTitle();
+      return undefined;
+    };
+
+    Router.prototype.refreshNavigation = function refreshNavigation() {
+      var nav = this.navigation;
+
+      for (var i = 0, length = nav.length; i < length; i++) {
+        var current = nav[i];
+        if (!current.config.href) {
+          current.href = _createRootedPath(current.relativeHref, this.baseUrl, this.history._hasPushState);
+        } else {
+          current.href = _normalizeAbsolutePath(current.config.href, this.history._hasPushState);
+        }
+      }
+    };
+
+    Router.prototype._refreshBaseUrl = function _refreshBaseUrl() {
+      if (this.parent) {
+        var baseUrl = this.parent.currentInstruction.getBaseUrl();
+        this.baseUrl = this.parent.baseUrl + baseUrl;
+      }
+    };
+
+    Router.prototype._createNavigationInstruction = function _createNavigationInstruction() {
+      var url = arguments.length <= 0 || arguments[0] === undefined ? '' : arguments[0];
+      var parentInstruction = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
+
+      var fragment = url;
+      var queryString = '';
+
+      var queryIndex = url.indexOf('?');
+      if (queryIndex !== -1) {
+        fragment = url.substr(0, queryIndex);
+        queryString = url.substr(queryIndex + 1);
+      }
+
+      var results = this._recognizer.recognize(url);
+      if (!results || !results.length) {
+        results = this._childRecognizer.recognize(url);
+      }
+
+      var instructionInit = {
+        fragment: fragment,
+        queryString: queryString,
+        config: null,
+        parentInstruction: parentInstruction,
+        previousInstruction: this.currentInstruction,
+        router: this,
+        options: {
+          compareQueryParams: this.options.compareQueryParams
+        }
+      };
+
+      if (results && results.length) {
+        var first = results[0];
+        var _instruction = new NavigationInstruction(Object.assign({}, instructionInit, {
+          params: first.params,
+          queryParams: first.queryParams || results.queryParams,
+          config: first.config || first.handler
+        }));
+
+        if (typeof first.handler === 'function') {
+          return evaluateNavigationStrategy(_instruction, first.handler, first);
+        } else if (first.handler && typeof first.handler.navigationStrategy === 'function') {
+          return evaluateNavigationStrategy(_instruction, first.handler.navigationStrategy, first.handler);
+        }
+
+        return Promise.resolve(_instruction);
+      } else if (this.catchAllHandler) {
+        var _instruction2 = new NavigationInstruction(Object.assign({}, instructionInit, {
+          params: { path: fragment },
+          queryParams: results && results.queryParams,
+          config: null }));
+
+        return evaluateNavigationStrategy(_instruction2, this.catchAllHandler);
+      }
+
+      return Promise.reject(new Error('Route not found: ' + url));
+    };
+
+    Router.prototype._createRouteConfig = function _createRouteConfig(config, instruction) {
+      var _this6 = this;
+
+      return Promise.resolve(config).then(function (c) {
+        if (typeof c === 'string') {
+          return { moduleId: c };
+        } else if (typeof c === 'function') {
+          return c(instruction);
+        }
+
+        return c;
+      }).then(function (c) {
+        return typeof c === 'string' ? { moduleId: c } : c;
+      }).then(function (c) {
+        c.route = instruction.params.path;
+        validateRouteConfig(c, _this6.routes);
+
+        if (!c.navModel) {
+          c.navModel = _this6.createNavModel(c);
+        }
+
+        return c;
+      });
+    };
+
+    _createClass(Router, [{
+      key: 'isRoot',
+      get: function get() {
+        return !this.parent;
+      }
+    }]);
+
+    return Router;
+  }();
+
+  function validateRouteConfig(config, routes) {
+    if ((typeof config === 'undefined' ? 'undefined' : _typeof(config)) !== 'object') {
+      throw new Error('Invalid Route Config');
+    }
+
+    if (typeof config.route !== 'string') {
+      var _name2 = config.name || '(no name)';
+      throw new Error('Invalid Route Config for "' + _name2 + '": You must specify a "route:" pattern.');
+    }
+
+    if (!('redirect' in config || config.moduleId || config.navigationStrategy || config.viewPorts)) {
+      throw new Error('Invalid Route Config for "' + config.route + '": You must specify a "moduleId:", "redirect:", "navigationStrategy:", or "viewPorts:".');
+    }
+  }
+
+  function evaluateNavigationStrategy(instruction, evaluator, context) {
+    return Promise.resolve(evaluator.call(context, instruction)).then(function () {
+      if (!('viewPorts' in instruction.config)) {
+        instruction.config.viewPorts = {
+          'default': {
+            moduleId: instruction.config.moduleId
+          }
+        };
+      }
+
+      return instruction;
+    });
+  }
+
+  var CanDeactivatePreviousStep = exports.CanDeactivatePreviousStep = function () {
+    function CanDeactivatePreviousStep() {
+      
+    }
+
+    CanDeactivatePreviousStep.prototype.run = function run(navigationInstruction, next) {
+      return processDeactivatable(navigationInstruction.plan, 'canDeactivate', next);
+    };
+
+    return CanDeactivatePreviousStep;
+  }();
+
+  var CanActivateNextStep = exports.CanActivateNextStep = function () {
+    function CanActivateNextStep() {
+      
+    }
+
+    CanActivateNextStep.prototype.run = function run(navigationInstruction, next) {
+      return processActivatable(navigationInstruction, 'canActivate', next);
+    };
+
+    return CanActivateNextStep;
+  }();
+
+  var DeactivatePreviousStep = exports.DeactivatePreviousStep = function () {
+    function DeactivatePreviousStep() {
+      
+    }
+
+    DeactivatePreviousStep.prototype.run = function run(navigationInstruction, next) {
+      return processDeactivatable(navigationInstruction.plan, 'deactivate', next, true);
+    };
+
+    return DeactivatePreviousStep;
+  }();
+
+  var ActivateNextStep = exports.ActivateNextStep = function () {
+    function ActivateNextStep() {
+      
+    }
+
+    ActivateNextStep.prototype.run = function run(navigationInstruction, next) {
+      return processActivatable(navigationInstruction, 'activate', next, true);
+    };
+
+    return ActivateNextStep;
+  }();
+
+  function processDeactivatable(plan, callbackName, next, ignoreResult) {
+    var infos = findDeactivatable(plan, callbackName);
+    var i = infos.length;
+
+    function inspect(val) {
+      if (ignoreResult || shouldContinue(val)) {
+        return iterate();
+      }
+
+      return next.cancel(val);
+    }
+
+    function iterate() {
+      if (i--) {
+        try {
+          var viewModel = infos[i];
+          var _result = viewModel[callbackName]();
+          return processPotential(_result, inspect, next.cancel);
+        } catch (error) {
+          return next.cancel(error);
+        }
+      }
+
+      return next();
+    }
+
+    return iterate();
+  }
+
+  function findDeactivatable(plan, callbackName) {
+    var list = arguments.length <= 2 || arguments[2] === undefined ? [] : arguments[2];
+
+    for (var viewPortName in plan) {
+      var _viewPortPlan = plan[viewPortName];
+      var prevComponent = _viewPortPlan.prevComponent;
+
+      if ((_viewPortPlan.strategy === activationStrategy.invokeLifecycle || _viewPortPlan.strategy === activationStrategy.replace) && prevComponent) {
+        var viewModel = prevComponent.viewModel;
+
+        if (callbackName in viewModel) {
+          list.push(viewModel);
+        }
+      }
+
+      if (_viewPortPlan.childNavigationInstruction) {
+        findDeactivatable(_viewPortPlan.childNavigationInstruction.plan, callbackName, list);
+      } else if (prevComponent) {
+        addPreviousDeactivatable(prevComponent, callbackName, list);
+      }
+    }
+
+    return list;
+  }
+
+  function addPreviousDeactivatable(component, callbackName, list) {
+    var childRouter = component.childRouter;
+
+    if (childRouter && childRouter.currentInstruction) {
+      var viewPortInstructions = childRouter.currentInstruction.viewPortInstructions;
+
+      for (var viewPortName in viewPortInstructions) {
+        var _viewPortInstruction2 = viewPortInstructions[viewPortName];
+        var prevComponent = _viewPortInstruction2.component;
+        var prevViewModel = prevComponent.viewModel;
+
+        if (callbackName in prevViewModel) {
+          list.push(prevViewModel);
+        }
+
+        addPreviousDeactivatable(prevComponent, callbackName, list);
+      }
+    }
+  }
+
+  function processActivatable(navigationInstruction, callbackName, next, ignoreResult) {
+    var infos = findActivatable(navigationInstruction, callbackName);
+    var length = infos.length;
+    var i = -1;
+
+    function inspect(val, router) {
+      if (ignoreResult || shouldContinue(val, router)) {
+        return iterate();
+      }
+
+      return next.cancel(val);
+    }
+
+    function iterate() {
+      i++;
+
+      if (i < length) {
+        try {
+          var _ret3 = function () {
+            var _current$viewModel;
+
+            var current = infos[i];
+            var result = (_current$viewModel = current.viewModel)[callbackName].apply(_current$viewModel, current.lifecycleArgs);
+            return {
+              v: processPotential(result, function (val) {
+                return inspect(val, current.router);
+              }, next.cancel)
+            };
+          }();
+
+          if ((typeof _ret3 === 'undefined' ? 'undefined' : _typeof(_ret3)) === "object") return _ret3.v;
+        } catch (error) {
+          return next.cancel(error);
+        }
+      }
+
+      return next();
+    }
+
+    return iterate();
+  }
+
+  function findActivatable(navigationInstruction, callbackName) {
+    var list = arguments.length <= 2 || arguments[2] === undefined ? [] : arguments[2];
+    var router = arguments[3];
+
+    var plan = navigationInstruction.plan;
+
+    Object.keys(plan).filter(function (viewPortName) {
+      var viewPortPlan = plan[viewPortName];
+      var viewPortInstruction = navigationInstruction.viewPortInstructions[viewPortName];
+      var viewModel = viewPortInstruction.component.viewModel;
+
+      if ((viewPortPlan.strategy === activationStrategy.invokeLifecycle || viewPortPlan.strategy === activationStrategy.replace) && callbackName in viewModel) {
+        list.push({
+          viewModel: viewModel,
+          lifecycleArgs: viewPortInstruction.lifecycleArgs,
+          router: router
+        });
+      }
+
+      if (viewPortPlan.childNavigationInstruction) {
+        findActivatable(viewPortPlan.childNavigationInstruction, callbackName, list, viewPortInstruction.component.childRouter || router);
+      }
+    });
+
+    return list;
+  }
+
+  function shouldContinue(output, router) {
+    if (output instanceof Error) {
+      return false;
+    }
+
+    if (isNavigationCommand(output)) {
+      if (typeof output.setRouter === 'function') {
+        output.setRouter(router);
+      }
+
+      return !!output.shouldContinueProcessing;
+    }
+
+    if (output === undefined) {
+      return true;
+    }
+
+    return output;
+  }
+
+  var SafeSubscription = function () {
+    function SafeSubscription(subscriptionFunc) {
+      
+
+      this._subscribed = true;
+      this._subscription = subscriptionFunc(this);
+
+      if (!this._subscribed) this.unsubscribe();
+    }
+
+    SafeSubscription.prototype.unsubscribe = function unsubscribe() {
+      if (this._subscribed && this._subscription) this._subscription.unsubscribe();
+
+      this._subscribed = false;
+    };
+
+    _createClass(SafeSubscription, [{
+      key: 'subscribed',
+      get: function get() {
+        return this._subscribed;
+      }
+    }]);
+
+    return SafeSubscription;
+  }();
+
+  function processPotential(obj, resolve, reject) {
+    if (obj && typeof obj.then === 'function') {
+      return Promise.resolve(obj).then(resolve).catch(reject);
+    }
+
+    if (obj && typeof obj.subscribe === 'function') {
+      var _ret4 = function () {
+        var obs = obj;
+        return {
+          v: new SafeSubscription(function (sub) {
+            return obs.subscribe({
+              next: function next() {
+                if (sub.subscribed) {
+                  sub.unsubscribe();
+                  resolve(obj);
+                }
+              },
+              error: function error(_error) {
+                if (sub.subscribed) {
+                  sub.unsubscribe();
+                  reject(_error);
+                }
+              },
+              complete: function complete() {
+                if (sub.subscribed) {
+                  sub.unsubscribe();
+                  resolve(obj);
+                }
+              }
+            });
+          })
+        };
+      }();
+
+      if ((typeof _ret4 === 'undefined' ? 'undefined' : _typeof(_ret4)) === "object") return _ret4.v;
+    }
+
+    try {
+      return resolve(obj);
+    } catch (error) {
+      return reject(error);
+    }
+  }
+
+  var RouteLoader = exports.RouteLoader = function () {
+    function RouteLoader() {
+      
+    }
+
+    RouteLoader.prototype.loadRoute = function loadRoute(router, config, navigationInstruction) {
+      throw Error('Route loaders must implement "loadRoute(router, config, navigationInstruction)".');
+    };
+
+    return RouteLoader;
+  }();
+
+  var LoadRouteStep = exports.LoadRouteStep = function () {
+    LoadRouteStep.inject = function inject() {
+      return [RouteLoader];
+    };
+
+    function LoadRouteStep(routeLoader) {
+      
+
+      this.routeLoader = routeLoader;
+    }
+
+    LoadRouteStep.prototype.run = function run(navigationInstruction, next) {
+      return loadNewRoute(this.routeLoader, navigationInstruction).then(next).catch(next.cancel);
+    };
+
+    return LoadRouteStep;
+  }();
+
+  function loadNewRoute(routeLoader, navigationInstruction) {
+    var toLoad = determineWhatToLoad(navigationInstruction);
+    var loadPromises = toLoad.map(function (current) {
+      return loadRoute(routeLoader, current.navigationInstruction, current.viewPortPlan);
+    });
+
+    return Promise.all(loadPromises);
+  }
+
+  function determineWhatToLoad(navigationInstruction) {
+    var toLoad = arguments.length <= 1 || arguments[1] === undefined ? [] : arguments[1];
+
+    var plan = navigationInstruction.plan;
+
+    for (var viewPortName in plan) {
+      var _viewPortPlan2 = plan[viewPortName];
+
+      if (_viewPortPlan2.strategy === activationStrategy.replace) {
+        toLoad.push({ viewPortPlan: _viewPortPlan2, navigationInstruction: navigationInstruction });
+
+        if (_viewPortPlan2.childNavigationInstruction) {
+          determineWhatToLoad(_viewPortPlan2.childNavigationInstruction, toLoad);
+        }
+      } else {
+        var _viewPortInstruction3 = navigationInstruction.addViewPortInstruction(viewPortName, _viewPortPlan2.strategy, _viewPortPlan2.prevModuleId, _viewPortPlan2.prevComponent);
+
+        if (_viewPortPlan2.childNavigationInstruction) {
+          _viewPortInstruction3.childNavigationInstruction = _viewPortPlan2.childNavigationInstruction;
+          determineWhatToLoad(_viewPortPlan2.childNavigationInstruction, toLoad);
+        }
+      }
+    }
+
+    return toLoad;
+  }
+
+  function loadRoute(routeLoader, navigationInstruction, viewPortPlan) {
+    var moduleId = viewPortPlan.config.moduleId;
+
+    return loadComponent(routeLoader, navigationInstruction, viewPortPlan.config).then(function (component) {
+      var viewPortInstruction = navigationInstruction.addViewPortInstruction(viewPortPlan.name, viewPortPlan.strategy, moduleId, component);
+
+      var childRouter = component.childRouter;
+      if (childRouter) {
+        var path = navigationInstruction.getWildcardPath();
+
+        return childRouter._createNavigationInstruction(path, navigationInstruction).then(function (childInstruction) {
+          viewPortPlan.childNavigationInstruction = childInstruction;
+
+          return _buildNavigationPlan(childInstruction).then(function (childPlan) {
+            childInstruction.plan = childPlan;
+            viewPortInstruction.childNavigationInstruction = childInstruction;
+
+            return loadNewRoute(routeLoader, childInstruction);
+          });
+        });
+      }
+
+      return undefined;
+    });
+  }
+
+  function loadComponent(routeLoader, navigationInstruction, config) {
+    var router = navigationInstruction.router;
+    var lifecycleArgs = navigationInstruction.lifecycleArgs;
+
+    return routeLoader.loadRoute(router, config, navigationInstruction).then(function (component) {
+      var viewModel = component.viewModel;
+      var childContainer = component.childContainer;
+
+      component.router = router;
+      component.config = config;
+
+      if ('configureRouter' in viewModel) {
+        var _ret5 = function () {
+          var childRouter = childContainer.getChildRouter();
+          component.childRouter = childRouter;
+
+          return {
+            v: childRouter.configure(function (c) {
+              return viewModel.configureRouter.apply(viewModel, [c, childRouter].concat(lifecycleArgs));
+            }).then(function () {
+              return component;
+            })
+          };
+        }();
+
+        if ((typeof _ret5 === 'undefined' ? 'undefined' : _typeof(_ret5)) === "object") return _ret5.v;
+      }
+
+      return component;
+    });
+  }
+
+  var PipelineSlot = function () {
+    function PipelineSlot(container, name, alias) {
+      
+
+      this.steps = [];
+
+      this.container = container;
+      this.slotName = name;
+      this.slotAlias = alias;
+    }
+
+    PipelineSlot.prototype.getSteps = function getSteps() {
+      var _this7 = this;
+
+      return this.steps.map(function (x) {
+        return _this7.container.get(x);
+      });
+    };
+
+    return PipelineSlot;
+  }();
+
+  var PipelineProvider = exports.PipelineProvider = function () {
+    PipelineProvider.inject = function inject() {
+      return [_aureliaDependencyInjection.Container];
+    };
+
+    function PipelineProvider(container) {
+      
+
+      this.container = container;
+      this.steps = [BuildNavigationPlanStep, CanDeactivatePreviousStep, LoadRouteStep, this._createPipelineSlot('authorize'), CanActivateNextStep, this._createPipelineSlot('preActivate', 'modelbind'), DeactivatePreviousStep, ActivateNextStep, this._createPipelineSlot('preRender', 'precommit'), CommitChangesStep, this._createPipelineSlot('postRender', 'postcomplete')];
+    }
+
+    PipelineProvider.prototype.createPipeline = function createPipeline() {
+      var _this8 = this;
+
+      var pipeline = new Pipeline();
+      this.steps.forEach(function (step) {
+        return pipeline.addStep(_this8.container.get(step));
+      });
+      return pipeline;
+    };
+
+    PipelineProvider.prototype._findStep = function _findStep(name) {
+      return this.steps.find(function (x) {
+        return x.slotName === name || x.slotAlias === name;
+      });
+    };
+
+    PipelineProvider.prototype.addStep = function addStep(name, step) {
+      var found = this._findStep(name);
+      if (found) {
+        if (!found.steps.includes(step)) {
+          found.steps.push(step);
+        }
+      } else {
+        throw new Error('Invalid pipeline slot name: ' + name + '.');
+      }
+    };
+
+    PipelineProvider.prototype.removeStep = function removeStep(name, step) {
+      var slot = this._findStep(name);
+      if (slot) {
+        slot.steps.splice(slot.steps.indexOf(step), 1);
+      }
+    };
+
+    PipelineProvider.prototype._clearSteps = function _clearSteps() {
+      var name = arguments.length <= 0 || arguments[0] === undefined ? '' : arguments[0];
+
+      var slot = this._findStep(name);
+      if (slot) {
+        slot.steps = [];
+      }
+    };
+
+    PipelineProvider.prototype.reset = function reset() {
+      this._clearSteps('authorize');
+      this._clearSteps('preActivate');
+      this._clearSteps('preRender');
+      this._clearSteps('postRender');
+    };
+
+    PipelineProvider.prototype._createPipelineSlot = function _createPipelineSlot(name, alias) {
+      return new PipelineSlot(this.container, name, alias);
+    };
+
+    return PipelineProvider;
+  }();
+
+  var logger = LogManager.getLogger('app-router');
+
+  var AppRouter = exports.AppRouter = function (_Router) {
+    _inherits(AppRouter, _Router);
+
+    AppRouter.inject = function inject() {
+      return [_aureliaDependencyInjection.Container, _aureliaHistory.History, PipelineProvider, _aureliaEventAggregator.EventAggregator];
+    };
+
+    function AppRouter(container, history, pipelineProvider, events) {
+      
+
+      var _this9 = _possibleConstructorReturn(this, _Router.call(this, container, history));
+
+      _this9.pipelineProvider = pipelineProvider;
+      _this9.events = events;
+      return _this9;
+    }
+
+    AppRouter.prototype.reset = function reset() {
+      _Router.prototype.reset.call(this);
+      this.maxInstructionCount = 10;
+      if (!this._queue) {
+        this._queue = [];
+      } else {
+        this._queue.length = 0;
+      }
+    };
+
+    AppRouter.prototype.loadUrl = function loadUrl(url) {
+      var _this10 = this;
+
+      return this._createNavigationInstruction(url).then(function (instruction) {
+        return _this10._queueInstruction(instruction);
+      }).catch(function (error) {
+        logger.error(error);
+        restorePreviousLocation(_this10);
+      });
+    };
+
+    AppRouter.prototype.registerViewPort = function registerViewPort(viewPort, name) {
+      var _this11 = this;
+
+      _Router.prototype.registerViewPort.call(this, viewPort, name);
+
+      if (!this.isActive) {
+        var _ret6 = function () {
+          var viewModel = _this11._findViewModel(viewPort);
+          if ('configureRouter' in viewModel) {
+            if (!_this11.isConfigured) {
+              var _ret7 = function () {
+                var resolveConfiguredPromise = _this11._resolveConfiguredPromise;
+                _this11._resolveConfiguredPromise = function () {};
+                return {
+                  v: {
+                    v: _this11.configure(function (config) {
+                      return viewModel.configureRouter(config, _this11);
+                    }).then(function () {
+                      _this11.activate();
+                      resolveConfiguredPromise();
+                    })
+                  }
+                };
+              }();
+
+              if ((typeof _ret7 === 'undefined' ? 'undefined' : _typeof(_ret7)) === "object") return _ret7.v;
+            }
+          } else {
+            _this11.activate();
+          }
+        }();
+
+        if ((typeof _ret6 === 'undefined' ? 'undefined' : _typeof(_ret6)) === "object") return _ret6.v;
+      } else {
+        this._dequeueInstruction();
+      }
+
+      return Promise.resolve();
+    };
+
+    AppRouter.prototype.activate = function activate(options) {
+      if (this.isActive) {
+        return;
+      }
+
+      this.isActive = true;
+      this.options = Object.assign({ routeHandler: this.loadUrl.bind(this) }, this.options, options);
+      this.history.activate(this.options);
+      this._dequeueInstruction();
+    };
+
+    AppRouter.prototype.deactivate = function deactivate() {
+      this.isActive = false;
+      this.history.deactivate();
+    };
+
+    AppRouter.prototype._queueInstruction = function _queueInstruction(instruction) {
+      var _this12 = this;
+
+      return new Promise(function (resolve) {
+        instruction.resolve = resolve;
+        _this12._queue.unshift(instruction);
+        _this12._dequeueInstruction();
+      });
+    };
+
+    AppRouter.prototype._dequeueInstruction = function _dequeueInstruction() {
+      var _this13 = this;
+
+      var instructionCount = arguments.length <= 0 || arguments[0] === undefined ? 0 : arguments[0];
+
+      return Promise.resolve().then(function () {
+        if (_this13.isNavigating && !instructionCount) {
+          return undefined;
+        }
+
+        var instruction = _this13._queue.shift();
+        _this13._queue.length = 0;
+
+        if (!instruction) {
+          return undefined;
+        }
+
+        _this13.isNavigating = true;
+        instruction.previousInstruction = _this13.currentInstruction;
+
+        if (!instructionCount) {
+          _this13.events.publish('router:navigation:processing', { instruction: instruction });
+        } else if (instructionCount === _this13.maxInstructionCount - 1) {
+          logger.error(instructionCount + 1 + ' navigation instructions have been attempted without success. Restoring last known good location.');
+          restorePreviousLocation(_this13);
+          return _this13._dequeueInstruction(instructionCount + 1);
+        } else if (instructionCount > _this13.maxInstructionCount) {
+          throw new Error('Maximum navigation attempts exceeded. Giving up.');
+        }
+
+        var pipeline = _this13.pipelineProvider.createPipeline();
+
+        return pipeline.run(instruction).then(function (result) {
+          return processResult(instruction, result, instructionCount, _this13);
+        }).catch(function (error) {
+          return { output: error instanceof Error ? error : new Error(error) };
+        }).then(function (result) {
+          return resolveInstruction(instruction, result, !!instructionCount, _this13);
+        });
+      });
+    };
+
+    AppRouter.prototype._findViewModel = function _findViewModel(viewPort) {
+      if (this.container.viewModel) {
+        return this.container.viewModel;
+      }
+
+      if (viewPort.container) {
+        var container = viewPort.container;
+
+        while (container) {
+          if (container.viewModel) {
+            this.container.viewModel = container.viewModel;
+            return container.viewModel;
+          }
+
+          container = container.parent;
+        }
+      }
+
+      return undefined;
+    };
+
+    return AppRouter;
+  }(Router);
+
+  function processResult(instruction, result, instructionCount, router) {
+    if (!(result && 'completed' in result && 'output' in result)) {
+      result = result || {};
+      result.output = new Error('Expected router pipeline to return a navigation result, but got [' + JSON.stringify(result) + '] instead.');
+    }
+
+    var finalResult = null;
+    if (isNavigationCommand(result.output)) {
+      result.output.navigate(router);
+    } else {
+      finalResult = result;
+
+      if (!result.completed) {
+        if (result.output instanceof Error) {
+          logger.error(result.output);
+        }
+
+        restorePreviousLocation(router);
+      }
+    }
+
+    return router._dequeueInstruction(instructionCount + 1).then(function (innerResult) {
+      return finalResult || innerResult || result;
+    });
+  }
+
+  function resolveInstruction(instruction, result, isInnerInstruction, router) {
+    instruction.resolve(result);
+
+    if (!isInnerInstruction) {
+      router.isNavigating = false;
+      var eventArgs = { instruction: instruction, result: result };
+      var eventName = void 0;
+
+      if (result.output instanceof Error) {
+        eventName = 'error';
+      } else if (!result.completed) {
+        eventName = 'canceled';
+      } else {
+        var _queryString = instruction.queryString ? '?' + instruction.queryString : '';
+        router.history.previousLocation = instruction.fragment + _queryString;
+        eventName = 'success';
+      }
+
+      router.events.publish('router:navigation:' + eventName, eventArgs);
+      router.events.publish('router:navigation:complete', eventArgs);
+    }
+
+    return result;
+  }
+
+  function restorePreviousLocation(router) {
+    var previousLocation = router.history.previousLocation;
+    if (previousLocation) {
+      router.navigate(router.history.previousLocation, { trigger: false, replace: true });
+    } else if (router.fallbackRoute) {
+      router.navigate(router.fallbackRoute, { trigger: true, replace: true });
+    } else {
+      logger.error('Router navigation failed, and no previous location or fallbackRoute could be restored.');
+    }
+  }
+});
 define('aurelia-task-queue',['exports', 'aurelia-pal'], function (exports, _aureliaPal) {
   'use strict';
 
@@ -18361,15 +18261,7 @@ define('aurelia-task-queue',['exports', 'aurelia-pal'], function (exports, _aure
 
   
 
-  var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
-    return typeof obj;
-  } : function (obj) {
-    return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
-  };
-
   var hasSetImmediate = typeof setImmediate === 'function';
-  var stackSeparator = '\nEnqueued in TaskQueue by:\n';
-  var microStackSeparator = '\nEnqueued in MicroTaskQueue by:\n';
 
   function makeRequestFlushFromMutationObserver(flush) {
     var toggle = 1;
@@ -18395,11 +18287,7 @@ define('aurelia-task-queue',['exports', 'aurelia-pal'], function (exports, _aure
     };
   }
 
-  function onError(error, task, longStacks) {
-    if (longStacks && task.stack && (typeof error === 'undefined' ? 'undefined' : _typeof(error)) === 'object' && error !== null) {
-      error.stack = filterFlushStack(error.stack) + task.stack;
-    }
-
+  function onError(error, task) {
     if ('onError' in task) {
       task.onError(error);
     } else if (hasSetImmediate) {
@@ -18420,7 +18308,6 @@ define('aurelia-task-queue',['exports', 'aurelia-pal'], function (exports, _aure
       
 
       this.flushing = false;
-      this.longStacks = false;
 
       this.microTaskQueue = [];
       this.microTaskQueueCapacity = 1024;
@@ -18446,9 +18333,6 @@ define('aurelia-task-queue',['exports', 'aurelia-pal'], function (exports, _aure
         this.requestFlushMicroTaskQueue();
       }
 
-      if (this.longStacks) {
-        task.stack = this.prepareQueueStack(microStackSeparator);
-      }
       this.microTaskQueue.push(task);
     };
 
@@ -18457,9 +18341,6 @@ define('aurelia-task-queue',['exports', 'aurelia-pal'], function (exports, _aure
         this.requestFlushTaskQueue();
       }
 
-      if (this.longStacks) {
-        task.stack = this.prepareQueueStack(stackSeparator);
-      }
       this.taskQueue.push(task);
     };
 
@@ -18474,14 +18355,11 @@ define('aurelia-task-queue',['exports', 'aurelia-pal'], function (exports, _aure
         this.flushing = true;
         while (index < queue.length) {
           task = queue[index];
-          if (this.longStacks) {
-            this.stack = typeof task.stack === 'string' ? task.stack : undefined;
-          }
           task.call();
           index++;
         }
       } catch (error) {
-        onError(error, task, this.longStacks);
+        onError(error, task);
       } finally {
         this.flushing = false;
       }
@@ -18497,9 +18375,6 @@ define('aurelia-task-queue',['exports', 'aurelia-pal'], function (exports, _aure
         this.flushing = true;
         while (index < queue.length) {
           task = queue[index];
-          if (this.longStacks) {
-            this.stack = typeof task.stack === 'string' ? task.stack : undefined;
-          }
           task.call();
           index++;
 
@@ -18513,7 +18388,7 @@ define('aurelia-task-queue',['exports', 'aurelia-pal'], function (exports, _aure
           }
         }
       } catch (error) {
-        onError(error, task, this.longStacks);
+        onError(error, task);
       } finally {
         this.flushing = false;
       }
@@ -18521,46 +18396,8 @@ define('aurelia-task-queue',['exports', 'aurelia-pal'], function (exports, _aure
       queue.length = 0;
     };
 
-    TaskQueue.prototype.prepareQueueStack = function prepareQueueStack(separator) {
-      var stack = separator + filterQueueStack(captureStack());
-      if (typeof this.stack === 'string') {
-        stack = filterFlushStack(stack) + this.stack;
-      }
-      return stack;
-    };
-
     return TaskQueue;
   }();
-
-  function captureStack() {
-    var error = new Error();
-
-    if (error.stack) {
-      return error.stack;
-    }
-
-    try {
-      throw error;
-    } catch (e) {
-      return e.stack;
-    }
-  }
-
-  function filterQueueStack(stack) {
-    return stack.replace(/^[\s\S]*?\bqueue(Micro)?Task\b[^\n]*\n/, '');
-  }
-
-  function filterFlushStack(stack) {
-    var index = stack.lastIndexOf('flushMicroTaskQueue');
-    if (index < 0) {
-      index = stack.lastIndexOf('flushTaskQueue');
-      if (index < 0) {
-        return stack;
-      }
-    }
-    index = stack.lastIndexOf('\n', index);
-    return index < 0 ? stack : stack.substr(0, index);
-  }
 });
 define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', 'aurelia-pal', 'aurelia-path', 'aurelia-loader', 'aurelia-dependency-injection', 'aurelia-binding', 'aurelia-task-queue'], function (exports, _aureliaLogging, _aureliaMetadata, _aureliaPal, _aureliaPath, _aureliaLoader, _aureliaDependencyInjection, _aureliaBinding, _aureliaTaskQueue) {
   'use strict';
@@ -18568,7 +18405,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
   Object.defineProperty(exports, "__esModule", {
     value: true
   });
-  exports.TemplatingEngine = exports.ElementConfigResource = exports.CompositionEngine = exports.SwapStrategies = exports.HtmlBehaviorResource = exports.BindableProperty = exports.BehaviorPropertyObserver = exports.Controller = exports.ViewEngine = exports.ModuleAnalyzer = exports.ResourceDescription = exports.ResourceModule = exports.ViewCompiler = exports.ViewFactory = exports.BoundViewFactory = exports.ViewSlot = exports.View = exports.ViewResources = exports.ShadowDOM = exports.ShadowSlot = exports.PassThroughSlot = exports.SlotCustomAttribute = exports.BindingLanguage = exports.ViewLocator = exports.InlineViewStrategy = exports.TemplateRegistryViewStrategy = exports.NoViewStrategy = exports.ConventionalViewStrategy = exports.RelativeViewStrategy = exports.viewStrategy = exports.TargetInstruction = exports.BehaviorInstruction = exports.ViewCompileInstruction = exports.ResourceLoadContext = exports.ElementEvents = exports.ViewEngineHooksResource = exports.CompositionTransaction = exports.CompositionTransactionOwnershipToken = exports.CompositionTransactionNotifier = exports.Animator = exports.animationEvent = undefined;
+  exports.TemplatingEngine = exports.ElementConfigResource = exports.CompositionEngine = exports.HtmlBehaviorResource = exports.BindableProperty = exports.BehaviorPropertyObserver = exports.Controller = exports.ViewEngine = exports.ModuleAnalyzer = exports.ResourceDescription = exports.ResourceModule = exports.ViewCompiler = exports.ViewFactory = exports.BoundViewFactory = exports.ViewSlot = exports.View = exports.ViewResources = exports.ShadowDOM = exports.ShadowSlot = exports.PassThroughSlot = exports.SlotCustomAttribute = exports.BindingLanguage = exports.ViewLocator = exports.InlineViewStrategy = exports.TemplateRegistryViewStrategy = exports.NoViewStrategy = exports.ConventionalViewStrategy = exports.RelativeViewStrategy = exports.viewStrategy = exports.TargetInstruction = exports.BehaviorInstruction = exports.ViewCompileInstruction = exports.ResourceLoadContext = exports.ElementEvents = exports.ViewEngineHooksResource = exports.CompositionTransaction = exports.CompositionTransactionOwnershipToken = exports.CompositionTransactionNotifier = exports.Animator = exports.animationEvent = undefined;
   exports._hyphenate = _hyphenate;
   exports._isAllWhitespace = _isAllWhitespace;
   exports.viewEngineHooks = viewEngineHooks;
@@ -18629,12 +18466,12 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
   }();
 
-  var _class, _temp, _dec, _class2, _dec2, _class3, _dec3, _class4, _dec4, _class5, _dec5, _class6, _class7, _temp2, _dec6, _class8, _class9, _temp3, _class11, _dec7, _class13, _dec8, _class14, _class15, _temp4, _dec9, _class16, _dec10, _class17, _dec11, _class18;
+  var _class4, _temp, _dec, _class5, _dec2, _class6, _dec3, _class7, _dec4, _class8, _dec5, _class9, _class10, _temp2, _dec6, _class11, _class12, _temp3, _class15, _dec7, _class17, _dec8, _class18, _class19, _temp4, _dec9, _class21, _dec10, _class22, _dec11, _class23;
 
   var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
     return typeof obj;
   } : function (obj) {
-    return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+    return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
   };
 
   
@@ -18855,9 +18692,9 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
 
     ElementEvents.prototype.publish = function publish(eventName) {
-      var detail = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-      var bubbles = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
-      var cancelable = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : true;
+      var detail = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+      var bubbles = arguments.length <= 2 || arguments[2] === undefined ? true : arguments[2];
+      var cancelable = arguments.length <= 3 || arguments[3] === undefined ? true : arguments[3];
 
       var event = _aureliaPal.DOM.createCustomEvent(eventName, { cancelable: cancelable, bubbles: bubbles, detail: detail });
       this.element.dispatchEvent(event);
@@ -18866,7 +18703,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     ElementEvents.prototype.subscribe = function subscribe(eventName, handler) {
       var _this2 = this;
 
-      var bubbles = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
+      var bubbles = arguments.length <= 2 || arguments[2] === undefined ? true : arguments[2];
 
       if (handler && typeof handler === 'function') {
         handler.eventName = eventName;
@@ -18887,7 +18724,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     ElementEvents.prototype.subscribeOnce = function subscribeOnce(eventName, handler) {
       var _this3 = this;
 
-      var bubbles = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
+      var bubbles = arguments.length <= 2 || arguments[2] === undefined ? true : arguments[2];
 
       if (handler && typeof handler === 'function') {
         var _ret = function () {
@@ -18950,8 +18787,8 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
   }();
 
   var ViewCompileInstruction = exports.ViewCompileInstruction = function ViewCompileInstruction() {
-    var targetShadowDOM = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-    var compileSurrogate = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+    var targetShadowDOM = arguments.length <= 0 || arguments[0] === undefined ? false : arguments[0];
+    var compileSurrogate = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
 
     
 
@@ -19026,7 +18863,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
 
   BehaviorInstruction.normal = new BehaviorInstruction();
 
-  var TargetInstruction = exports.TargetInstruction = (_temp = _class = function () {
+  var TargetInstruction = exports.TargetInstruction = (_temp = _class4 = function () {
     TargetInstruction.shadowSlot = function shadowSlot(parentInjectorId) {
       var instruction = new TargetInstruction();
       instruction.parentInjectorId = parentInjectorId;
@@ -19098,7 +18935,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     }
 
     return TargetInstruction;
-  }(), _class.noExpressions = Object.freeze([]), _temp);
+  }(), _class4.noExpressions = Object.freeze([]), _temp);
   var viewStrategy = exports.viewStrategy = _aureliaMetadata.protocol.create('aurelia:view-strategy', {
     validate: function validate(target) {
       if (!(typeof target.loadViewFactory === 'function')) {
@@ -19114,7 +18951,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     }
   });
 
-  var RelativeViewStrategy = exports.RelativeViewStrategy = (_dec = viewStrategy(), _dec(_class2 = function () {
+  var RelativeViewStrategy = exports.RelativeViewStrategy = (_dec = viewStrategy(), _dec(_class5 = function () {
     function RelativeViewStrategy(path) {
       
 
@@ -19138,8 +18975,8 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
 
     return RelativeViewStrategy;
-  }()) || _class2);
-  var ConventionalViewStrategy = exports.ConventionalViewStrategy = (_dec2 = viewStrategy(), _dec2(_class3 = function () {
+  }()) || _class5);
+  var ConventionalViewStrategy = exports.ConventionalViewStrategy = (_dec2 = viewStrategy(), _dec2(_class6 = function () {
     function ConventionalViewStrategy(viewLocator, origin) {
       
 
@@ -19153,8 +18990,8 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
 
     return ConventionalViewStrategy;
-  }()) || _class3);
-  var NoViewStrategy = exports.NoViewStrategy = (_dec3 = viewStrategy(), _dec3(_class4 = function () {
+  }()) || _class6);
+  var NoViewStrategy = exports.NoViewStrategy = (_dec3 = viewStrategy(), _dec3(_class7 = function () {
     function NoViewStrategy(dependencies, dependencyBaseUrl) {
       
 
@@ -19193,8 +19030,8 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
 
     return NoViewStrategy;
-  }()) || _class4);
-  var TemplateRegistryViewStrategy = exports.TemplateRegistryViewStrategy = (_dec4 = viewStrategy(), _dec4(_class5 = function () {
+  }()) || _class7);
+  var TemplateRegistryViewStrategy = exports.TemplateRegistryViewStrategy = (_dec4 = viewStrategy(), _dec4(_class8 = function () {
     function TemplateRegistryViewStrategy(moduleId, entry) {
       
 
@@ -19214,8 +19051,8 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
 
     return TemplateRegistryViewStrategy;
-  }()) || _class5);
-  var InlineViewStrategy = exports.InlineViewStrategy = (_dec5 = viewStrategy(), _dec5(_class6 = function () {
+  }()) || _class8);
+  var InlineViewStrategy = exports.InlineViewStrategy = (_dec5 = viewStrategy(), _dec5(_class9 = function () {
     function InlineViewStrategy(markup, dependencies, dependencyBaseUrl) {
       
 
@@ -19252,8 +19089,8 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
 
     return InlineViewStrategy;
-  }()) || _class6);
-  var ViewLocator = exports.ViewLocator = (_temp2 = _class7 = function () {
+  }()) || _class9);
+  var ViewLocator = exports.ViewLocator = (_temp2 = _class10 = function () {
     function ViewLocator() {
       
     }
@@ -19320,7 +19157,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
 
     return ViewLocator;
-  }(), _class7.viewStrategyMetadataKey = 'aurelia:view-strategy', _temp2);
+  }(), _class10.viewStrategyMetadataKey = 'aurelia:view-strategy', _temp2);
 
 
   function mi(name) {
@@ -19349,7 +19186,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
 
   var noNodes = Object.freeze([]);
 
-  var SlotCustomAttribute = exports.SlotCustomAttribute = (_dec6 = (0, _aureliaDependencyInjection.inject)(_aureliaPal.DOM.Element), _dec6(_class8 = function () {
+  var SlotCustomAttribute = exports.SlotCustomAttribute = (_dec6 = (0, _aureliaDependencyInjection.inject)(_aureliaPal.DOM.Element), _dec6(_class11 = function () {
     function SlotCustomAttribute(element) {
       
 
@@ -19360,7 +19197,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     SlotCustomAttribute.prototype.valueChanged = function valueChanged(newValue, oldValue) {};
 
     return SlotCustomAttribute;
-  }()) || _class8);
+  }()) || _class11);
 
   var PassThroughSlot = exports.PassThroughSlot = function () {
     function PassThroughSlot(anchor, name, destinationName, fallbackFactory) {
@@ -19693,7 +19530,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     return ShadowSlot;
   }();
 
-  var ShadowDOM = exports.ShadowDOM = (_temp3 = _class9 = function () {
+  var ShadowDOM = exports.ShadowDOM = (_temp3 = _class12 = function () {
     function ShadowDOM() {
       
     }
@@ -19779,7 +19616,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
 
     return ShadowDOM;
-  }(), _class9.defaultSlotKey = '__au-default-slot-key__', _temp3);
+  }(), _class12.defaultSlotKey = '__au-default-slot-key__', _temp3);
 
 
   function register(lookup, name, resource, type) {
@@ -20180,7 +20017,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
 
   var ViewSlot = exports.ViewSlot = function () {
     function ViewSlot(anchor, anchorIsContainer) {
-      var animator = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : Animator.instance;
+      var animator = arguments.length <= 2 || arguments[2] === undefined ? Animator.instance : arguments[2];
 
       
 
@@ -20198,7 +20035,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     }
 
     ViewSlot.prototype.animateView = function animateView(view) {
-      var direction = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'enter';
+      var direction = arguments.length <= 1 || arguments[1] === undefined ? 'enter' : arguments[1];
 
       var animatableElement = getAnimatableElement(view);
 
@@ -20446,11 +20283,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
 
         if (returnToCache) {
           for (i = 0; i < ii; ++i) {
-            var _child3 = children[i];
-
-            if (_child3) {
-              _child3.returnToCache();
-            }
+            children[i].returnToCache();
           }
         }
 
@@ -20600,7 +20433,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     return ViewSlot;
   }();
 
-  var ProviderResolver = (0, _aureliaDependencyInjection.resolver)(_class11 = function () {
+  var ProviderResolver = (0, _aureliaDependencyInjection.resolver)(_class15 = function () {
     function ProviderResolver() {
       
     }
@@ -20611,7 +20444,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
 
     return ProviderResolver;
-  }()) || _class11;
+  }()) || _class15;
 
   var providerResolverInstance = new ProviderResolver();
 
@@ -20689,18 +20522,6 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     return container;
   }
 
-  function hasAttribute(name) {
-    return this._element.hasAttribute(name);
-  }
-
-  function getAttribute(name) {
-    return this._element.getAttribute(name);
-  }
-
-  function setAttribute(name, value) {
-    this._element.setAttribute(name, value);
-  }
-
   function makeElementIntoAnchor(element, elementInstruction) {
     var anchor = _aureliaPal.DOM.createComment('anchor');
 
@@ -20711,11 +20532,15 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
         anchor.contentElement = firstChild;
       }
 
-      anchor._element = element;
-
-      anchor.hasAttribute = hasAttribute;
-      anchor.getAttribute = getAttribute;
-      anchor.setAttribute = setAttribute;
+      anchor.hasAttribute = function (name) {
+        return element.hasAttribute(name);
+      };
+      anchor.getAttribute = function (name) {
+        return element.getAttribute(name);
+      };
+      anchor.setAttribute = function (name, value) {
+        element.setAttribute(name, value);
+      };
     }
 
     _aureliaPal.DOM.replaceNode(anchor, element);
@@ -20833,8 +20658,8 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
           element.setAttribute('style', styleObjectToString(styleObject));
         }
       } else {
-        element.setAttribute(key, values[key]);
-      }
+          element.setAttribute(key, values[key]);
+        }
     }
 
     if (behaviorInstructions.length) {
@@ -21007,6 +20832,35 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     return ++nextInjectorId;
   }
 
+  function configureProperties(instruction, resources) {
+    var type = instruction.type;
+    var attrName = instruction.attrName;
+    var attributes = instruction.attributes;
+    var property = void 0;
+    var key = void 0;
+    var value = void 0;
+
+    var knownAttribute = resources.mapAttribute(attrName);
+    if (knownAttribute && attrName in attributes && knownAttribute !== attrName) {
+      attributes[knownAttribute] = attributes[attrName];
+      delete attributes[attrName];
+    }
+
+    for (key in attributes) {
+      value = attributes[key];
+
+      if (value !== null && (typeof value === 'undefined' ? 'undefined' : _typeof(value)) === 'object') {
+        property = type.attributes[key];
+
+        if (property !== undefined) {
+          value.targetProperty = property.name;
+        } else {
+          value.targetProperty = key;
+        }
+      }
+    }
+  }
+
   var lastAUTargetID = 0;
   function getNextAUTargetID() {
     return (++lastAUTargetID).toString();
@@ -21034,10 +20888,10 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
 
     if (node.innerHTML.trim()) {
       var fragment = _aureliaPal.DOM.createDocumentFragment();
-      var _child4 = void 0;
+      var _child3 = void 0;
 
-      while (_child4 = node.firstChild) {
-        fragment.appendChild(_child4);
+      while (_child3 = node.firstChild) {
+        fragment.appendChild(_child3);
       }
 
       instruction.slotFallbackFactory = compiler.compile(fragment, resources);
@@ -21048,7 +20902,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     return auShadowSlot;
   }
 
-  var ViewCompiler = exports.ViewCompiler = (_dec7 = (0, _aureliaDependencyInjection.inject)(BindingLanguage, ViewResources), _dec7(_class13 = function () {
+  var ViewCompiler = exports.ViewCompiler = (_dec7 = (0, _aureliaDependencyInjection.inject)(BindingLanguage, ViewResources), _dec7(_class17 = function () {
     function ViewCompiler(bindingLanguage, resources) {
       
 
@@ -21180,13 +21034,6 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
               if (!info.command && !info.expression) {
                 info.command = property.hasOptions ? 'options' : null;
               }
-
-              if (info.command && info.command !== 'options' && type.primaryProperty) {
-                var primaryProperty = type.primaryProperty;
-                attrName = info.attrName = primaryProperty.name;
-
-                info.defaultBindingMode = primaryProperty.defaultBindingMode;
-              }
             }
           }
         }
@@ -21203,7 +21050,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
           } else {
             if (type) {
               instruction.type = type;
-              this._configureProperties(instruction, resources);
+              configureProperties(instruction, resources);
 
               if (type.liftsContent) {
                 throw new Error('You cannot place a template controller on a surrogate element.');
@@ -21317,21 +21164,14 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
               if (!info.command && !info.expression) {
                 info.command = property.hasOptions ? 'options' : null;
               }
-
-              if (info.command && info.command !== 'options' && type.primaryProperty) {
-                var primaryProperty = type.primaryProperty;
-                attrName = info.attrName = primaryProperty.name;
-
-                info.defaultBindingMode = primaryProperty.defaultBindingMode;
-              }
             }
           }
         } else if (elementInstruction) {
-          elementProperty = elementInstruction.type.attributes[info.attrName];
-          if (elementProperty) {
-            info.defaultBindingMode = elementProperty.defaultBindingMode;
+            elementProperty = elementInstruction.type.attributes[info.attrName];
+            if (elementProperty) {
+              info.defaultBindingMode = elementProperty.defaultBindingMode;
+            }
           }
-        }
 
         if (elementProperty) {
           instruction = bindingLanguage.createAttributeInstruction(resources, node, info, elementInstruction);
@@ -21349,7 +21189,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
           } else {
             if (type) {
               instruction.type = type;
-              this._configureProperties(instruction, resources);
+              configureProperties(instruction, resources);
 
               if (type.liftsContent) {
                 instruction.originalAttrName = attrName;
@@ -21421,37 +21261,8 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
       return node.nextSibling;
     };
 
-    ViewCompiler.prototype._configureProperties = function _configureProperties(instruction, resources) {
-      var type = instruction.type;
-      var attrName = instruction.attrName;
-      var attributes = instruction.attributes;
-      var property = void 0;
-      var key = void 0;
-      var value = void 0;
-
-      var knownAttribute = resources.mapAttribute(attrName);
-      if (knownAttribute && attrName in attributes && knownAttribute !== attrName) {
-        attributes[knownAttribute] = attributes[attrName];
-        delete attributes[attrName];
-      }
-
-      for (key in attributes) {
-        value = attributes[key];
-
-        if (value !== null && (typeof value === 'undefined' ? 'undefined' : _typeof(value)) === 'object') {
-          property = type.attributes[key];
-
-          if (property !== undefined) {
-            value.targetProperty = property.name;
-          } else {
-            value.targetProperty = key;
-          }
-        }
-      }
-    };
-
     return ViewCompiler;
-  }()) || _class13);
+  }()) || _class17);
 
   var ResourceModule = exports.ResourceModule = function () {
     function ResourceModule(moduleId) {
@@ -21727,7 +21538,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     return ProxyViewFactory;
   }();
 
-  var ViewEngine = exports.ViewEngine = (_dec8 = (0, _aureliaDependencyInjection.inject)(_aureliaLoader.Loader, _aureliaDependencyInjection.Container, ViewCompiler, ModuleAnalyzer, ViewResources), _dec8(_class14 = (_temp4 = _class15 = function () {
+  var ViewEngine = exports.ViewEngine = (_dec8 = (0, _aureliaDependencyInjection.inject)(_aureliaLoader.Loader, _aureliaDependencyInjection.Container, ViewCompiler, ModuleAnalyzer, ViewResources), _dec8(_class18 = (_temp4 = _class19 = function () {
     function ViewEngine(loader, container, viewCompiler, moduleAnalyzer, appResources) {
       
 
@@ -21910,7 +21721,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
 
     return ViewEngine;
-  }(), _class15.viewModelRequireMetadataKey = 'aurelia:view-model-require', _temp4)) || _class14);
+  }(), _class19.viewModelRequireMetadataKey = 'aurelia:view-model-require', _temp4)) || _class18);
 
   var Controller = exports.Controller = function () {
     function Controller(behavior, instruction, viewModel, container) {
@@ -22005,11 +21816,11 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
         if (this.viewModel === scope.overrideContext.bindingContext) {
           overrideContext = scope.overrideContext;
         } else if (this.instruction.inheritBindingContext) {
-          overrideContext = (0, _aureliaBinding.createOverrideContext)(this.viewModel, scope.overrideContext);
-        } else {
-          overrideContext = (0, _aureliaBinding.createOverrideContext)(this.viewModel);
-          overrideContext.__parentOverrideContext = scope.overrideContext;
-        }
+            overrideContext = (0, _aureliaBinding.createOverrideContext)(this.viewModel, scope.overrideContext);
+          } else {
+              overrideContext = (0, _aureliaBinding.createOverrideContext)(this.viewModel);
+              overrideContext.__parentOverrideContext = scope.overrideContext;
+            }
 
         this.view.bind(this.viewModel, overrideContext);
       } else if (skipSelfSubscriber) {
@@ -22025,9 +21836,9 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
 
     Controller.prototype.unbind = function unbind() {
       if (this.isBound) {
-        var _boundProperties = this.boundProperties;
-        var _i2 = void 0;
-        var _ii2 = void 0;
+        var boundProperties = this.boundProperties;
+        var i = void 0;
+        var ii = void 0;
 
         this.isBound = false;
         this.scope = null;
@@ -22044,8 +21855,8 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
           this.elementEvents.disposeAll();
         }
 
-        for (_i2 = 0, _ii2 = _boundProperties.length; _i2 < _ii2; ++_i2) {
-          _boundProperties[_i2].binding.unbind();
+        for (i = 0, ii = boundProperties.length; i < ii; ++i) {
+          boundProperties[i].binding.unbind();
         }
       }
     };
@@ -22083,7 +21894,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     return Controller;
   }();
 
-  var BehaviorPropertyObserver = exports.BehaviorPropertyObserver = (_dec9 = (0, _aureliaBinding.subscriberCollection)(), _dec9(_class16 = function () {
+  var BehaviorPropertyObserver = exports.BehaviorPropertyObserver = (_dec9 = (0, _aureliaBinding.subscriberCollection)(), _dec9(_class21 = function () {
     function BehaviorPropertyObserver(taskQueue, obj, propertyName, selfSubscriber, initialValue) {
       
 
@@ -22145,7 +21956,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
 
     return BehaviorPropertyObserver;
-  }()) || _class16);
+  }()) || _class21);
 
 
   function getObserver(behavior, instance, name) {
@@ -22399,7 +22210,6 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
       this.properties = [];
       this.attributes = {};
       this.isInitialized = false;
-      this.primaryProperty = null;
     }
 
     HtmlBehaviorResource.convention = function convention(name, existing) {
@@ -22472,12 +22282,6 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
         } else {
           for (i = 0, ii = properties.length; i < ii; ++i) {
             properties[i].defineOn(target, this);
-            if (properties[i].primaryProperty) {
-              if (this.primaryProperty) {
-                throw new Error('Only one bindable property on a custom element can be defined as the default');
-              }
-              this.primaryProperty = properties[i];
-            }
           }
 
           current = new BindableProperty({
@@ -22498,16 +22302,8 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
 
     HtmlBehaviorResource.prototype.register = function register(registry, name) {
-      var _this13 = this;
-
       if (this.attributeName !== null) {
         registry.registerAttribute(name || this.attributeName, this, this.attributeName);
-
-        if (Array.isArray(this.aliases)) {
-          this.aliases.forEach(function (alias) {
-            registry.registerAttribute(alias, _this13, _this13.attributeName);
-          });
-        }
       }
 
       if (this.elementName !== null) {
@@ -22516,7 +22312,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
 
     HtmlBehaviorResource.prototype.load = function load(container, target, loadContext, viewStrategy, transientView) {
-      var _this14 = this;
+      var _this13 = this;
 
       var options = void 0;
 
@@ -22529,8 +22325,8 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
         }
 
         return viewStrategy.loadViewFactory(container.get(ViewEngine), options, loadContext, target).then(function (viewFactory) {
-          if (!transientView || !_this14.viewFactory) {
-            _this14.viewFactory = viewFactory;
+          if (!transientView || !_this13.viewFactory) {
+            _this13.viewFactory = viewFactory;
           }
 
           return viewFactory;
@@ -22656,8 +22452,8 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
 
             if (instruction.anchorIsContainer) {
               if (childBindings !== null) {
-                for (var _i3 = 0, _ii3 = childBindings.length; _i3 < _ii3; ++_i3) {
-                  controller.view.addBinding(childBindings[_i3].create(element, viewModel, controller));
+                for (var i = 0, ii = childBindings.length; i < ii; ++i) {
+                  controller.view.addBinding(childBindings[i].create(element, viewModel, controller));
                 }
               }
 
@@ -22666,26 +22462,26 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
               controller.view.insertNodesBefore(viewHost);
             }
           } else if (childBindings !== null) {
-            for (var _i4 = 0, _ii4 = childBindings.length; _i4 < _ii4; ++_i4) {
-              bindings.push(childBindings[_i4].create(element, viewModel, controller));
+            for (var _i2 = 0, _ii2 = childBindings.length; _i2 < _ii2; ++_i2) {
+              bindings.push(childBindings[_i2].create(element, viewModel, controller));
             }
           }
         } else if (controller.view) {
           controller.view.controller = controller;
 
           if (childBindings !== null) {
-            for (var _i5 = 0, _ii5 = childBindings.length; _i5 < _ii5; ++_i5) {
-              controller.view.addBinding(childBindings[_i5].create(instruction.host, viewModel, controller));
+            for (var _i3 = 0, _ii3 = childBindings.length; _i3 < _ii3; ++_i3) {
+              controller.view.addBinding(childBindings[_i3].create(instruction.host, viewModel, controller));
             }
           }
         } else if (childBindings !== null) {
-          for (var _i6 = 0, _ii6 = childBindings.length; _i6 < _ii6; ++_i6) {
-            bindings.push(childBindings[_i6].create(instruction.host, viewModel, controller));
+          for (var _i4 = 0, _ii4 = childBindings.length; _i4 < _ii4; ++_i4) {
+            bindings.push(childBindings[_i4].create(instruction.host, viewModel, controller));
           }
         }
       } else if (childBindings !== null) {
-        for (var _i7 = 0, _ii7 = childBindings.length; _i7 < _ii7; ++_i7) {
-          bindings.push(childBindings[_i7].create(element, viewModel, controller));
+        for (var _i5 = 0, _ii5 = childBindings.length; _i5 < _ii5; ++_i5) {
+          bindings.push(childBindings[_i5].create(element, viewModel, controller));
         }
       }
 
@@ -22739,7 +22535,6 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
 
       if (descriptor) {
         descriptor.writable = true;
-        descriptor.configurable = true;
       }
 
       selectorOrConfig.all = all;
@@ -22790,8 +22585,8 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     var bindersLength = binders.length;
     var groupedMutations = new Map();
 
-    for (var _i8 = 0, _ii8 = mutations.length; _i8 < _ii8; ++_i8) {
-      var record = mutations[_i8];
+    for (var i = 0, ii = mutations.length; i < ii; ++i) {
+      var record = mutations[i];
       var added = record.addedNodes;
       var removed = record.removedNodes;
 
@@ -22859,8 +22654,8 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
         if (assignedSlot && assignedSlot.projectFromAnchors) {
           var anchors = assignedSlot.projectFromAnchors;
 
-          for (var _i9 = 0, _ii9 = anchors.length; _i9 < _ii9; ++_i9) {
-            if (anchors[_i9].auOwnerView === contentView) {
+          for (var i = 0, ii = anchors.length; i < ii; ++i) {
+            if (anchors[i].auOwnerView === contentView) {
               return true;
             }
           }
@@ -22996,24 +22791,6 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     return ChildObserverBinder;
   }();
 
-  function remove(viewSlot, previous) {
-    return Array.isArray(previous) ? viewSlot.removeMany(previous, true) : viewSlot.remove(previous, true);
-  }
-
-  var SwapStrategies = exports.SwapStrategies = {
-    before: function before(viewSlot, previous, callback) {
-      return previous === undefined ? callback() : callback().then(function () {
-        return remove(viewSlot, previous);
-      });
-    },
-    with: function _with(viewSlot, previous, callback) {
-      return previous === undefined ? callback() : Promise.all([remove(viewSlot, previous), callback()]);
-    },
-    after: function after(viewSlot, previous, callback) {
-      return Promise.resolve(viewSlot.removeAll(true)).then(callback);
-    }
-  };
-
   function tryActivateViewModel(context) {
     if (context.skipActivation || typeof context.viewModel.activate !== 'function') {
       return Promise.resolve();
@@ -23022,7 +22799,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     return context.viewModel.activate(context.model) || Promise.resolve();
   }
 
-  var CompositionEngine = exports.CompositionEngine = (_dec10 = (0, _aureliaDependencyInjection.inject)(ViewEngine, ViewLocator), _dec10(_class17 = function () {
+  var CompositionEngine = exports.CompositionEngine = (_dec10 = (0, _aureliaDependencyInjection.inject)(ViewEngine, ViewLocator), _dec10(_class22 = function () {
     function CompositionEngine(viewEngine, viewLocator) {
       
 
@@ -23030,45 +22807,38 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
       this.viewLocator = viewLocator;
     }
 
-    CompositionEngine.prototype._swap = function _swap(context, view) {
-      var swapStrategy = SwapStrategies[context.swapOrder] || SwapStrategies.after;
-      var previousViews = context.viewSlot.children.slice();
-
-      return swapStrategy(context.viewSlot, previousViews, function () {
-        return Promise.resolve(context.viewSlot.add(view)).then(function () {
+    CompositionEngine.prototype._createControllerAndSwap = function _createControllerAndSwap(context) {
+      function swap(controller) {
+        return Promise.resolve(context.viewSlot.removeAll(true)).then(function () {
           if (context.currentController) {
             context.currentController.unbind();
           }
-        });
-      }).then(function () {
-        if (context.compositionTransactionNotifier) {
-          context.compositionTransactionNotifier.done();
-        }
-      });
-    };
 
-    CompositionEngine.prototype._createControllerAndSwap = function _createControllerAndSwap(context) {
-      var _this15 = this;
+          context.viewSlot.add(controller.view);
+
+          if (context.compositionTransactionNotifier) {
+            context.compositionTransactionNotifier.done();
+          }
+
+          return controller;
+        });
+      }
 
       return this.createController(context).then(function (controller) {
         controller.automate(context.overrideContext, context.owningView);
 
         if (context.compositionTransactionOwnershipToken) {
           return context.compositionTransactionOwnershipToken.waitForCompositionComplete().then(function () {
-            return _this15._swap(context, controller.view);
-          }).then(function () {
-            return controller;
+            return swap(controller);
           });
         }
 
-        return _this15._swap(context, controller.view).then(function () {
-          return controller;
-        });
+        return swap(controller);
       });
     };
 
     CompositionEngine.prototype.createController = function createController(context) {
-      var _this16 = this;
+      var _this14 = this;
 
       var childContainer = void 0;
       var viewModel = void 0;
@@ -23081,7 +22851,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
         viewModelResource = context.viewModelResource;
         m = viewModelResource.metadata;
 
-        var viewStrategy = _this16.viewLocator.getViewStrategy(context.view || viewModel);
+        var viewStrategy = _this14.viewLocator.getViewStrategy(context.view || viewModel);
 
         if (context.viewResources) {
           viewStrategy.makeRelativeTo(context.viewResources.viewUrl);
@@ -23121,8 +22891,6 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
 
     CompositionEngine.prototype.compose = function compose(context) {
-      var _this17 = this;
-
       context.childContainer = context.childContainer || context.container.createChild();
       context.view = this.viewLocator.getViewStrategy(context.view);
 
@@ -23146,17 +22914,23 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
           var result = viewFactory.create(context.childContainer);
           result.bind(context.bindingContext, context.overrideContext);
 
-          if (context.compositionTransactionOwnershipToken) {
-            return context.compositionTransactionOwnershipToken.waitForCompositionComplete().then(function () {
-              return _this17._swap(context, result);
-            }).then(function () {
+          var work = function work() {
+            return Promise.resolve(context.viewSlot.removeAll(true)).then(function () {
+              context.viewSlot.add(result);
+
+              if (context.compositionTransactionNotifier) {
+                context.compositionTransactionNotifier.done();
+              }
+
               return result;
             });
+          };
+
+          if (context.compositionTransactionOwnershipToken) {
+            return context.compositionTransactionOwnershipToken.waitForCompositionComplete().then(work);
           }
 
-          return _this17._swap(context, result).then(function () {
-            return result;
-          });
+          return work();
         });
       } else if (context.viewSlot) {
         context.viewSlot.removeAll();
@@ -23172,7 +22946,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
 
     return CompositionEngine;
-  }()) || _class17);
+  }()) || _class22);
 
   var ElementConfigResource = exports.ElementConfigResource = function () {
     function ElementConfigResource() {
@@ -23225,12 +22999,11 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
   }
 
-  function customAttribute(name, defaultBindingMode, aliases) {
+  function customAttribute(name, defaultBindingMode) {
     return function (target) {
       var r = _aureliaMetadata.metadata.getOrCreateOwn(_aureliaMetadata.metadata.resource, HtmlBehaviorResource, target);
       r.attributeName = validateBehaviorName(name, 'custom attribute');
       r.attributeDefaultBindingMode = defaultBindingMode;
-      r.aliases = aliases;
     };
   }
 
@@ -23382,7 +23155,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
   }
 
-  var TemplatingEngine = exports.TemplatingEngine = (_dec11 = (0, _aureliaDependencyInjection.inject)(_aureliaDependencyInjection.Container, ModuleAnalyzer, ViewCompiler, CompositionEngine), _dec11(_class18 = function () {
+  var TemplatingEngine = exports.TemplatingEngine = (_dec11 = (0, _aureliaDependencyInjection.inject)(_aureliaDependencyInjection.Container, ModuleAnalyzer, ViewCompiler, CompositionEngine), _dec11(_class23 = function () {
     function TemplatingEngine(container, moduleAnalyzer, viewCompiler, compositionEngine) {
       
 
@@ -23418,15 +23191,11 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
 
       view.bind(instruction.bindingContext || {}, instruction.overrideContext);
 
-      view.firstChild = view.lastChild = view.fragment;
-      view.fragment = _aureliaPal.DOM.createDocumentFragment();
-      view.attached();
-
       return view;
     };
 
     return TemplatingEngine;
-  }()) || _class18);
+  }()) || _class23);
 });
 define('aurelia-templating-binding',['exports', 'aurelia-logging', 'aurelia-binding', 'aurelia-templating'], function (exports, _aureliaLogging, _aureliaBinding, _aureliaTemplating) {
   'use strict';
@@ -23504,8 +23273,6 @@ define('aurelia-templating-binding',['exports', 'aurelia-logging', 'aurelia-bind
 
       this.register('label', 'for', 'htmlFor');
 
-      this.register('img', 'usemap', 'useMap');
-
       this.register('input', 'maxlength', 'maxLength');
       this.register('input', 'minlength', 'minLength');
       this.register('input', 'formaction', 'formAction');
@@ -23548,7 +23315,7 @@ define('aurelia-templating-binding',['exports', 'aurelia-logging', 'aurelia-bind
         return this.allElements[attributeName];
       }
 
-      if (/(?:^data-)|(?:^aria-)|:/.test(attributeName)) {
+      if (/(^data-)|(^aria-)|:/.test(attributeName)) {
         return attributeName;
       }
       return (0, _aureliaBinding.camelCase)(attributeName);
@@ -23838,15 +23605,11 @@ define('aurelia-templating-binding',['exports', 'aurelia-logging', 'aurelia-bind
       var ii = void 0;
       var inString = false;
       var inEscape = false;
-      var foundName = false;
 
       for (i = 0, ii = attrValue.length; i < ii; ++i) {
         current = attrValue[i];
 
         if (current === ';' && !inString) {
-          if (!foundName) {
-            name = this._getPrimaryPropertyName(resources, context);
-          }
           info = language.inspectAttribute(resources, '?', name, target.trim());
           language.createAttributeInstruction(resources, element, info, instruction, context);
 
@@ -23857,7 +23620,6 @@ define('aurelia-templating-binding',['exports', 'aurelia-logging', 'aurelia-bind
           target = '';
           name = null;
         } else if (current === ':' && name === null) {
-          foundName = true;
           name = target.trim();
           target = '';
         } else if (current === '\\') {
@@ -23875,10 +23637,6 @@ define('aurelia-templating-binding',['exports', 'aurelia-logging', 'aurelia-bind
         inEscape = false;
       }
 
-      if (!foundName) {
-        name = this._getPrimaryPropertyName(resources, context);
-      }
-
       if (name !== null) {
         info = language.inspectAttribute(resources, '?', name, target.trim());
         language.createAttributeInstruction(resources, element, info, instruction, context);
@@ -23889,14 +23647,6 @@ define('aurelia-templating-binding',['exports', 'aurelia-logging', 'aurelia-bind
       }
 
       return instruction;
-    };
-
-    SyntaxInterpreter.prototype._getPrimaryPropertyName = function _getPrimaryPropertyName(resources, context) {
-      var type = resources.getAttribute(context.attributeName);
-      if (type && type.primaryProperty) {
-        return type.primaryProperty.name;
-      }
-      return null;
     };
 
     SyntaxInterpreter.prototype['for'] = function _for(resources, element, info, existingInstruction) {
@@ -24289,22 +24039,20 @@ define('aurelia-animator-css',['exports', 'aurelia-templating', 'aurelia-pal'], 
       });
     };
 
-    CssAnimator.prototype._stateAnim = function _stateAnim(element, direction, doneClass) {
+    CssAnimator.prototype.enter = function enter(element) {
       var _this4 = this;
 
-      var auClass = 'au-' + direction;
-      var auClassActive = auClass + '-active';
       return new Promise(function (resolve, reject) {
         var classList = element.classList;
 
-        _this4._triggerDOMEvent(_aureliaTemplating.animationEvent[direction + 'Begin'], element);
+        _this4._triggerDOMEvent(_aureliaTemplating.animationEvent.enterBegin, element);
 
         if (_this4.useAnimationDoneClasses) {
           classList.remove(_this4.animationEnteredClass);
           classList.remove(_this4.animationLeftClass);
         }
 
-        classList.add(auClass);
+        classList.add('au-enter');
         var prevAnimationNames = _this4._getElementAnimationNames(element);
 
         var _animStart = void 0;
@@ -24313,7 +24061,7 @@ define('aurelia-animator-css',['exports', 'aurelia-templating', 'aurelia-pal'], 
           animHasStarted = true;
           _this4.isAnimating = true;
 
-          _this4._triggerDOMEvent(_aureliaTemplating.animationEvent[direction + 'Active'], element);
+          _this4._triggerDOMEvent(_aureliaTemplating.animationEvent.enterActive, element);
 
           evAnimStart.stopPropagation();
 
@@ -24328,83 +24076,69 @@ define('aurelia-animator-css',['exports', 'aurelia-templating', 'aurelia-pal'], 
 
           evAnimEnd.stopPropagation();
 
-          classList.remove(auClassActive);
-          classList.remove(auClass);
+          classList.remove('au-enter-active');
+          classList.remove('au-enter');
 
           evAnimEnd.target.removeEventListener(evAnimEnd.type, _animEnd);
 
-          if (_this4.useAnimationDoneClasses && doneClass !== undefined && doneClass !== null) {
-            classList.add(doneClass);
+          if (_this4.useAnimationDoneClasses && _this4.animationEnteredClass !== undefined && _this4.animationEnteredClass !== null) {
+            classList.add(_this4.animationEnteredClass);
           }
 
           _this4.isAnimating = false;
-          _this4._triggerDOMEvent(_aureliaTemplating.animationEvent[direction + 'Done'], element);
+          _this4._triggerDOMEvent(_aureliaTemplating.animationEvent.enterDone, element);
 
           resolve(true);
         }, false);
 
         var parent = element.parentElement;
         var delay = 0;
-        var attrib = 'data-animator-pending' + direction;
 
         var cleanupAnimation = function cleanupAnimation() {
           var animationNames = _this4._getElementAnimationNames(element);
           if (!_this4._animationChangeWithValidKeyframe(animationNames, prevAnimationNames)) {
-            classList.remove(auClassActive);
-            classList.remove(auClass);
+            classList.remove('au-enter-active');
+            classList.remove('au-enter');
 
             _this4._removeMultipleEventListener(element, 'webkitAnimationEnd animationend', _animEnd);
             _this4._removeMultipleEventListener(element, 'webkitAnimationStart animationstart', _animStart);
 
-            _this4._triggerDOMEvent(_aureliaTemplating.animationEvent[direction + 'Timeout'], element);
+            _this4._triggerDOMEvent(_aureliaTemplating.animationEvent.enterTimeout, element);
             resolve(false);
           }
-          parent && parent.setAttribute(attrib, +(parent.getAttribute(attrib) || 1) - 1);
         };
 
         if (parent !== null && parent !== undefined && (parent.classList.contains('au-stagger') || parent.classList.contains('au-stagger-enter'))) {
-          var offset = +(parent.getAttribute(attrib) || 0);
-          parent.setAttribute(attrib, offset + 1);
-          delay = _this4._getElementAnimationDelay(parent) * offset;
+          var elemPos = Array.prototype.indexOf.call(parent.children, element);
+          delay = _this4._getElementAnimationDelay(parent) * elemPos;
+
           _this4._triggerDOMEvent(_aureliaTemplating.animationEvent.staggerNext, element);
 
           setTimeout(function () {
-            classList.add(auClassActive);
+            classList.add('au-enter-active');
             cleanupAnimation();
           }, delay);
         } else {
-          classList.add(auClassActive);
+          classList.add('au-enter-active');
           cleanupAnimation();
         }
       });
     };
 
-    CssAnimator.prototype.enter = function enter(element) {
-      return this._stateAnim(element, 'enter', this.animationEnteredClass);
-    };
-
     CssAnimator.prototype.leave = function leave(element) {
-      return this._stateAnim(element, 'leave', this.animationLeftClass);
-    };
-
-    CssAnimator.prototype.removeClass = function removeClass(element, className) {
       var _this5 = this;
-
-      var suppressEvents = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];
 
       return new Promise(function (resolve, reject) {
         var classList = element.classList;
 
-        if (!classList.contains(className) && !classList.contains(className + '-add')) {
-          resolve(false);
-          return;
+        _this5._triggerDOMEvent(_aureliaTemplating.animationEvent.leaveBegin, element);
+
+        if (_this5.useAnimationDoneClasses) {
+          classList.remove(_this5.animationEnteredClass);
+          classList.remove(_this5.animationLeftClass);
         }
 
-        if (suppressEvents !== true) {
-          _this5._triggerDOMEvent(_aureliaTemplating.animationEvent.removeClassBegin, element);
-        }
-
-        classList.remove(className);
+        classList.add('au-leave');
         var prevAnimationNames = _this5._getElementAnimationNames(element);
 
         var _animStart2 = void 0;
@@ -24413,9 +24147,7 @@ define('aurelia-animator-css',['exports', 'aurelia-templating', 'aurelia-pal'], 
           animHasStarted = true;
           _this5.isAnimating = true;
 
-          if (suppressEvents !== true) {
-            _this5._triggerDOMEvent(_aureliaTemplating.animationEvent.removeClassActive, element);
-          }
+          _this5._triggerDOMEvent(_aureliaTemplating.animationEvent.leaveActive, element);
 
           evAnimStart.stopPropagation();
 
@@ -24430,39 +24162,56 @@ define('aurelia-animator-css',['exports', 'aurelia-templating', 'aurelia-pal'], 
 
           evAnimEnd.stopPropagation();
 
-          classList.remove(className + '-remove');
+          classList.remove('au-leave-active');
+          classList.remove('au-leave');
 
           evAnimEnd.target.removeEventListener(evAnimEnd.type, _animEnd2);
 
-          _this5.isAnimating = false;
-
-          if (suppressEvents !== true) {
-            _this5._triggerDOMEvent(_aureliaTemplating.animationEvent.removeClassDone, element);
+          if (_this5.useAnimationDoneClasses && _this5.animationLeftClass !== undefined && _this5.animationLeftClass !== null) {
+            classList.add(_this5.animationLeftClass);
           }
+
+          _this5.isAnimating = false;
+          _this5._triggerDOMEvent(_aureliaTemplating.animationEvent.leaveDone, element);
 
           resolve(true);
         }, false);
 
-        classList.add(className + '-remove');
+        var parent = element.parentElement;
+        var delay = 0;
 
-        var animationNames = _this5._getElementAnimationNames(element);
-        if (!_this5._animationChangeWithValidKeyframe(animationNames, prevAnimationNames)) {
-          classList.remove(className + '-remove');
-          classList.remove(className);
+        var cleanupAnimation = function cleanupAnimation() {
+          var animationNames = _this5._getElementAnimationNames(element);
+          if (!_this5._animationChangeWithValidKeyframe(animationNames, prevAnimationNames)) {
+            classList.remove('au-leave-active');
+            classList.remove('au-leave');
 
-          _this5._removeMultipleEventListener(element, 'webkitAnimationEnd animationend', _animEnd2);
-          _this5._removeMultipleEventListener(element, 'webkitAnimationStart animationstart', _animStart2);
+            _this5._removeMultipleEventListener(element, 'webkitAnimationEnd animationend', _animEnd2);
+            _this5._removeMultipleEventListener(element, 'webkitAnimationStart animationstart', _animStart2);
 
-          if (suppressEvents !== true) {
-            _this5._triggerDOMEvent(_aureliaTemplating.animationEvent.removeClassTimeout, element);
+            _this5._triggerDOMEvent(_aureliaTemplating.animationEvent.leaveTimeout, element);
+            resolve(false);
           }
+        };
 
-          resolve(false);
+        if (parent !== null && parent !== undefined && (parent.classList.contains('au-stagger') || parent.classList.contains('au-stagger-leave'))) {
+          var elemPos = Array.prototype.indexOf.call(parent.children, element);
+          delay = _this5._getElementAnimationDelay(parent) * elemPos;
+
+          _this5._triggerDOMEvent(_aureliaTemplating.animationEvent.staggerNext, element);
+
+          setTimeout(function () {
+            classList.add('au-leave-active');
+            cleanupAnimation();
+          }, delay);
+        } else {
+          classList.add('au-leave-active');
+          cleanupAnimation();
         }
       });
     };
 
-    CssAnimator.prototype.addClass = function addClass(element, className) {
+    CssAnimator.prototype.removeClass = function removeClass(element, className) {
       var _this6 = this;
 
       var suppressEvents = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];
@@ -24470,9 +24219,17 @@ define('aurelia-animator-css',['exports', 'aurelia-templating', 'aurelia-pal'], 
       return new Promise(function (resolve, reject) {
         var classList = element.classList;
 
-        if (suppressEvents !== true) {
-          _this6._triggerDOMEvent(_aureliaTemplating.animationEvent.addClassBegin, element);
+        if (!classList.contains(className) && !classList.contains(className + '-add')) {
+          resolve(false);
+          return;
         }
+
+        if (suppressEvents !== true) {
+          _this6._triggerDOMEvent(_aureliaTemplating.animationEvent.removeClassBegin, element);
+        }
+
+        classList.remove(className);
+        var prevAnimationNames = _this6._getElementAnimationNames(element);
 
         var _animStart3 = void 0;
         var animHasStarted = false;
@@ -24481,7 +24238,7 @@ define('aurelia-animator-css',['exports', 'aurelia-templating', 'aurelia-pal'], 
           _this6.isAnimating = true;
 
           if (suppressEvents !== true) {
-            _this6._triggerDOMEvent(_aureliaTemplating.animationEvent.addClassActive, element);
+            _this6._triggerDOMEvent(_aureliaTemplating.animationEvent.removeClassActive, element);
           }
 
           evAnimStart.stopPropagation();
@@ -24497,35 +24254,102 @@ define('aurelia-animator-css',['exports', 'aurelia-templating', 'aurelia-pal'], 
 
           evAnimEnd.stopPropagation();
 
-          classList.add(className);
-
-          classList.remove(className + '-add');
+          classList.remove(className + '-remove');
 
           evAnimEnd.target.removeEventListener(evAnimEnd.type, _animEnd3);
 
           _this6.isAnimating = false;
 
           if (suppressEvents !== true) {
-            _this6._triggerDOMEvent(_aureliaTemplating.animationEvent.addClassDone, element);
+            _this6._triggerDOMEvent(_aureliaTemplating.animationEvent.removeClassDone, element);
           }
 
           resolve(true);
         }, false);
 
-        var prevAnimationNames = _this6._getElementAnimationNames(element);
-
-        classList.add(className + '-add');
+        classList.add(className + '-remove');
 
         var animationNames = _this6._getElementAnimationNames(element);
         if (!_this6._animationChangeWithValidKeyframe(animationNames, prevAnimationNames)) {
-          classList.remove(className + '-add');
-          classList.add(className);
+          classList.remove(className + '-remove');
+          classList.remove(className);
 
           _this6._removeMultipleEventListener(element, 'webkitAnimationEnd animationend', _animEnd3);
           _this6._removeMultipleEventListener(element, 'webkitAnimationStart animationstart', _animStart3);
 
           if (suppressEvents !== true) {
-            _this6._triggerDOMEvent(_aureliaTemplating.animationEvent.addClassTimeout, element);
+            _this6._triggerDOMEvent(_aureliaTemplating.animationEvent.removeClassTimeout, element);
+          }
+
+          resolve(false);
+        }
+      });
+    };
+
+    CssAnimator.prototype.addClass = function addClass(element, className) {
+      var _this7 = this;
+
+      var suppressEvents = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];
+
+      return new Promise(function (resolve, reject) {
+        var classList = element.classList;
+
+        if (suppressEvents !== true) {
+          _this7._triggerDOMEvent(_aureliaTemplating.animationEvent.addClassBegin, element);
+        }
+
+        var _animStart4 = void 0;
+        var animHasStarted = false;
+        _this7._addMultipleEventListener(element, 'webkitAnimationStart animationstart', _animStart4 = function animStart(evAnimStart) {
+          animHasStarted = true;
+          _this7.isAnimating = true;
+
+          if (suppressEvents !== true) {
+            _this7._triggerDOMEvent(_aureliaTemplating.animationEvent.addClassActive, element);
+          }
+
+          evAnimStart.stopPropagation();
+
+          evAnimStart.target.removeEventListener(evAnimStart.type, _animStart4);
+        }, false);
+
+        var _animEnd4 = void 0;
+        _this7._addMultipleEventListener(element, 'webkitAnimationEnd animationend', _animEnd4 = function animEnd(evAnimEnd) {
+          if (!animHasStarted) {
+            return;
+          }
+
+          evAnimEnd.stopPropagation();
+
+          classList.add(className);
+
+          classList.remove(className + '-add');
+
+          evAnimEnd.target.removeEventListener(evAnimEnd.type, _animEnd4);
+
+          _this7.isAnimating = false;
+
+          if (suppressEvents !== true) {
+            _this7._triggerDOMEvent(_aureliaTemplating.animationEvent.addClassDone, element);
+          }
+
+          resolve(true);
+        }, false);
+
+        var prevAnimationNames = _this7._getElementAnimationNames(element);
+
+        classList.add(className + '-add');
+
+        var animationNames = _this7._getElementAnimationNames(element);
+        if (!_this7._animationChangeWithValidKeyframe(animationNames, prevAnimationNames)) {
+          classList.remove(className + '-add');
+          classList.add(className);
+
+          _this7._removeMultipleEventListener(element, 'webkitAnimationEnd animationend', _animEnd4);
+          _this7._removeMultipleEventListener(element, 'webkitAnimationStart animationstart', _animStart4);
+
+          if (suppressEvents !== true) {
+            _this7._triggerDOMEvent(_aureliaTemplating.animationEvent.addClassTimeout, element);
           }
 
           resolve(false);
@@ -24586,20 +24410,16 @@ define('aurelia-animator-velocity',['exports', 'velocity-animate', 'aurelia-temp
     }
 
     VelocityAnimator.prototype.animate = function animate(element, nameOrProps, options, silent) {
-      if (!element) return Promise.reject(new Error('first argument (element) must be defined'));
-      if (!nameOrProps) return Promise.reject(new Error('second argument (animation name or properties) must be defined'));
-      if (options && (!(options instanceof Object) || Array.isArray(options))) return Promise.reject(new Error('third argument (options) must be an Object'));
-
       this.isAnimating = true;
-
       var _this = this;
-      var optionOverrides = {
+      var overrides = {
         complete: function complete(el) {
           _this.isAnimating = false;
           if (!silent) dispatch(el, 'animateDone');
           if (options && options.complete) options.complete.apply(this, arguments);
         }
       };
+      if (!element) return Promise.reject(new Error('invalid first argument'));
 
       if (typeof element === 'string') element = this.container.querySelectorAll(element);
 
@@ -24609,12 +24429,13 @@ define('aurelia-animator-velocity',['exports', 'velocity-animate', 'aurelia-temp
 
       if (typeof nameOrProps === 'string') {
         nameOrProps = this.resolveEffectAlias(nameOrProps);
-        if (!this.effects[nameOrProps]) return Promise.reject(new Error('effect with name `' + nameOrProps + '` was not found'));
       }
 
-      var velocityOptions = Object.assign({}, this.options, options, optionOverrides);
-      var velocityPromise = (0, _velocityAnimate2.default)(element, nameOrProps, velocityOptions);
-      return velocityPromise ? velocityPromise : Promise.reject(new Error('velocity animation failed due to invalid arguments'));
+      var opts = Object.assign({}, this.options, options, overrides);
+      var p = (0, _velocityAnimate2.default)(element, nameOrProps, opts);
+
+      if (!p) return Promise.reject(new Error('invalid element used for animator.animate'));
+      return p;
     };
 
     VelocityAnimator.prototype.stop = function stop(element, clearQueue) {
@@ -24770,7 +24591,7 @@ define('aurelia-animator-velocity',['exports', 'velocity-animate', 'aurelia-temp
           break;
 
         default:
-          if (!this.effects[this.resolveEffectAlias(name)]) throw new Error(name + ' animation is not supported.');
+          throw new Error(name + ' animation is not supported.');
       }
 
       var opts = Object.assign({}, this.options, attrOpts, options, overrides);
@@ -24829,16 +24650,12 @@ define('aurelia-animator-velocity',['exports', 'velocity-animate', 'aurelia-temp
     }
 
     text = text.replace('{', '').replace('}', '');
-    var pairs = text.split(/[,]+(?![^\[]+\])/);
+    var pairs = text.split(',');
     var obj = {};
 
     for (var i = 0; i < pairs.length; ++i) {
       var keyAndValue = pairs[i].split(':');
-      var value = keyAndValue[1].trim();
-
-      if (value[0] === '[' && value[value.length - 1] === ']' && value.indexOf(',') > -1) value = value.replace('[', '').replace(']', '').split(',');
-
-      obj[keyAndValue[0].trim()] = value;
+      obj[keyAndValue[0].trim()] = keyAndValue[1].trim();
     }
 
     return obj;
@@ -24852,5607 +24669,29 @@ define('aurelia-animator-velocity',['exports', 'velocity-animate', 'aurelia-temp
     }
   }
 });
-/*! VelocityJS.org (1.5.0). (C) 2014 Julian Shapiro. MIT @license: en.wikipedia.org/wiki/MIT_License */
-
-/*************************
- Velocity jQuery Shim
- *************************/
-
-/*! VelocityJS.org jQuery Shim (1.0.1). (C) 2014 The jQuery Foundation. MIT @license: en.wikipedia.org/wiki/MIT_License. */
-
-/* This file contains the jQuery functions that Velocity relies on, thereby removing Velocity's dependency on a full copy of jQuery, and allowing it to work in any environment. */
-/* These shimmed functions are only used if jQuery isn't present. If both this shim and jQuery are loaded, Velocity defaults to jQuery proper. */
-/* Browser support: Using this shim instead of jQuery proper removes support for IE8. */
-
-(function(window) {
-	"use strict";
-	/***************
-	 Setup
-	 ***************/
-
-	/* If jQuery is already loaded, there's no point in loading this shim. */
-	if (window.jQuery) {
-		return;
-	}
-
-	/* jQuery base. */
-	var $ = function(selector, context) {
-		return new $.fn.init(selector, context);
-	};
-
-	/********************
-	 Private Methods
-	 ********************/
-
-	/* jQuery */
-	$.isWindow = function(obj) {
-		/* jshint eqeqeq: false */
-		return obj && obj === obj.window;
-	};
-
-	/* jQuery */
-	$.type = function(obj) {
-		if (!obj) {
-			return obj + "";
-		}
-
-		return typeof obj === "object" || typeof obj === "function" ?
-				class2type[toString.call(obj)] || "object" :
-				typeof obj;
-	};
-
-	/* jQuery */
-	$.isArray = Array.isArray || function(obj) {
-		return $.type(obj) === "array";
-	};
-
-	/* jQuery */
-	function isArraylike(obj) {
-		var length = obj.length,
-				type = $.type(obj);
-
-		if (type === "function" || $.isWindow(obj)) {
-			return false;
-		}
-
-		if (obj.nodeType === 1 && length) {
-			return true;
-		}
-
-		return type === "array" || length === 0 || typeof length === "number" && length > 0 && (length - 1) in obj;
-	}
-
-	/***************
-	 $ Methods
-	 ***************/
-
-	/* jQuery: Support removed for IE<9. */
-	$.isPlainObject = function(obj) {
-		var key;
-
-		if (!obj || $.type(obj) !== "object" || obj.nodeType || $.isWindow(obj)) {
-			return false;
-		}
-
-		try {
-			if (obj.constructor &&
-					!hasOwn.call(obj, "constructor") &&
-					!hasOwn.call(obj.constructor.prototype, "isPrototypeOf")) {
-				return false;
-			}
-		} catch (e) {
-			return false;
-		}
-
-		for (key in obj) {
-		}
-
-		return key === undefined || hasOwn.call(obj, key);
-	};
-
-	/* jQuery */
-	$.each = function(obj, callback, args) {
-		var value,
-				i = 0,
-				length = obj.length,
-				isArray = isArraylike(obj);
-
-		if (args) {
-			if (isArray) {
-				for (; i < length; i++) {
-					value = callback.apply(obj[i], args);
-
-					if (value === false) {
-						break;
-					}
-				}
-			} else {
-				for (i in obj) {
-					if (!obj.hasOwnProperty(i)) {
-						continue;
-					}
-					value = callback.apply(obj[i], args);
-
-					if (value === false) {
-						break;
-					}
-				}
-			}
-
-		} else {
-			if (isArray) {
-				for (; i < length; i++) {
-					value = callback.call(obj[i], i, obj[i]);
-
-					if (value === false) {
-						break;
-					}
-				}
-			} else {
-				for (i in obj) {
-					if (!obj.hasOwnProperty(i)) {
-						continue;
-					}
-					value = callback.call(obj[i], i, obj[i]);
-
-					if (value === false) {
-						break;
-					}
-				}
-			}
-		}
-
-		return obj;
-	};
-
-	/* Custom */
-	$.data = function(node, key, value) {
-		/* $.getData() */
-		if (value === undefined) {
-			var getId = node[$.expando],
-					store = getId && cache[getId];
-
-			if (key === undefined) {
-				return store;
-			} else if (store) {
-				if (key in store) {
-					return store[key];
-				}
-			}
-			/* $.setData() */
-		} else if (key !== undefined) {
-			var setId = node[$.expando] || (node[$.expando] = ++$.uuid);
-
-			cache[setId] = cache[setId] || {};
-			cache[setId][key] = value;
-
-			return value;
-		}
-	};
-
-	/* Custom */
-	$.removeData = function(node, keys) {
-		var id = node[$.expando],
-				store = id && cache[id];
-
-		if (store) {
-			// Cleanup the entire store if no keys are provided.
-			if (!keys) {
-				delete cache[id];
-			} else {
-				$.each(keys, function(_, key) {
-					delete store[key];
-				});
-			}
-		}
-	};
-
-	/* jQuery */
-	$.extend = function() {
-		var src, copyIsArray, copy, name, options, clone,
-				target = arguments[0] || {},
-				i = 1,
-				length = arguments.length,
-				deep = false;
-
-		if (typeof target === "boolean") {
-			deep = target;
-
-			target = arguments[i] || {};
-			i++;
-		}
-
-		if (typeof target !== "object" && $.type(target) !== "function") {
-			target = {};
-		}
-
-		if (i === length) {
-			target = this;
-			i--;
-		}
-
-		for (; i < length; i++) {
-			if ((options = arguments[i])) {
-				for (name in options) {
-					if (!options.hasOwnProperty(name)) {
-						continue;
-					}
-					src = target[name];
-					copy = options[name];
-
-					if (target === copy) {
-						continue;
-					}
-
-					if (deep && copy && ($.isPlainObject(copy) || (copyIsArray = $.isArray(copy)))) {
-						if (copyIsArray) {
-							copyIsArray = false;
-							clone = src && $.isArray(src) ? src : [];
-
-						} else {
-							clone = src && $.isPlainObject(src) ? src : {};
-						}
-
-						target[name] = $.extend(deep, clone, copy);
-
-					} else if (copy !== undefined) {
-						target[name] = copy;
-					}
-				}
-			}
-		}
-
-		return target;
-	};
-
-	/* jQuery 1.4.3 */
-	$.queue = function(elem, type, data) {
-		function $makeArray(arr, results) {
-			var ret = results || [];
-
-			if (arr) {
-				if (isArraylike(Object(arr))) {
-					/* $.merge */
-					(function(first, second) {
-						var len = +second.length,
-								j = 0,
-								i = first.length;
-
-						while (j < len) {
-							first[i++] = second[j++];
-						}
-
-						if (len !== len) {
-							while (second[j] !== undefined) {
-								first[i++] = second[j++];
-							}
-						}
-
-						first.length = i;
-
-						return first;
-					})(ret, typeof arr === "string" ? [arr] : arr);
-				} else {
-					[].push.call(ret, arr);
-				}
-			}
-
-			return ret;
-		}
-
-		if (!elem) {
-			return;
-		}
-
-		type = (type || "fx") + "queue";
-
-		var q = $.data(elem, type);
-
-		if (!data) {
-			return q || [];
-		}
-
-		if (!q || $.isArray(data)) {
-			q = $.data(elem, type, $makeArray(data));
-		} else {
-			q.push(data);
-		}
-
-		return q;
-	};
-
-	/* jQuery 1.4.3 */
-	$.dequeue = function(elems, type) {
-		/* Custom: Embed element iteration. */
-		$.each(elems.nodeType ? [elems] : elems, function(i, elem) {
-			type = type || "fx";
-
-			var queue = $.queue(elem, type),
-					fn = queue.shift();
-
-			if (fn === "inprogress") {
-				fn = queue.shift();
-			}
-
-			if (fn) {
-				if (type === "fx") {
-					queue.unshift("inprogress");
-				}
-
-				fn.call(elem, function() {
-					$.dequeue(elem, type);
-				});
-			}
-		});
-	};
-
-	/******************
-	 $.fn Methods
-	 ******************/
-
-	/* jQuery */
-	$.fn = $.prototype = {
-		init: function(selector) {
-			/* Just return the element wrapped inside an array; don't proceed with the actual jQuery node wrapping process. */
-			if (selector.nodeType) {
-				this[0] = selector;
-
-				return this;
-			} else {
-				throw new Error("Not a DOM node.");
-			}
-		},
-		offset: function() {
-			/* jQuery altered code: Dropped disconnected DOM node checking. */
-			var box = this[0].getBoundingClientRect ? this[0].getBoundingClientRect() : {top: 0, left: 0};
-
-			return {
-				top: box.top + (window.pageYOffset || document.scrollTop || 0) - (document.clientTop || 0),
-				left: box.left + (window.pageXOffset || document.scrollLeft || 0) - (document.clientLeft || 0)
-			};
-		},
-		position: function() {
-			/* jQuery */
-			function offsetParentFn(elem) {
-				var offsetParent = elem.offsetParent;
-
-				while (offsetParent && offsetParent.nodeName.toLowerCase() !== "html" && offsetParent.style && offsetParent.style.position === "static") {
-					offsetParent = offsetParent.offsetParent;
-				}
-
-				return offsetParent || document;
-			}
-
-			/* Zepto */
-			var elem = this[0],
-					offsetParent = offsetParentFn(elem),
-					offset = this.offset(),
-					parentOffset = /^(?:body|html)$/i.test(offsetParent.nodeName) ? {top: 0, left: 0} : $(offsetParent).offset();
-
-			offset.top -= parseFloat(elem.style.marginTop) || 0;
-			offset.left -= parseFloat(elem.style.marginLeft) || 0;
-
-			if (offsetParent.style) {
-				parentOffset.top += parseFloat(offsetParent.style.borderTopWidth) || 0;
-				parentOffset.left += parseFloat(offsetParent.style.borderLeftWidth) || 0;
-			}
-
-			return {
-				top: offset.top - parentOffset.top,
-				left: offset.left - parentOffset.left
-			};
-		}
-	};
-
-	/**********************
-	 Private Variables
-	 **********************/
-
-	/* For $.data() */
-	var cache = {};
-	$.expando = "velocity" + (new Date().getTime());
-	$.uuid = 0;
-
-	/* For $.queue() */
-	var class2type = {},
-			hasOwn = class2type.hasOwnProperty,
-			toString = class2type.toString;
-
-	var types = "Boolean Number String Function Array Date RegExp Object Error".split(" ");
-	for (var i = 0; i < types.length; i++) {
-		class2type["[object " + types[i] + "]"] = types[i].toLowerCase();
-	}
-
-	/* Makes $(node) possible, without having to call init. */
-	$.fn.init.prototype = $.fn;
-
-	/* Globalize Velocity onto the window, and assign its Utilities property. */
-	window.Velocity = {Utilities: $};
-})(window);
-
-/******************
- Velocity.js
- ******************/
-
-(function(factory) {
-	"use strict";
-	/* CommonJS module. */
-	if (typeof module === "object" && typeof module.exports === "object") {
-		module.exports = factory();
-		/* AMD module. */
-	} else if (typeof define === "function" && define.amd) {
-		define('velocity-animate/velocity',factory);
-		/* Browser globals. */
-	} else {
-		factory();
-	}
-}(function() {
-	"use strict";
-	return function(global, window, document, undefined) {
-
-		/***************
-		 Summary
-		 ***************/
-
-		/*
-		 - CSS: CSS stack that works independently from the rest of Velocity.
-		 - animate(): Core animation method that iterates over the targeted elements and queues the incoming call onto each element individually.
-		 - Pre-Queueing: Prepare the element for animation by instantiating its data cache and processing the call's options.
-		 - Queueing: The logic that runs once the call has reached its point of execution in the element's $.queue() stack.
-		 Most logic is placed here to avoid risking it becoming stale (if the element's properties have changed).
-		 - Pushing: Consolidation of the tween data followed by its push onto the global in-progress calls container.
-		 - tick(): The single requestAnimationFrame loop responsible for tweening all in-progress calls.
-		 - completeCall(): Handles the cleanup process for each Velocity call.
-		 */
-
-		/*********************
-		 Helper Functions
-		 *********************/
-
-		/* IE detection. Gist: https://gist.github.com/julianshapiro/9098609 */
-		var IE = (function() {
-			if (document.documentMode) {
-				return document.documentMode;
-			} else {
-				for (var i = 7; i > 4; i--) {
-					var div = document.createElement("div");
-
-					div.innerHTML = "<!--[if IE " + i + "]><span></span><![endif]-->";
-
-					if (div.getElementsByTagName("span").length) {
-						div = null;
-
-						return i;
-					}
-				}
-			}
-
-			return undefined;
-		})();
-
-		/* rAF shim. Gist: https://gist.github.com/julianshapiro/9497513 */
-		var rAFShim = (function() {
-			var timeLast = 0;
-
-			return window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || function(callback) {
-				var timeCurrent = (new Date()).getTime(),
-						timeDelta;
-
-				/* Dynamically set delay on a per-tick basis to match 60fps. */
-				/* Technique by Erik Moller. MIT license: https://gist.github.com/paulirish/1579671 */
-				timeDelta = Math.max(0, 16 - (timeCurrent - timeLast));
-				timeLast = timeCurrent + timeDelta;
-
-				return setTimeout(function() {
-					callback(timeCurrent + timeDelta);
-				}, timeDelta);
-			};
-		})();
-
-		var performance = (function() {
-			var perf = window.performance || {};
-
-			if (typeof perf.now !== "function") {
-				var nowOffset = perf.timing && perf.timing.navigationStart ? perf.timing.navigationStart : (new Date()).getTime();
-
-				perf.now = function() {
-					return (new Date()).getTime() - nowOffset;
-				};
-			}
-			return perf;
-		})();
-
-		/* Array compacting. Copyright Lo-Dash. MIT License: https://github.com/lodash/lodash/blob/master/LICENSE.txt */
-		function compactSparseArray(array) {
-			var index = -1,
-					length = array ? array.length : 0,
-					result = [];
-
-			while (++index < length) {
-				var value = array[index];
-
-				if (value) {
-					result.push(value);
-				}
-			}
-
-			return result;
-		}
-
-		/**
-		 * Shim for "fixing" IE's lack of support (IE < 9) for applying slice
-		 * on host objects like NamedNodeMap, NodeList, and HTMLCollection
-		 * (technically, since host objects have been implementation-dependent,
-		 * at least before ES2015, IE hasn't needed to work this way).
-		 * Also works on strings, fixes IE < 9 to allow an explicit undefined
-		 * for the 2nd argument (as in Firefox), and prevents errors when
-		 * called on other DOM objects.
-		 */
-		var _slice = (function() {
-			var slice = Array.prototype.slice;
-
-			try {
-				// Can't be used with DOM elements in IE < 9
-				slice.call(document.documentElement);
-				return slice;
-			} catch (e) { // Fails in IE < 9
-
-				// This will work for genuine arrays, array-like objects, 
-				// NamedNodeMap (attributes, entities, notations),
-				// NodeList (e.g., getElementsByTagName), HTMLCollection (e.g., childNodes),
-				// and will not fail on other DOM objects (as do DOM elements in IE < 9)
-				return function(begin, end) {
-					var len = this.length;
-
-					if (typeof begin !== "number") {
-						begin = 0;
-					}
-					// IE < 9 gets unhappy with an undefined end argument
-					if (typeof end !== "number") {
-						end = len;
-					}
-					// For native Array objects, we use the native slice function
-					if (this.slice) {
-						return slice.call(this, begin, end);
-					}
-					// For array like object we handle it ourselves.
-					var i,
-							cloned = [],
-							// Handle negative value for "begin"
-							start = (begin >= 0) ? begin : Math.max(0, len + begin),
-							// Handle negative value for "end"
-							upTo = end < 0 ? len + end : Math.min(end, len),
-							// Actual expected size of the slice
-							size = upTo - start;
-
-					if (size > 0) {
-						cloned = new Array(size);
-						if (this.charAt) {
-							for (i = 0; i < size; i++) {
-								cloned[i] = this.charAt(start + i);
-							}
-						} else {
-							for (i = 0; i < size; i++) {
-								cloned[i] = this[start + i];
-							}
-						}
-					}
-					return cloned;
-				};
-			}
-		})();
-
-		/* .indexOf doesn't exist in IE<9 */
-		var _inArray = (function() {
-			if (Array.prototype.includes) {
-				return function(arr, val) {
-					return arr.includes(val);
-				};
-			}
-			if (Array.prototype.indexOf) {
-				return function(arr, val) {
-					return arr.indexOf(val) >= 0;
-				};
-			}
-			return function(arr, val) {
-				for (var i = 0; i < arr.length; i++) {
-					if (arr[i] === val) {
-						return true;
-					}
-				}
-				return false;
-			};
-		});
-
-		function sanitizeElements(elements) {
-			/* Unwrap jQuery/Zepto objects. */
-			if (Type.isWrapped(elements)) {
-				elements = _slice.call(elements);
-				/* Wrap a single element in an array so that $.each() can iterate with the element instead of its node's children. */
-			} else if (Type.isNode(elements)) {
-				elements = [elements];
-			}
-
-			return elements;
-		}
-
-		var Type = {
-			isNumber: function(variable) {
-				return (typeof variable === "number");
-			},
-			isString: function(variable) {
-				return (typeof variable === "string");
-			},
-			isArray: Array.isArray || function(variable) {
-				return Object.prototype.toString.call(variable) === "[object Array]";
-			},
-			isFunction: function(variable) {
-				return Object.prototype.toString.call(variable) === "[object Function]";
-			},
-			isNode: function(variable) {
-				return variable && variable.nodeType;
-			},
-			/* Determine if variable is an array-like wrapped jQuery, Zepto or similar element, or even a NodeList etc. */
-			/* NOTE: HTMLFormElements also have a length. */
-			isWrapped: function(variable) {
-				return variable
-						&& variable !== window
-						&& Type.isNumber(variable.length)
-						&& !Type.isString(variable)
-						&& !Type.isFunction(variable)
-						&& !Type.isNode(variable)
-						&& (variable.length === 0 || Type.isNode(variable[0]));
-			},
-			isSVG: function(variable) {
-				return window.SVGElement && (variable instanceof window.SVGElement);
-			},
-			isEmptyObject: function(variable) {
-				for (var name in variable) {
-					if (variable.hasOwnProperty(name)) {
-						return false;
-					}
-				}
-
-				return true;
-			}
-		};
-
-		/*****************
-		 Dependencies
-		 *****************/
-
-		var $,
-				isJQuery = false;
-
-		if (global.fn && global.fn.jquery) {
-			$ = global;
-			isJQuery = true;
-		} else {
-			$ = window.Velocity.Utilities;
-		}
-
-		if (IE <= 8 && !isJQuery) {
-			throw new Error("Velocity: IE8 and below require jQuery to be loaded before Velocity.");
-		} else if (IE <= 7) {
-			/* Revert to jQuery's $.animate(), and lose Velocity's extra features. */
-			jQuery.fn.velocity = jQuery.fn.animate;
-
-			/* Now that $.fn.velocity is aliased, abort this Velocity declaration. */
-			return;
-		}
-
-		/*****************
-		 Constants
-		 *****************/
-
-		var DURATION_DEFAULT = 400,
-				EASING_DEFAULT = "swing";
-
-		/*************
-		 State
-		 *************/
-
-		var Velocity = {
-			/* Container for page-wide Velocity state data. */
-			State: {
-				/* Detect mobile devices to determine if mobileHA should be turned on. */
-				isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
-				/* The mobileHA option's behavior changes on older Android devices (Gingerbread, versions 2.3.3-2.3.7). */
-				isAndroid: /Android/i.test(navigator.userAgent),
-				isGingerbread: /Android 2\.3\.[3-7]/i.test(navigator.userAgent),
-				isChrome: window.chrome,
-				isFirefox: /Firefox/i.test(navigator.userAgent),
-				/* Create a cached element for re-use when checking for CSS property prefixes. */
-				prefixElement: document.createElement("div"),
-				/* Cache every prefix match to avoid repeating lookups. */
-				prefixMatches: {},
-				/* Cache the anchor used for animating window scrolling. */
-				scrollAnchor: null,
-				/* Cache the browser-specific property names associated with the scroll anchor. */
-				scrollPropertyLeft: null,
-				scrollPropertyTop: null,
-				/* Keep track of whether our RAF tick is running. */
-				isTicking: false,
-				/* Container for every in-progress call to Velocity. */
-				calls: [],
-				delayedElements: {
-					count: 0
-				}
-			},
-			/* Velocity's custom CSS stack. Made global for unit testing. */
-			CSS: {/* Defined below. */},
-			/* A shim of the jQuery utility functions used by Velocity -- provided by Velocity's optional jQuery shim. */
-			Utilities: $,
-			/* Container for the user's custom animation redirects that are referenced by name in place of the properties map argument. */
-			Redirects: {/* Manually registered by the user. */},
-			Easings: {/* Defined below. */},
-			/* Attempt to use ES6 Promises by default. Users can override this with a third-party promises library. */
-			Promise: window.Promise,
-			/* Velocity option defaults, which can be overriden by the user. */
-			defaults: {
-				queue: "",
-				duration: DURATION_DEFAULT,
-				easing: EASING_DEFAULT,
-				begin: undefined,
-				complete: undefined,
-				progress: undefined,
-				display: undefined,
-				visibility: undefined,
-				loop: false,
-				delay: false,
-				mobileHA: true,
-				/* Advanced: Set to false to prevent property values from being cached between consecutive Velocity-initiated chain calls. */
-				_cacheValues: true,
-				/* Advanced: Set to false if the promise should always resolve on empty element lists. */
-				promiseRejectEmpty: true
-			},
-			/* A design goal of Velocity is to cache data wherever possible in order to avoid DOM requerying. Accordingly, each element has a data cache. */
-			init: function(element) {
-				$.data(element, "velocity", {
-					/* Store whether this is an SVG element, since its properties are retrieved and updated differently than standard HTML elements. */
-					isSVG: Type.isSVG(element),
-					/* Keep track of whether the element is currently being animated by Velocity.
-					 This is used to ensure that property values are not transferred between non-consecutive (stale) calls. */
-					isAnimating: false,
-					/* A reference to the element's live computedStyle object. Learn more here: https://developer.mozilla.org/en/docs/Web/API/window.getComputedStyle */
-					computedStyle: null,
-					/* Tween data is cached for each animation on the element so that data can be passed across calls --
-					 in particular, end values are used as subsequent start values in consecutive Velocity calls. */
-					tweensContainer: null,
-					/* The full root property values of each CSS hook being animated on this element are cached so that:
-					 1) Concurrently-animating hooks sharing the same root can have their root values' merged into one while tweening.
-					 2) Post-hook-injection root values can be transferred over to consecutively chained Velocity calls as starting root values. */
-					rootPropertyValueCache: {},
-					/* A cache for transform updates, which must be manually flushed via CSS.flushTransformCache(). */
-					transformCache: {}
-				});
-			},
-			/* A parallel to jQuery's $.css(), used for getting/setting Velocity's hooked CSS properties. */
-			hook: null, /* Defined below. */
-			/* Velocity-wide animation time remapping for testing purposes. */
-			mock: false,
-			version: {major: 1, minor: 5, patch: 0},
-			/* Set to 1 or 2 (most verbose) to output debug info to console. */
-			debug: false,
-			/* Use rAF high resolution timestamp when available */
-			timestamp: true,
-			/* Pause all animations */
-			pauseAll: function(queueName) {
-				var currentTime = (new Date()).getTime();
-
-				$.each(Velocity.State.calls, function(i, activeCall) {
-
-					if (activeCall) {
-
-						/* If we have a queueName and this call is not on that queue, skip */
-						if (queueName !== undefined && ((activeCall[2].queue !== queueName) || (activeCall[2].queue === false))) {
-							return true;
-						}
-
-						/* Set call to paused */
-						activeCall[5] = {
-							resume: false
-						};
-					}
-				});
-
-				/* Pause timers on any currently delayed calls */
-				$.each(Velocity.State.delayedElements, function(k, element) {
-					if (!element) {
-						return;
-					}
-					pauseDelayOnElement(element, currentTime);
-				});
-			},
-			/* Resume all animations */
-			resumeAll: function(queueName) {
-				var currentTime = (new Date()).getTime();
-
-				$.each(Velocity.State.calls, function(i, activeCall) {
-
-					if (activeCall) {
-
-						/* If we have a queueName and this call is not on that queue, skip */
-						if (queueName !== undefined && ((activeCall[2].queue !== queueName) || (activeCall[2].queue === false))) {
-							return true;
-						}
-
-						/* Set call to resumed if it was paused */
-						if (activeCall[5]) {
-							activeCall[5].resume = true;
-						}
-					}
-				});
-				/* Resume timers on any currently delayed calls */
-				$.each(Velocity.State.delayedElements, function(k, element) {
-					if (!element) {
-						return;
-					}
-					resumeDelayOnElement(element, currentTime);
-				});
-			}
-		};
-
-		/* Retrieve the appropriate scroll anchor and property name for the browser: https://developer.mozilla.org/en-US/docs/Web/API/Window.scrollY */
-		if (window.pageYOffset !== undefined) {
-			Velocity.State.scrollAnchor = window;
-			Velocity.State.scrollPropertyLeft = "pageXOffset";
-			Velocity.State.scrollPropertyTop = "pageYOffset";
-		} else {
-			Velocity.State.scrollAnchor = document.documentElement || document.body.parentNode || document.body;
-			Velocity.State.scrollPropertyLeft = "scrollLeft";
-			Velocity.State.scrollPropertyTop = "scrollTop";
-		}
-
-		/* Shorthand alias for jQuery's $.data() utility. */
-		function Data(element) {
-			/* Hardcode a reference to the plugin name. */
-			var response = $.data(element, "velocity");
-
-			/* jQuery <=1.4.2 returns null instead of undefined when no match is found. We normalize this behavior. */
-			return response === null ? undefined : response;
-		}
-
-		/**************
-		 Delay Timer
-		 **************/
-
-		function pauseDelayOnElement(element, currentTime) {
-			/* Check for any delay timers, and pause the set timeouts (while preserving time data)
-			 to be resumed when the "resume" command is issued */
-			var data = Data(element);
-			if (data && data.delayTimer && !data.delayPaused) {
-				data.delayRemaining = data.delay - currentTime + data.delayBegin;
-				data.delayPaused = true;
-				clearTimeout(data.delayTimer.setTimeout);
-			}
-		}
-
-		function resumeDelayOnElement(element, currentTime) {
-			/* Check for any paused timers and resume */
-			var data = Data(element);
-			if (data && data.delayTimer && data.delayPaused) {
-				/* If the element was mid-delay, re initiate the timeout with the remaining delay */
-				data.delayPaused = false;
-				data.delayTimer.setTimeout = setTimeout(data.delayTimer.next, data.delayRemaining);
-			}
-		}
-
-
-
-		/**************
-		 Easing
-		 **************/
-
-		/* Step easing generator. */
-		function generateStep(steps) {
-			return function(p) {
-				return Math.round(p * steps) * (1 / steps);
-			};
-		}
-
-		/* Bezier curve function generator. Copyright Gaetan Renaudeau. MIT License: http://en.wikipedia.org/wiki/MIT_License */
-		function generateBezier(mX1, mY1, mX2, mY2) {
-			var NEWTON_ITERATIONS = 4,
-					NEWTON_MIN_SLOPE = 0.001,
-					SUBDIVISION_PRECISION = 0.0000001,
-					SUBDIVISION_MAX_ITERATIONS = 10,
-					kSplineTableSize = 11,
-					kSampleStepSize = 1.0 / (kSplineTableSize - 1.0),
-					float32ArraySupported = "Float32Array" in window;
-
-			/* Must contain four arguments. */
-			if (arguments.length !== 4) {
-				return false;
-			}
-
-			/* Arguments must be numbers. */
-			for (var i = 0; i < 4; ++i) {
-				if (typeof arguments[i] !== "number" || isNaN(arguments[i]) || !isFinite(arguments[i])) {
-					return false;
-				}
-			}
-
-			/* X values must be in the [0, 1] range. */
-			mX1 = Math.min(mX1, 1);
-			mX2 = Math.min(mX2, 1);
-			mX1 = Math.max(mX1, 0);
-			mX2 = Math.max(mX2, 0);
-
-			var mSampleValues = float32ArraySupported ? new Float32Array(kSplineTableSize) : new Array(kSplineTableSize);
-
-			function A(aA1, aA2) {
-				return 1.0 - 3.0 * aA2 + 3.0 * aA1;
-			}
-			function B(aA1, aA2) {
-				return 3.0 * aA2 - 6.0 * aA1;
-			}
-			function C(aA1) {
-				return 3.0 * aA1;
-			}
-
-			function calcBezier(aT, aA1, aA2) {
-				return ((A(aA1, aA2) * aT + B(aA1, aA2)) * aT + C(aA1)) * aT;
-			}
-
-			function getSlope(aT, aA1, aA2) {
-				return 3.0 * A(aA1, aA2) * aT * aT + 2.0 * B(aA1, aA2) * aT + C(aA1);
-			}
-
-			function newtonRaphsonIterate(aX, aGuessT) {
-				for (var i = 0; i < NEWTON_ITERATIONS; ++i) {
-					var currentSlope = getSlope(aGuessT, mX1, mX2);
-
-					if (currentSlope === 0.0) {
-						return aGuessT;
-					}
-
-					var currentX = calcBezier(aGuessT, mX1, mX2) - aX;
-					aGuessT -= currentX / currentSlope;
-				}
-
-				return aGuessT;
-			}
-
-			function calcSampleValues() {
-				for (var i = 0; i < kSplineTableSize; ++i) {
-					mSampleValues[i] = calcBezier(i * kSampleStepSize, mX1, mX2);
-				}
-			}
-
-			function binarySubdivide(aX, aA, aB) {
-				var currentX, currentT, i = 0;
-
-				do {
-					currentT = aA + (aB - aA) / 2.0;
-					currentX = calcBezier(currentT, mX1, mX2) - aX;
-					if (currentX > 0.0) {
-						aB = currentT;
-					} else {
-						aA = currentT;
-					}
-				} while (Math.abs(currentX) > SUBDIVISION_PRECISION && ++i < SUBDIVISION_MAX_ITERATIONS);
-
-				return currentT;
-			}
-
-			function getTForX(aX) {
-				var intervalStart = 0.0,
-						currentSample = 1,
-						lastSample = kSplineTableSize - 1;
-
-				for (; currentSample !== lastSample && mSampleValues[currentSample] <= aX; ++currentSample) {
-					intervalStart += kSampleStepSize;
-				}
-
-				--currentSample;
-
-				var dist = (aX - mSampleValues[currentSample]) / (mSampleValues[currentSample + 1] - mSampleValues[currentSample]),
-						guessForT = intervalStart + dist * kSampleStepSize,
-						initialSlope = getSlope(guessForT, mX1, mX2);
-
-				if (initialSlope >= NEWTON_MIN_SLOPE) {
-					return newtonRaphsonIterate(aX, guessForT);
-				} else if (initialSlope === 0.0) {
-					return guessForT;
-				} else {
-					return binarySubdivide(aX, intervalStart, intervalStart + kSampleStepSize);
-				}
-			}
-
-			var _precomputed = false;
-
-			function precompute() {
-				_precomputed = true;
-				if (mX1 !== mY1 || mX2 !== mY2) {
-					calcSampleValues();
-				}
-			}
-
-			var f = function(aX) {
-				if (!_precomputed) {
-					precompute();
-				}
-				if (mX1 === mY1 && mX2 === mY2) {
-					return aX;
-				}
-				if (aX === 0) {
-					return 0;
-				}
-				if (aX === 1) {
-					return 1;
-				}
-
-				return calcBezier(getTForX(aX), mY1, mY2);
-			};
-
-			f.getControlPoints = function() {
-				return [{x: mX1, y: mY1}, {x: mX2, y: mY2}];
-			};
-
-			var str = "generateBezier(" + [mX1, mY1, mX2, mY2] + ")";
-			f.toString = function() {
-				return str;
-			};
-
-			return f;
-		}
-
-		/* Runge-Kutta spring physics function generator. Adapted from Framer.js, copyright Koen Bok. MIT License: http://en.wikipedia.org/wiki/MIT_License */
-		/* Given a tension, friction, and duration, a simulation at 60FPS will first run without a defined duration in order to calculate the full path. A second pass
-		 then adjusts the time delta -- using the relation between actual time and duration -- to calculate the path for the duration-constrained animation. */
-		var generateSpringRK4 = (function() {
-			function springAccelerationForState(state) {
-				return (-state.tension * state.x) - (state.friction * state.v);
-			}
-
-			function springEvaluateStateWithDerivative(initialState, dt, derivative) {
-				var state = {
-					x: initialState.x + derivative.dx * dt,
-					v: initialState.v + derivative.dv * dt,
-					tension: initialState.tension,
-					friction: initialState.friction
-				};
-
-				return {dx: state.v, dv: springAccelerationForState(state)};
-			}
-
-			function springIntegrateState(state, dt) {
-				var a = {
-					dx: state.v,
-					dv: springAccelerationForState(state)
-				},
-						b = springEvaluateStateWithDerivative(state, dt * 0.5, a),
-						c = springEvaluateStateWithDerivative(state, dt * 0.5, b),
-						d = springEvaluateStateWithDerivative(state, dt, c),
-						dxdt = 1.0 / 6.0 * (a.dx + 2.0 * (b.dx + c.dx) + d.dx),
-						dvdt = 1.0 / 6.0 * (a.dv + 2.0 * (b.dv + c.dv) + d.dv);
-
-				state.x = state.x + dxdt * dt;
-				state.v = state.v + dvdt * dt;
-
-				return state;
-			}
-
-			return function springRK4Factory(tension, friction, duration) {
-
-				var initState = {
-					x: -1,
-					v: 0,
-					tension: null,
-					friction: null
-				},
-						path = [0],
-						time_lapsed = 0,
-						tolerance = 1 / 10000,
-						DT = 16 / 1000,
-						have_duration, dt, last_state;
-
-				tension = parseFloat(tension) || 500;
-				friction = parseFloat(friction) || 20;
-				duration = duration || null;
-
-				initState.tension = tension;
-				initState.friction = friction;
-
-				have_duration = duration !== null;
-
-				/* Calculate the actual time it takes for this animation to complete with the provided conditions. */
-				if (have_duration) {
-					/* Run the simulation without a duration. */
-					time_lapsed = springRK4Factory(tension, friction);
-					/* Compute the adjusted time delta. */
-					dt = time_lapsed / duration * DT;
-				} else {
-					dt = DT;
-				}
-
-				while (true) {
-					/* Next/step function .*/
-					last_state = springIntegrateState(last_state || initState, dt);
-					/* Store the position. */
-					path.push(1 + last_state.x);
-					time_lapsed += 16;
-					/* If the change threshold is reached, break. */
-					if (!(Math.abs(last_state.x) > tolerance && Math.abs(last_state.v) > tolerance)) {
-						break;
-					}
-				}
-
-				/* If duration is not defined, return the actual time required for completing this animation. Otherwise, return a closure that holds the
-				 computed path and returns a snapshot of the position according to a given percentComplete. */
-				return !have_duration ? time_lapsed : function(percentComplete) {
-					return path[ (percentComplete * (path.length - 1)) | 0 ];
-				};
-			};
-		}());
-
-		/* jQuery easings. */
-		Velocity.Easings = {
-			linear: function(p) {
-				return p;
-			},
-			swing: function(p) {
-				return 0.5 - Math.cos(p * Math.PI) / 2;
-			},
-			/* Bonus "spring" easing, which is a less exaggerated version of easeInOutElastic. */
-			spring: function(p) {
-				return 1 - (Math.cos(p * 4.5 * Math.PI) * Math.exp(-p * 6));
-			}
-		};
-
-		/* CSS3 and Robert Penner easings. */
-		$.each(
-				[
-					["ease", [0.25, 0.1, 0.25, 1.0]],
-					["ease-in", [0.42, 0.0, 1.00, 1.0]],
-					["ease-out", [0.00, 0.0, 0.58, 1.0]],
-					["ease-in-out", [0.42, 0.0, 0.58, 1.0]],
-					["easeInSine", [0.47, 0, 0.745, 0.715]],
-					["easeOutSine", [0.39, 0.575, 0.565, 1]],
-					["easeInOutSine", [0.445, 0.05, 0.55, 0.95]],
-					["easeInQuad", [0.55, 0.085, 0.68, 0.53]],
-					["easeOutQuad", [0.25, 0.46, 0.45, 0.94]],
-					["easeInOutQuad", [0.455, 0.03, 0.515, 0.955]],
-					["easeInCubic", [0.55, 0.055, 0.675, 0.19]],
-					["easeOutCubic", [0.215, 0.61, 0.355, 1]],
-					["easeInOutCubic", [0.645, 0.045, 0.355, 1]],
-					["easeInQuart", [0.895, 0.03, 0.685, 0.22]],
-					["easeOutQuart", [0.165, 0.84, 0.44, 1]],
-					["easeInOutQuart", [0.77, 0, 0.175, 1]],
-					["easeInQuint", [0.755, 0.05, 0.855, 0.06]],
-					["easeOutQuint", [0.23, 1, 0.32, 1]],
-					["easeInOutQuint", [0.86, 0, 0.07, 1]],
-					["easeInExpo", [0.95, 0.05, 0.795, 0.035]],
-					["easeOutExpo", [0.19, 1, 0.22, 1]],
-					["easeInOutExpo", [1, 0, 0, 1]],
-					["easeInCirc", [0.6, 0.04, 0.98, 0.335]],
-					["easeOutCirc", [0.075, 0.82, 0.165, 1]],
-					["easeInOutCirc", [0.785, 0.135, 0.15, 0.86]]
-				], function(i, easingArray) {
-			Velocity.Easings[easingArray[0]] = generateBezier.apply(null, easingArray[1]);
-		});
-
-		/* Determine the appropriate easing type given an easing input. */
-		function getEasing(value, duration) {
-			var easing = value;
-
-			/* The easing option can either be a string that references a pre-registered easing,
-			 or it can be a two-/four-item array of integers to be converted into a bezier/spring function. */
-			if (Type.isString(value)) {
-				/* Ensure that the easing has been assigned to jQuery's Velocity.Easings object. */
-				if (!Velocity.Easings[value]) {
-					easing = false;
-				}
-			} else if (Type.isArray(value) && value.length === 1) {
-				easing = generateStep.apply(null, value);
-			} else if (Type.isArray(value) && value.length === 2) {
-				/* springRK4 must be passed the animation's duration. */
-				/* Note: If the springRK4 array contains non-numbers, generateSpringRK4() returns an easing
-				 function generated with default tension and friction values. */
-				easing = generateSpringRK4.apply(null, value.concat([duration]));
-			} else if (Type.isArray(value) && value.length === 4) {
-				/* Note: If the bezier array contains non-numbers, generateBezier() returns false. */
-				easing = generateBezier.apply(null, value);
-			} else {
-				easing = false;
-			}
-
-			/* Revert to the Velocity-wide default easing type, or fall back to "swing" (which is also jQuery's default)
-			 if the Velocity-wide default has been incorrectly modified. */
-			if (easing === false) {
-				if (Velocity.Easings[Velocity.defaults.easing]) {
-					easing = Velocity.defaults.easing;
-				} else {
-					easing = EASING_DEFAULT;
-				}
-			}
-
-			return easing;
-		}
-
-		/*****************
-		 CSS Stack
-		 *****************/
-
-		/* The CSS object is a highly condensed and performant CSS stack that fully replaces jQuery's.
-		 It handles the validation, getting, and setting of both standard CSS properties and CSS property hooks. */
-		/* Note: A "CSS" shorthand is aliased so that our code is easier to read. */
-		var CSS = Velocity.CSS = {
-			/*************
-			 RegEx
-			 *************/
-
-			RegEx: {
-				isHex: /^#([A-f\d]{3}){1,2}$/i,
-				/* Unwrap a property value's surrounding text, e.g. "rgba(4, 3, 2, 1)" ==> "4, 3, 2, 1" and "rect(4px 3px 2px 1px)" ==> "4px 3px 2px 1px". */
-				valueUnwrap: /^[A-z]+\((.*)\)$/i,
-				wrappedValueAlreadyExtracted: /[0-9.]+ [0-9.]+ [0-9.]+( [0-9.]+)?/,
-				/* Split a multi-value property into an array of subvalues, e.g. "rgba(4, 3, 2, 1) 4px 3px 2px 1px" ==> [ "rgba(4, 3, 2, 1)", "4px", "3px", "2px", "1px" ]. */
-				valueSplit: /([A-z]+\(.+\))|(([A-z0-9#-.]+?)(?=\s|$))/ig
-			},
-			/************
-			 Lists
-			 ************/
-
-			Lists: {
-				colors: ["fill", "stroke", "stopColor", "color", "backgroundColor", "borderColor", "borderTopColor", "borderRightColor", "borderBottomColor", "borderLeftColor", "outlineColor"],
-				transformsBase: ["translateX", "translateY", "scale", "scaleX", "scaleY", "skewX", "skewY", "rotateZ"],
-				transforms3D: ["transformPerspective", "translateZ", "scaleZ", "rotateX", "rotateY"],
-				units: [
-					"%", // relative
-					"em", "ex", "ch", "rem", // font relative
-					"vw", "vh", "vmin", "vmax", // viewport relative
-					"cm", "mm", "Q", "in", "pc", "pt", "px", // absolute lengths
-					"deg", "grad", "rad", "turn", // angles
-					"s", "ms" // time
-				],
-				colorNames: {
-					"aliceblue": "240,248,255",
-					"antiquewhite": "250,235,215",
-					"aquamarine": "127,255,212",
-					"aqua": "0,255,255",
-					"azure": "240,255,255",
-					"beige": "245,245,220",
-					"bisque": "255,228,196",
-					"black": "0,0,0",
-					"blanchedalmond": "255,235,205",
-					"blueviolet": "138,43,226",
-					"blue": "0,0,255",
-					"brown": "165,42,42",
-					"burlywood": "222,184,135",
-					"cadetblue": "95,158,160",
-					"chartreuse": "127,255,0",
-					"chocolate": "210,105,30",
-					"coral": "255,127,80",
-					"cornflowerblue": "100,149,237",
-					"cornsilk": "255,248,220",
-					"crimson": "220,20,60",
-					"cyan": "0,255,255",
-					"darkblue": "0,0,139",
-					"darkcyan": "0,139,139",
-					"darkgoldenrod": "184,134,11",
-					"darkgray": "169,169,169",
-					"darkgrey": "169,169,169",
-					"darkgreen": "0,100,0",
-					"darkkhaki": "189,183,107",
-					"darkmagenta": "139,0,139",
-					"darkolivegreen": "85,107,47",
-					"darkorange": "255,140,0",
-					"darkorchid": "153,50,204",
-					"darkred": "139,0,0",
-					"darksalmon": "233,150,122",
-					"darkseagreen": "143,188,143",
-					"darkslateblue": "72,61,139",
-					"darkslategray": "47,79,79",
-					"darkturquoise": "0,206,209",
-					"darkviolet": "148,0,211",
-					"deeppink": "255,20,147",
-					"deepskyblue": "0,191,255",
-					"dimgray": "105,105,105",
-					"dimgrey": "105,105,105",
-					"dodgerblue": "30,144,255",
-					"firebrick": "178,34,34",
-					"floralwhite": "255,250,240",
-					"forestgreen": "34,139,34",
-					"fuchsia": "255,0,255",
-					"gainsboro": "220,220,220",
-					"ghostwhite": "248,248,255",
-					"gold": "255,215,0",
-					"goldenrod": "218,165,32",
-					"gray": "128,128,128",
-					"grey": "128,128,128",
-					"greenyellow": "173,255,47",
-					"green": "0,128,0",
-					"honeydew": "240,255,240",
-					"hotpink": "255,105,180",
-					"indianred": "205,92,92",
-					"indigo": "75,0,130",
-					"ivory": "255,255,240",
-					"khaki": "240,230,140",
-					"lavenderblush": "255,240,245",
-					"lavender": "230,230,250",
-					"lawngreen": "124,252,0",
-					"lemonchiffon": "255,250,205",
-					"lightblue": "173,216,230",
-					"lightcoral": "240,128,128",
-					"lightcyan": "224,255,255",
-					"lightgoldenrodyellow": "250,250,210",
-					"lightgray": "211,211,211",
-					"lightgrey": "211,211,211",
-					"lightgreen": "144,238,144",
-					"lightpink": "255,182,193",
-					"lightsalmon": "255,160,122",
-					"lightseagreen": "32,178,170",
-					"lightskyblue": "135,206,250",
-					"lightslategray": "119,136,153",
-					"lightsteelblue": "176,196,222",
-					"lightyellow": "255,255,224",
-					"limegreen": "50,205,50",
-					"lime": "0,255,0",
-					"linen": "250,240,230",
-					"magenta": "255,0,255",
-					"maroon": "128,0,0",
-					"mediumaquamarine": "102,205,170",
-					"mediumblue": "0,0,205",
-					"mediumorchid": "186,85,211",
-					"mediumpurple": "147,112,219",
-					"mediumseagreen": "60,179,113",
-					"mediumslateblue": "123,104,238",
-					"mediumspringgreen": "0,250,154",
-					"mediumturquoise": "72,209,204",
-					"mediumvioletred": "199,21,133",
-					"midnightblue": "25,25,112",
-					"mintcream": "245,255,250",
-					"mistyrose": "255,228,225",
-					"moccasin": "255,228,181",
-					"navajowhite": "255,222,173",
-					"navy": "0,0,128",
-					"oldlace": "253,245,230",
-					"olivedrab": "107,142,35",
-					"olive": "128,128,0",
-					"orangered": "255,69,0",
-					"orange": "255,165,0",
-					"orchid": "218,112,214",
-					"palegoldenrod": "238,232,170",
-					"palegreen": "152,251,152",
-					"paleturquoise": "175,238,238",
-					"palevioletred": "219,112,147",
-					"papayawhip": "255,239,213",
-					"peachpuff": "255,218,185",
-					"peru": "205,133,63",
-					"pink": "255,192,203",
-					"plum": "221,160,221",
-					"powderblue": "176,224,230",
-					"purple": "128,0,128",
-					"red": "255,0,0",
-					"rosybrown": "188,143,143",
-					"royalblue": "65,105,225",
-					"saddlebrown": "139,69,19",
-					"salmon": "250,128,114",
-					"sandybrown": "244,164,96",
-					"seagreen": "46,139,87",
-					"seashell": "255,245,238",
-					"sienna": "160,82,45",
-					"silver": "192,192,192",
-					"skyblue": "135,206,235",
-					"slateblue": "106,90,205",
-					"slategray": "112,128,144",
-					"snow": "255,250,250",
-					"springgreen": "0,255,127",
-					"steelblue": "70,130,180",
-					"tan": "210,180,140",
-					"teal": "0,128,128",
-					"thistle": "216,191,216",
-					"tomato": "255,99,71",
-					"turquoise": "64,224,208",
-					"violet": "238,130,238",
-					"wheat": "245,222,179",
-					"whitesmoke": "245,245,245",
-					"white": "255,255,255",
-					"yellowgreen": "154,205,50",
-					"yellow": "255,255,0"
-				}
-			},
-			/************
-			 Hooks
-			 ************/
-
-			/* Hooks allow a subproperty (e.g. "boxShadowBlur") of a compound-value CSS property
-			 (e.g. "boxShadow: X Y Blur Spread Color") to be animated as if it were a discrete property. */
-			/* Note: Beyond enabling fine-grained property animation, hooking is necessary since Velocity only
-			 tweens properties with single numeric values; unlike CSS transitions, Velocity does not interpolate compound-values. */
-			Hooks: {
-				/********************
-				 Registration
-				 ********************/
-
-				/* Templates are a concise way of indicating which subproperties must be individually registered for each compound-value CSS property. */
-				/* Each template consists of the compound-value's base name, its constituent subproperty names, and those subproperties' default values. */
-				templates: {
-					"textShadow": ["Color X Y Blur", "black 0px 0px 0px"],
-					"boxShadow": ["Color X Y Blur Spread", "black 0px 0px 0px 0px"],
-					"clip": ["Top Right Bottom Left", "0px 0px 0px 0px"],
-					"backgroundPosition": ["X Y", "0% 0%"],
-					"transformOrigin": ["X Y Z", "50% 50% 0px"],
-					"perspectiveOrigin": ["X Y", "50% 50%"]
-				},
-				/* A "registered" hook is one that has been converted from its template form into a live,
-				 tweenable property. It contains data to associate it with its root property. */
-				registered: {
-					/* Note: A registered hook looks like this ==> textShadowBlur: [ "textShadow", 3 ],
-					 which consists of the subproperty's name, the associated root property's name,
-					 and the subproperty's position in the root's value. */
-				},
-				/* Convert the templates into individual hooks then append them to the registered object above. */
-				register: function() {
-					/* Color hooks registration: Colors are defaulted to white -- as opposed to black -- since colors that are
-					 currently set to "transparent" default to their respective template below when color-animated,
-					 and white is typically a closer match to transparent than black is. An exception is made for text ("color"),
-					 which is almost always set closer to black than white. */
-					for (var i = 0; i < CSS.Lists.colors.length; i++) {
-						var rgbComponents = (CSS.Lists.colors[i] === "color") ? "0 0 0 1" : "255 255 255 1";
-						CSS.Hooks.templates[CSS.Lists.colors[i]] = ["Red Green Blue Alpha", rgbComponents];
-					}
-
-					var rootProperty,
-							hookTemplate,
-							hookNames;
-
-					/* In IE, color values inside compound-value properties are positioned at the end the value instead of at the beginning.
-					 Thus, we re-arrange the templates accordingly. */
-					if (IE) {
-						for (rootProperty in CSS.Hooks.templates) {
-							if (!CSS.Hooks.templates.hasOwnProperty(rootProperty)) {
-								continue;
-							}
-							hookTemplate = CSS.Hooks.templates[rootProperty];
-							hookNames = hookTemplate[0].split(" ");
-
-							var defaultValues = hookTemplate[1].match(CSS.RegEx.valueSplit);
-
-							if (hookNames[0] === "Color") {
-								/* Reposition both the hook's name and its default value to the end of their respective strings. */
-								hookNames.push(hookNames.shift());
-								defaultValues.push(defaultValues.shift());
-
-								/* Replace the existing template for the hook's root property. */
-								CSS.Hooks.templates[rootProperty] = [hookNames.join(" "), defaultValues.join(" ")];
-							}
-						}
-					}
-
-					/* Hook registration. */
-					for (rootProperty in CSS.Hooks.templates) {
-						if (!CSS.Hooks.templates.hasOwnProperty(rootProperty)) {
-							continue;
-						}
-						hookTemplate = CSS.Hooks.templates[rootProperty];
-						hookNames = hookTemplate[0].split(" ");
-
-						for (var j in hookNames) {
-							if (!hookNames.hasOwnProperty(j)) {
-								continue;
-							}
-							var fullHookName = rootProperty + hookNames[j],
-									hookPosition = j;
-
-							/* For each hook, register its full name (e.g. textShadowBlur) with its root property (e.g. textShadow)
-							 and the hook's position in its template's default value string. */
-							CSS.Hooks.registered[fullHookName] = [rootProperty, hookPosition];
-						}
-					}
-				},
-				/*****************************
-				 Injection and Extraction
-				 *****************************/
-
-				/* Look up the root property associated with the hook (e.g. return "textShadow" for "textShadowBlur"). */
-				/* Since a hook cannot be set directly (the browser won't recognize it), style updating for hooks is routed through the hook's root property. */
-				getRoot: function(property) {
-					var hookData = CSS.Hooks.registered[property];
-
-					if (hookData) {
-						return hookData[0];
-					} else {
-						/* If there was no hook match, return the property name untouched. */
-						return property;
-					}
-				},
-				getUnit: function(str, start) {
-					var unit = (str.substr(start || 0, 5).match(/^[a-z%]+/) || [])[0] || "";
-
-					if (unit && _inArray(CSS.Lists.units, unit)) {
-						return unit;
-					}
-					return "";
-				},
-				fixColors: function(str) {
-					return str.replace(/(rgba?\(\s*)?(\b[a-z]+\b)/g, function($0, $1, $2) {
-						if (CSS.Lists.colorNames.hasOwnProperty($2)) {
-							return ($1 ? $1 : "rgba(") + CSS.Lists.colorNames[$2] + ($1 ? "" : ",1)");
-						}
-						return $1 + $2;
-					});
-				},
-				/* Convert any rootPropertyValue, null or otherwise, into a space-delimited list of hook values so that
-				 the targeted hook can be injected or extracted at its standard position. */
-				cleanRootPropertyValue: function(rootProperty, rootPropertyValue) {
-					/* If the rootPropertyValue is wrapped with "rgb()", "clip()", etc., remove the wrapping to normalize the value before manipulation. */
-					if (CSS.RegEx.valueUnwrap.test(rootPropertyValue)) {
-						rootPropertyValue = rootPropertyValue.match(CSS.RegEx.valueUnwrap)[1];
-					}
-
-					/* If rootPropertyValue is a CSS null-value (from which there's inherently no hook value to extract),
-					 default to the root's default value as defined in CSS.Hooks.templates. */
-					/* Note: CSS null-values include "none", "auto", and "transparent". They must be converted into their
-					 zero-values (e.g. textShadow: "none" ==> textShadow: "0px 0px 0px black") for hook manipulation to proceed. */
-					if (CSS.Values.isCSSNullValue(rootPropertyValue)) {
-						rootPropertyValue = CSS.Hooks.templates[rootProperty][1];
-					}
-
-					return rootPropertyValue;
-				},
-				/* Extracted the hook's value from its root property's value. This is used to get the starting value of an animating hook. */
-				extractValue: function(fullHookName, rootPropertyValue) {
-					var hookData = CSS.Hooks.registered[fullHookName];
-
-					if (hookData) {
-						var hookRoot = hookData[0],
-								hookPosition = hookData[1];
-
-						rootPropertyValue = CSS.Hooks.cleanRootPropertyValue(hookRoot, rootPropertyValue);
-
-						/* Split rootPropertyValue into its constituent hook values then grab the desired hook at its standard position. */
-						return rootPropertyValue.toString().match(CSS.RegEx.valueSplit)[hookPosition];
-					} else {
-						/* If the provided fullHookName isn't a registered hook, return the rootPropertyValue that was passed in. */
-						return rootPropertyValue;
-					}
-				},
-				/* Inject the hook's value into its root property's value. This is used to piece back together the root property
-				 once Velocity has updated one of its individually hooked values through tweening. */
-				injectValue: function(fullHookName, hookValue, rootPropertyValue) {
-					var hookData = CSS.Hooks.registered[fullHookName];
-
-					if (hookData) {
-						var hookRoot = hookData[0],
-								hookPosition = hookData[1],
-								rootPropertyValueParts,
-								rootPropertyValueUpdated;
-
-						rootPropertyValue = CSS.Hooks.cleanRootPropertyValue(hookRoot, rootPropertyValue);
-
-						/* Split rootPropertyValue into its individual hook values, replace the targeted value with hookValue,
-						 then reconstruct the rootPropertyValue string. */
-						rootPropertyValueParts = rootPropertyValue.toString().match(CSS.RegEx.valueSplit);
-						rootPropertyValueParts[hookPosition] = hookValue;
-						rootPropertyValueUpdated = rootPropertyValueParts.join(" ");
-
-						return rootPropertyValueUpdated;
-					} else {
-						/* If the provided fullHookName isn't a registered hook, return the rootPropertyValue that was passed in. */
-						return rootPropertyValue;
-					}
-				}
-			},
-			/*******************
-			 Normalizations
-			 *******************/
-
-			/* Normalizations standardize CSS property manipulation by pollyfilling browser-specific implementations (e.g. opacity)
-			 and reformatting special properties (e.g. clip, rgba) to look like standard ones. */
-			Normalizations: {
-				/* Normalizations are passed a normalization target (either the property's name, its extracted value, or its injected value),
-				 the targeted element (which may need to be queried), and the targeted property value. */
-				registered: {
-					clip: function(type, element, propertyValue) {
-						switch (type) {
-							case "name":
-								return "clip";
-								/* Clip needs to be unwrapped and stripped of its commas during extraction. */
-							case "extract":
-								var extracted;
-
-								/* If Velocity also extracted this value, skip extraction. */
-								if (CSS.RegEx.wrappedValueAlreadyExtracted.test(propertyValue)) {
-									extracted = propertyValue;
-								} else {
-									/* Remove the "rect()" wrapper. */
-									extracted = propertyValue.toString().match(CSS.RegEx.valueUnwrap);
-
-									/* Strip off commas. */
-									extracted = extracted ? extracted[1].replace(/,(\s+)?/g, " ") : propertyValue;
-								}
-
-								return extracted;
-								/* Clip needs to be re-wrapped during injection. */
-							case "inject":
-								return "rect(" + propertyValue + ")";
-						}
-					},
-					blur: function(type, element, propertyValue) {
-						switch (type) {
-							case "name":
-								return Velocity.State.isFirefox ? "filter" : "-webkit-filter";
-							case "extract":
-								var extracted = parseFloat(propertyValue);
-
-								/* If extracted is NaN, meaning the value isn't already extracted. */
-								if (!(extracted || extracted === 0)) {
-									var blurComponent = propertyValue.toString().match(/blur\(([0-9]+[A-z]+)\)/i);
-
-									/* If the filter string had a blur component, return just the blur value and unit type. */
-									if (blurComponent) {
-										extracted = blurComponent[1];
-										/* If the component doesn't exist, default blur to 0. */
-									} else {
-										extracted = 0;
-									}
-								}
-
-								return extracted;
-								/* Blur needs to be re-wrapped during injection. */
-							case "inject":
-								/* For the blur effect to be fully de-applied, it needs to be set to "none" instead of 0. */
-								if (!parseFloat(propertyValue)) {
-									return "none";
-								} else {
-									return "blur(" + propertyValue + ")";
-								}
-						}
-					},
-					/* <=IE8 do not support the standard opacity property. They use filter:alpha(opacity=INT) instead. */
-					opacity: function(type, element, propertyValue) {
-						if (IE <= 8) {
-							switch (type) {
-								case "name":
-									return "filter";
-								case "extract":
-									/* <=IE8 return a "filter" value of "alpha(opacity=\d{1,3})".
-									 Extract the value and convert it to a decimal value to match the standard CSS opacity property's formatting. */
-									var extracted = propertyValue.toString().match(/alpha\(opacity=(.*)\)/i);
-
-									if (extracted) {
-										/* Convert to decimal value. */
-										propertyValue = extracted[1] / 100;
-									} else {
-										/* When extracting opacity, default to 1 since a null value means opacity hasn't been set. */
-										propertyValue = 1;
-									}
-
-									return propertyValue;
-								case "inject":
-									/* Opacified elements are required to have their zoom property set to a non-zero value. */
-									element.style.zoom = 1;
-
-									/* Setting the filter property on elements with certain font property combinations can result in a
-									 highly unappealing ultra-bolding effect. There's no way to remedy this throughout a tween, but dropping the
-									 value altogether (when opacity hits 1) at leasts ensures that the glitch is gone post-tweening. */
-									if (parseFloat(propertyValue) >= 1) {
-										return "";
-									} else {
-										/* As per the filter property's spec, convert the decimal value to a whole number and wrap the value. */
-										return "alpha(opacity=" + parseInt(parseFloat(propertyValue) * 100, 10) + ")";
-									}
-							}
-							/* With all other browsers, normalization is not required; return the same values that were passed in. */
-						} else {
-							switch (type) {
-								case "name":
-									return "opacity";
-								case "extract":
-									return propertyValue;
-								case "inject":
-									return propertyValue;
-							}
-						}
-					}
-				},
-				/*****************************
-				 Batched Registrations
-				 *****************************/
-
-				/* Note: Batched normalizations extend the CSS.Normalizations.registered object. */
-				register: function() {
-
-					/*****************
-					 Transforms
-					 *****************/
-
-					/* Transforms are the subproperties contained by the CSS "transform" property. Transforms must undergo normalization
-					 so that they can be referenced in a properties map by their individual names. */
-					/* Note: When transforms are "set", they are actually assigned to a per-element transformCache. When all transform
-					 setting is complete complete, CSS.flushTransformCache() must be manually called to flush the values to the DOM.
-					 Transform setting is batched in this way to improve performance: the transform style only needs to be updated
-					 once when multiple transform subproperties are being animated simultaneously. */
-					/* Note: IE9 and Android Gingerbread have support for 2D -- but not 3D -- transforms. Since animating unsupported
-					 transform properties results in the browser ignoring the *entire* transform string, we prevent these 3D values
-					 from being normalized for these browsers so that tweening skips these properties altogether
-					 (since it will ignore them as being unsupported by the browser.) */
-					if ((!IE || IE > 9) && !Velocity.State.isGingerbread) {
-						/* Note: Since the standalone CSS "perspective" property and the CSS transform "perspective" subproperty
-						 share the same name, the latter is given a unique token within Velocity: "transformPerspective". */
-						CSS.Lists.transformsBase = CSS.Lists.transformsBase.concat(CSS.Lists.transforms3D);
-					}
-
-					for (var i = 0; i < CSS.Lists.transformsBase.length; i++) {
-						/* Wrap the dynamically generated normalization function in a new scope so that transformName's value is
-						 paired with its respective function. (Otherwise, all functions would take the final for loop's transformName.) */
-						(function() {
-							var transformName = CSS.Lists.transformsBase[i];
-
-							CSS.Normalizations.registered[transformName] = function(type, element, propertyValue) {
-								switch (type) {
-									/* The normalized property name is the parent "transform" property -- the property that is actually set in CSS. */
-									case "name":
-										return "transform";
-										/* Transform values are cached onto a per-element transformCache object. */
-									case "extract":
-										/* If this transform has yet to be assigned a value, return its null value. */
-										if (Data(element) === undefined || Data(element).transformCache[transformName] === undefined) {
-											/* Scale CSS.Lists.transformsBase default to 1 whereas all other transform properties default to 0. */
-											return /^scale/i.test(transformName) ? 1 : 0;
-											/* When transform values are set, they are wrapped in parentheses as per the CSS spec.
-											 Thus, when extracting their values (for tween calculations), we strip off the parentheses. */
-										}
-										return Data(element).transformCache[transformName].replace(/[()]/g, "");
-									case "inject":
-										var invalid = false;
-
-										/* If an individual transform property contains an unsupported unit type, the browser ignores the *entire* transform property.
-										 Thus, protect users from themselves by skipping setting for transform values supplied with invalid unit types. */
-										/* Switch on the base transform type; ignore the axis by removing the last letter from the transform's name. */
-										switch (transformName.substr(0, transformName.length - 1)) {
-											/* Whitelist unit types for each transform. */
-											case "translate":
-												invalid = !/(%|px|em|rem|vw|vh|\d)$/i.test(propertyValue);
-												break;
-												/* Since an axis-free "scale" property is supported as well, a little hack is used here to detect it by chopping off its last letter. */
-											case "scal":
-											case "scale":
-												/* Chrome on Android has a bug in which scaled elements blur if their initial scale
-												 value is below 1 (which can happen with forcefeeding). Thus, we detect a yet-unset scale property
-												 and ensure that its first value is always 1. More info: http://stackoverflow.com/questions/10417890/css3-animations-with-transform-causes-blurred-elements-on-webkit/10417962#10417962 */
-												if (Velocity.State.isAndroid && Data(element).transformCache[transformName] === undefined && propertyValue < 1) {
-													propertyValue = 1;
-												}
-
-												invalid = !/(\d)$/i.test(propertyValue);
-												break;
-											case "skew":
-												invalid = !/(deg|\d)$/i.test(propertyValue);
-												break;
-											case "rotate":
-												invalid = !/(deg|\d)$/i.test(propertyValue);
-												break;
-										}
-
-										if (!invalid) {
-											/* As per the CSS spec, wrap the value in parentheses. */
-											Data(element).transformCache[transformName] = "(" + propertyValue + ")";
-										}
-
-										/* Although the value is set on the transformCache object, return the newly-updated value for the calling code to process as normal. */
-										return Data(element).transformCache[transformName];
-								}
-							};
-						})();
-					}
-
-					/*************
-					 Colors
-					 *************/
-
-					/* Since Velocity only animates a single numeric value per property, color animation is achieved by hooking the individual RGBA components of CSS color properties.
-					 Accordingly, color values must be normalized (e.g. "#ff0000", "red", and "rgb(255, 0, 0)" ==> "255 0 0 1") so that their components can be injected/extracted by CSS.Hooks logic. */
-					for (var j = 0; j < CSS.Lists.colors.length; j++) {
-						/* Wrap the dynamically generated normalization function in a new scope so that colorName's value is paired with its respective function.
-						 (Otherwise, all functions would take the final for loop's colorName.) */
-						(function() {
-							var colorName = CSS.Lists.colors[j];
-
-							/* Note: In IE<=8, which support rgb but not rgba, color properties are reverted to rgb by stripping off the alpha component. */
-							CSS.Normalizations.registered[colorName] = function(type, element, propertyValue) {
-								switch (type) {
-									case "name":
-										return colorName;
-										/* Convert all color values into the rgb format. (Old IE can return hex values and color names instead of rgb/rgba.) */
-									case "extract":
-										var extracted;
-
-										/* If the color is already in its hookable form (e.g. "255 255 255 1") due to having been previously extracted, skip extraction. */
-										if (CSS.RegEx.wrappedValueAlreadyExtracted.test(propertyValue)) {
-											extracted = propertyValue;
-										} else {
-											var converted,
-													colorNames = {
-														black: "rgb(0, 0, 0)",
-														blue: "rgb(0, 0, 255)",
-														gray: "rgb(128, 128, 128)",
-														green: "rgb(0, 128, 0)",
-														red: "rgb(255, 0, 0)",
-														white: "rgb(255, 255, 255)"
-													};
-
-											/* Convert color names to rgb. */
-											if (/^[A-z]+$/i.test(propertyValue)) {
-												if (colorNames[propertyValue] !== undefined) {
-													converted = colorNames[propertyValue];
-												} else {
-													/* If an unmatched color name is provided, default to black. */
-													converted = colorNames.black;
-												}
-												/* Convert hex values to rgb. */
-											} else if (CSS.RegEx.isHex.test(propertyValue)) {
-												converted = "rgb(" + CSS.Values.hexToRgb(propertyValue).join(" ") + ")";
-												/* If the provided color doesn't match any of the accepted color formats, default to black. */
-											} else if (!(/^rgba?\(/i.test(propertyValue))) {
-												converted = colorNames.black;
-											}
-
-											/* Remove the surrounding "rgb/rgba()" string then replace commas with spaces and strip
-											 repeated spaces (in case the value included spaces to begin with). */
-											extracted = (converted || propertyValue).toString().match(CSS.RegEx.valueUnwrap)[1].replace(/,(\s+)?/g, " ");
-										}
-
-										/* So long as this isn't <=IE8, add a fourth (alpha) component if it's missing and default it to 1 (visible). */
-										if ((!IE || IE > 8) && extracted.split(" ").length === 3) {
-											extracted += " 1";
-										}
-
-										return extracted;
-									case "inject":
-										/* If we have a pattern then it might already have the right values */
-										if (/^rgb/.test(propertyValue)) {
-											return propertyValue;
-										}
-
-										/* If this is IE<=8 and an alpha component exists, strip it off. */
-										if (IE <= 8) {
-											if (propertyValue.split(" ").length === 4) {
-												propertyValue = propertyValue.split(/\s+/).slice(0, 3).join(" ");
-											}
-											/* Otherwise, add a fourth (alpha) component if it's missing and default it to 1 (visible). */
-										} else if (propertyValue.split(" ").length === 3) {
-											propertyValue += " 1";
-										}
-
-										/* Re-insert the browser-appropriate wrapper("rgb/rgba()"), insert commas, and strip off decimal units
-										 on all values but the fourth (R, G, and B only accept whole numbers). */
-										return (IE <= 8 ? "rgb" : "rgba") + "(" + propertyValue.replace(/\s+/g, ",").replace(/\.(\d)+(?=,)/g, "") + ")";
-								}
-							};
-						})();
-					}
-
-					/**************
-					 Dimensions
-					 **************/
-					function augmentDimension(name, element, wantInner) {
-						var isBorderBox = CSS.getPropertyValue(element, "boxSizing").toString().toLowerCase() === "border-box";
-
-						if (isBorderBox === (wantInner || false)) {
-							/* in box-sizing mode, the CSS width / height accessors already give the outerWidth / outerHeight. */
-							var i,
-									value,
-									augment = 0,
-									sides = name === "width" ? ["Left", "Right"] : ["Top", "Bottom"],
-									fields = ["padding" + sides[0], "padding" + sides[1], "border" + sides[0] + "Width", "border" + sides[1] + "Width"];
-
-							for (i = 0; i < fields.length; i++) {
-								value = parseFloat(CSS.getPropertyValue(element, fields[i]));
-								if (!isNaN(value)) {
-									augment += value;
-								}
-							}
-							return wantInner ? -augment : augment;
-						}
-						return 0;
-					}
-					function getDimension(name, wantInner) {
-						return function(type, element, propertyValue) {
-							switch (type) {
-								case "name":
-									return name;
-								case "extract":
-									return parseFloat(propertyValue) + augmentDimension(name, element, wantInner);
-								case "inject":
-									return (parseFloat(propertyValue) - augmentDimension(name, element, wantInner)) + "px";
-							}
-						};
-					}
-					CSS.Normalizations.registered.innerWidth = getDimension("width", true);
-					CSS.Normalizations.registered.innerHeight = getDimension("height", true);
-					CSS.Normalizations.registered.outerWidth = getDimension("width");
-					CSS.Normalizations.registered.outerHeight = getDimension("height");
-				}
-			},
-			/************************
-			 CSS Property Names
-			 ************************/
-
-			Names: {
-				/* Camelcase a property name into its JavaScript notation (e.g. "background-color" ==> "backgroundColor").
-				 Camelcasing is used to normalize property names between and across calls. */
-				camelCase: function(property) {
-					return property.replace(/-(\w)/g, function(match, subMatch) {
-						return subMatch.toUpperCase();
-					});
-				},
-				/* For SVG elements, some properties (namely, dimensional ones) are GET/SET via the element's HTML attributes (instead of via CSS styles). */
-				SVGAttribute: function(property) {
-					var SVGAttributes = "width|height|x|y|cx|cy|r|rx|ry|x1|x2|y1|y2";
-
-					/* Certain browsers require an SVG transform to be applied as an attribute. (Otherwise, application via CSS is preferable due to 3D support.) */
-					if (IE || (Velocity.State.isAndroid && !Velocity.State.isChrome)) {
-						SVGAttributes += "|transform";
-					}
-
-					return new RegExp("^(" + SVGAttributes + ")$", "i").test(property);
-				},
-				/* Determine whether a property should be set with a vendor prefix. */
-				/* If a prefixed version of the property exists, return it. Otherwise, return the original property name.
-				 If the property is not at all supported by the browser, return a false flag. */
-				prefixCheck: function(property) {
-					/* If this property has already been checked, return the cached value. */
-					if (Velocity.State.prefixMatches[property]) {
-						return [Velocity.State.prefixMatches[property], true];
-					} else {
-						var vendors = ["", "Webkit", "Moz", "ms", "O"];
-
-						for (var i = 0, vendorsLength = vendors.length; i < vendorsLength; i++) {
-							var propertyPrefixed;
-
-							if (i === 0) {
-								propertyPrefixed = property;
-							} else {
-								/* Capitalize the first letter of the property to conform to JavaScript vendor prefix notation (e.g. webkitFilter). */
-								propertyPrefixed = vendors[i] + property.replace(/^\w/, function(match) {
-									return match.toUpperCase();
-								});
-							}
-
-							/* Check if the browser supports this property as prefixed. */
-							if (Type.isString(Velocity.State.prefixElement.style[propertyPrefixed])) {
-								/* Cache the match. */
-								Velocity.State.prefixMatches[property] = propertyPrefixed;
-
-								return [propertyPrefixed, true];
-							}
-						}
-
-						/* If the browser doesn't support this property in any form, include a false flag so that the caller can decide how to proceed. */
-						return [property, false];
-					}
-				}
-			},
-			/************************
-			 CSS Property Values
-			 ************************/
-
-			Values: {
-				/* Hex to RGB conversion. Copyright Tim Down: http://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb */
-				hexToRgb: function(hex) {
-					var shortformRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i,
-							longformRegex = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i,
-							rgbParts;
-
-					hex = hex.replace(shortformRegex, function(m, r, g, b) {
-						return r + r + g + g + b + b;
-					});
-
-					rgbParts = longformRegex.exec(hex);
-
-					return rgbParts ? [parseInt(rgbParts[1], 16), parseInt(rgbParts[2], 16), parseInt(rgbParts[3], 16)] : [0, 0, 0];
-				},
-				isCSSNullValue: function(value) {
-					/* The browser defaults CSS values that have not been set to either 0 or one of several possible null-value strings.
-					 Thus, we check for both falsiness and these special strings. */
-					/* Null-value checking is performed to default the special strings to 0 (for the sake of tweening) or their hook
-					 templates as defined as CSS.Hooks (for the sake of hook injection/extraction). */
-					/* Note: Chrome returns "rgba(0, 0, 0, 0)" for an undefined color whereas IE returns "transparent". */
-					return (!value || /^(none|auto|transparent|(rgba\(0, ?0, ?0, ?0\)))$/i.test(value));
-				},
-				/* Retrieve a property's default unit type. Used for assigning a unit type when one is not supplied by the user. */
-				getUnitType: function(property) {
-					if (/^(rotate|skew)/i.test(property)) {
-						return "deg";
-					} else if (/(^(scale|scaleX|scaleY|scaleZ|alpha|flexGrow|flexHeight|zIndex|fontWeight)$)|((opacity|red|green|blue|alpha)$)/i.test(property)) {
-						/* The above properties are unitless. */
-						return "";
-					} else {
-						/* Default to px for all other properties. */
-						return "px";
-					}
-				},
-				/* HTML elements default to an associated display type when they're not set to display:none. */
-				/* Note: This function is used for correctly setting the non-"none" display value in certain Velocity redirects, such as fadeIn/Out. */
-				getDisplayType: function(element) {
-					var tagName = element && element.tagName.toString().toLowerCase();
-
-					if (/^(b|big|i|small|tt|abbr|acronym|cite|code|dfn|em|kbd|strong|samp|var|a|bdo|br|img|map|object|q|script|span|sub|sup|button|input|label|select|textarea)$/i.test(tagName)) {
-						return "inline";
-					} else if (/^(li)$/i.test(tagName)) {
-						return "list-item";
-					} else if (/^(tr)$/i.test(tagName)) {
-						return "table-row";
-					} else if (/^(table)$/i.test(tagName)) {
-						return "table";
-					} else if (/^(tbody)$/i.test(tagName)) {
-						return "table-row-group";
-						/* Default to "block" when no match is found. */
-					} else {
-						return "block";
-					}
-				},
-				/* The class add/remove functions are used to temporarily apply a "velocity-animating" class to elements while they're animating. */
-				addClass: function(element, className) {
-					if (element) {
-						if (element.classList) {
-							element.classList.add(className);
-						} else if (Type.isString(element.className)) {
-							// Element.className is around 15% faster then set/getAttribute
-							element.className += (element.className.length ? " " : "") + className;
-						} else {
-							// Work around for IE strict mode animating SVG - and anything else that doesn't behave correctly - the same way jQuery does it
-							var currentClass = element.getAttribute(IE <= 7 ? "className" : "class") || "";
-
-							element.setAttribute("class", currentClass + (currentClass ? " " : "") + className);
-						}
-					}
-				},
-				removeClass: function(element, className) {
-					if (element) {
-						if (element.classList) {
-							element.classList.remove(className);
-						} else if (Type.isString(element.className)) {
-							// Element.className is around 15% faster then set/getAttribute
-							// TODO: Need some jsperf tests on performance - can we get rid of the regex and maybe use split / array manipulation?
-							element.className = element.className.toString().replace(new RegExp("(^|\\s)" + className.split(" ").join("|") + "(\\s|$)", "gi"), " ");
-						} else {
-							// Work around for IE strict mode animating SVG - and anything else that doesn't behave correctly - the same way jQuery does it
-							var currentClass = element.getAttribute(IE <= 7 ? "className" : "class") || "";
-
-							element.setAttribute("class", currentClass.replace(new RegExp("(^|\s)" + className.split(" ").join("|") + "(\s|$)", "gi"), " "));
-						}
-					}
-				}
-			},
-			/****************************
-			 Style Getting & Setting
-			 ****************************/
-
-			/* The singular getPropertyValue, which routes the logic for all normalizations, hooks, and standard CSS properties. */
-			getPropertyValue: function(element, property, rootPropertyValue, forceStyleLookup) {
-				/* Get an element's computed property value. */
-				/* Note: Retrieving the value of a CSS property cannot simply be performed by checking an element's
-				 style attribute (which only reflects user-defined values). Instead, the browser must be queried for a property's
-				 *computed* value. You can read more about getComputedStyle here: https://developer.mozilla.org/en/docs/Web/API/window.getComputedStyle */
-				function computePropertyValue(element, property) {
-					/* When box-sizing isn't set to border-box, height and width style values are incorrectly computed when an
-					 element's scrollbars are visible (which expands the element's dimensions). Thus, we defer to the more accurate
-					 offsetHeight/Width property, which includes the total dimensions for interior, border, padding, and scrollbar.
-					 We subtract border and padding to get the sum of interior + scrollbar. */
-					var computedValue = 0;
-
-					/* IE<=8 doesn't support window.getComputedStyle, thus we defer to jQuery, which has an extensive array
-					 of hacks to accurately retrieve IE8 property values. Re-implementing that logic here is not worth bloating the
-					 codebase for a dying browser. The performance repercussions of using jQuery here are minimal since
-					 Velocity is optimized to rarely (and sometimes never) query the DOM. Further, the $.css() codepath isn't that slow. */
-					if (IE <= 8) {
-						computedValue = $.css(element, property); /* GET */
-						/* All other browsers support getComputedStyle. The returned live object reference is cached onto its
-						 associated element so that it does not need to be refetched upon every GET. */
-					} else {
-						/* Browsers do not return height and width values for elements that are set to display:"none". Thus, we temporarily
-						 toggle display to the element type's default value. */
-						var toggleDisplay = false;
-
-						if (/^(width|height)$/.test(property) && CSS.getPropertyValue(element, "display") === 0) {
-							toggleDisplay = true;
-							CSS.setPropertyValue(element, "display", CSS.Values.getDisplayType(element));
-						}
-
-						var revertDisplay = function() {
-							if (toggleDisplay) {
-								CSS.setPropertyValue(element, "display", "none");
-							}
-						};
-
-						if (!forceStyleLookup) {
-							if (property === "height" && CSS.getPropertyValue(element, "boxSizing").toString().toLowerCase() !== "border-box") {
-								var contentBoxHeight = element.offsetHeight - (parseFloat(CSS.getPropertyValue(element, "borderTopWidth")) || 0) - (parseFloat(CSS.getPropertyValue(element, "borderBottomWidth")) || 0) - (parseFloat(CSS.getPropertyValue(element, "paddingTop")) || 0) - (parseFloat(CSS.getPropertyValue(element, "paddingBottom")) || 0);
-								revertDisplay();
-
-								return contentBoxHeight;
-							} else if (property === "width" && CSS.getPropertyValue(element, "boxSizing").toString().toLowerCase() !== "border-box") {
-								var contentBoxWidth = element.offsetWidth - (parseFloat(CSS.getPropertyValue(element, "borderLeftWidth")) || 0) - (parseFloat(CSS.getPropertyValue(element, "borderRightWidth")) || 0) - (parseFloat(CSS.getPropertyValue(element, "paddingLeft")) || 0) - (parseFloat(CSS.getPropertyValue(element, "paddingRight")) || 0);
-								revertDisplay();
-
-								return contentBoxWidth;
-							}
-						}
-
-						var computedStyle;
-
-						/* For elements that Velocity hasn't been called on directly (e.g. when Velocity queries the DOM on behalf
-						 of a parent of an element its animating), perform a direct getComputedStyle lookup since the object isn't cached. */
-						if (Data(element) === undefined) {
-							computedStyle = window.getComputedStyle(element, null); /* GET */
-							/* If the computedStyle object has yet to be cached, do so now. */
-						} else if (!Data(element).computedStyle) {
-							computedStyle = Data(element).computedStyle = window.getComputedStyle(element, null); /* GET */
-							/* If computedStyle is cached, use it. */
-						} else {
-							computedStyle = Data(element).computedStyle;
-						}
-
-						/* IE and Firefox do not return a value for the generic borderColor -- they only return individual values for each border side's color.
-						 Also, in all browsers, when border colors aren't all the same, a compound value is returned that Velocity isn't setup to parse.
-						 So, as a polyfill for querying individual border side colors, we just return the top border's color and animate all borders from that value. */
-						if (property === "borderColor") {
-							property = "borderTopColor";
-						}
-
-						/* IE9 has a bug in which the "filter" property must be accessed from computedStyle using the getPropertyValue method
-						 instead of a direct property lookup. The getPropertyValue method is slower than a direct lookup, which is why we avoid it by default. */
-						if (IE === 9 && property === "filter") {
-							computedValue = computedStyle.getPropertyValue(property); /* GET */
-						} else {
-							computedValue = computedStyle[property];
-						}
-
-						/* Fall back to the property's style value (if defined) when computedValue returns nothing,
-						 which can happen when the element hasn't been painted. */
-						if (computedValue === "" || computedValue === null) {
-							computedValue = element.style[property];
-						}
-
-						revertDisplay();
-					}
-
-					/* For top, right, bottom, and left (TRBL) values that are set to "auto" on elements of "fixed" or "absolute" position,
-					 defer to jQuery for converting "auto" to a numeric value. (For elements with a "static" or "relative" position, "auto" has the same
-					 effect as being set to 0, so no conversion is necessary.) */
-					/* An example of why numeric conversion is necessary: When an element with "position:absolute" has an untouched "left"
-					 property, which reverts to "auto", left's value is 0 relative to its parent element, but is often non-zero relative
-					 to its *containing* (not parent) element, which is the nearest "position:relative" ancestor or the viewport (and always the viewport in the case of "position:fixed"). */
-					if (computedValue === "auto" && /^(top|right|bottom|left)$/i.test(property)) {
-						var position = computePropertyValue(element, "position"); /* GET */
-
-						/* For absolute positioning, jQuery's $.position() only returns values for top and left;
-						 right and bottom will have their "auto" value reverted to 0. */
-						/* Note: A jQuery object must be created here since jQuery doesn't have a low-level alias for $.position().
-						 Not a big deal since we're currently in a GET batch anyway. */
-						if (position === "fixed" || (position === "absolute" && /top|left/i.test(property))) {
-							/* Note: jQuery strips the pixel unit from its returned values; we re-add it here to conform with computePropertyValue's behavior. */
-							computedValue = $(element).position()[property] + "px"; /* GET */
-						}
-					}
-
-					return computedValue;
-				}
-
-				var propertyValue;
-
-				/* If this is a hooked property (e.g. "clipLeft" instead of the root property of "clip"),
-				 extract the hook's value from a normalized rootPropertyValue using CSS.Hooks.extractValue(). */
-				if (CSS.Hooks.registered[property]) {
-					var hook = property,
-							hookRoot = CSS.Hooks.getRoot(hook);
-
-					/* If a cached rootPropertyValue wasn't passed in (which Velocity always attempts to do in order to avoid requerying the DOM),
-					 query the DOM for the root property's value. */
-					if (rootPropertyValue === undefined) {
-						/* Since the browser is now being directly queried, use the official post-prefixing property name for this lookup. */
-						rootPropertyValue = CSS.getPropertyValue(element, CSS.Names.prefixCheck(hookRoot)[0]); /* GET */
-					}
-
-					/* If this root has a normalization registered, peform the associated normalization extraction. */
-					if (CSS.Normalizations.registered[hookRoot]) {
-						rootPropertyValue = CSS.Normalizations.registered[hookRoot]("extract", element, rootPropertyValue);
-					}
-
-					/* Extract the hook's value. */
-					propertyValue = CSS.Hooks.extractValue(hook, rootPropertyValue);
-
-					/* If this is a normalized property (e.g. "opacity" becomes "filter" in <=IE8) or "translateX" becomes "transform"),
-					 normalize the property's name and value, and handle the special case of transforms. */
-					/* Note: Normalizing a property is mutually exclusive from hooking a property since hook-extracted values are strictly
-					 numerical and therefore do not require normalization extraction. */
-				} else if (CSS.Normalizations.registered[property]) {
-					var normalizedPropertyName,
-							normalizedPropertyValue;
-
-					normalizedPropertyName = CSS.Normalizations.registered[property]("name", element);
-
-					/* Transform values are calculated via normalization extraction (see below), which checks against the element's transformCache.
-					 At no point do transform GETs ever actually query the DOM; initial stylesheet values are never processed.
-					 This is because parsing 3D transform matrices is not always accurate and would bloat our codebase;
-					 thus, normalization extraction defaults initial transform values to their zero-values (e.g. 1 for scaleX and 0 for translateX). */
-					if (normalizedPropertyName !== "transform") {
-						normalizedPropertyValue = computePropertyValue(element, CSS.Names.prefixCheck(normalizedPropertyName)[0]); /* GET */
-
-						/* If the value is a CSS null-value and this property has a hook template, use that zero-value template so that hooks can be extracted from it. */
-						if (CSS.Values.isCSSNullValue(normalizedPropertyValue) && CSS.Hooks.templates[property]) {
-							normalizedPropertyValue = CSS.Hooks.templates[property][1];
-						}
-					}
-
-					propertyValue = CSS.Normalizations.registered[property]("extract", element, normalizedPropertyValue);
-				}
-
-				/* If a (numeric) value wasn't produced via hook extraction or normalization, query the DOM. */
-				if (!/^[\d-]/.test(propertyValue)) {
-					/* For SVG elements, dimensional properties (which SVGAttribute() detects) are tweened via
-					 their HTML attribute values instead of their CSS style values. */
-					var data = Data(element);
-
-					if (data && data.isSVG && CSS.Names.SVGAttribute(property)) {
-						/* Since the height/width attribute values must be set manually, they don't reflect computed values.
-						 Thus, we use use getBBox() to ensure we always get values for elements with undefined height/width attributes. */
-						if (/^(height|width)$/i.test(property)) {
-							/* Firefox throws an error if .getBBox() is called on an SVG that isn't attached to the DOM. */
-							try {
-								propertyValue = element.getBBox()[property];
-							} catch (error) {
-								propertyValue = 0;
-							}
-							/* Otherwise, access the attribute value directly. */
-						} else {
-							propertyValue = element.getAttribute(property);
-						}
-					} else {
-						propertyValue = computePropertyValue(element, CSS.Names.prefixCheck(property)[0]); /* GET */
-					}
-				}
-
-				/* Since property lookups are for animation purposes (which entails computing the numeric delta between start and end values),
-				 convert CSS null-values to an integer of value 0. */
-				if (CSS.Values.isCSSNullValue(propertyValue)) {
-					propertyValue = 0;
-				}
-
-				if (Velocity.debug >= 2) {
-					console.log("Get " + property + ": " + propertyValue);
-				}
-
-				return propertyValue;
-			},
-			/* The singular setPropertyValue, which routes the logic for all normalizations, hooks, and standard CSS properties. */
-			setPropertyValue: function(element, property, propertyValue, rootPropertyValue, scrollData) {
-				var propertyName = property;
-
-				/* In order to be subjected to call options and element queueing, scroll animation is routed through Velocity as if it were a standard CSS property. */
-				if (property === "scroll") {
-					/* If a container option is present, scroll the container instead of the browser window. */
-					if (scrollData.container) {
-						scrollData.container["scroll" + scrollData.direction] = propertyValue;
-						/* Otherwise, Velocity defaults to scrolling the browser window. */
-					} else {
-						if (scrollData.direction === "Left") {
-							window.scrollTo(propertyValue, scrollData.alternateValue);
-						} else {
-							window.scrollTo(scrollData.alternateValue, propertyValue);
-						}
-					}
-				} else {
-					/* Transforms (translateX, rotateZ, etc.) are applied to a per-element transformCache object, which is manually flushed via flushTransformCache().
-					 Thus, for now, we merely cache transforms being SET. */
-					if (CSS.Normalizations.registered[property] && CSS.Normalizations.registered[property]("name", element) === "transform") {
-						/* Perform a normalization injection. */
-						/* Note: The normalization logic handles the transformCache updating. */
-						CSS.Normalizations.registered[property]("inject", element, propertyValue);
-
-						propertyName = "transform";
-						propertyValue = Data(element).transformCache[property];
-					} else {
-						/* Inject hooks. */
-						if (CSS.Hooks.registered[property]) {
-							var hookName = property,
-									hookRoot = CSS.Hooks.getRoot(property);
-
-							/* If a cached rootPropertyValue was not provided, query the DOM for the hookRoot's current value. */
-							rootPropertyValue = rootPropertyValue || CSS.getPropertyValue(element, hookRoot); /* GET */
-
-							propertyValue = CSS.Hooks.injectValue(hookName, propertyValue, rootPropertyValue);
-							property = hookRoot;
-						}
-
-						/* Normalize names and values. */
-						if (CSS.Normalizations.registered[property]) {
-							propertyValue = CSS.Normalizations.registered[property]("inject", element, propertyValue);
-							property = CSS.Normalizations.registered[property]("name", element);
-						}
-
-						/* Assign the appropriate vendor prefix before performing an official style update. */
-						propertyName = CSS.Names.prefixCheck(property)[0];
-
-						/* A try/catch is used for IE<=8, which throws an error when "invalid" CSS values are set, e.g. a negative width.
-						 Try/catch is avoided for other browsers since it incurs a performance overhead. */
-						if (IE <= 8) {
-							try {
-								element.style[propertyName] = propertyValue;
-							} catch (error) {
-								if (Velocity.debug) {
-									console.log("Browser does not support [" + propertyValue + "] for [" + propertyName + "]");
-								}
-							}
-							/* SVG elements have their dimensional properties (width, height, x, y, cx, etc.) applied directly as attributes instead of as styles. */
-							/* Note: IE8 does not support SVG elements, so it's okay that we skip it for SVG animation. */
-						} else {
-							var data = Data(element);
-
-							if (data && data.isSVG && CSS.Names.SVGAttribute(property)) {
-								/* Note: For SVG attributes, vendor-prefixed property names are never used. */
-								/* Note: Not all CSS properties can be animated via attributes, but the browser won't throw an error for unsupported properties. */
-								element.setAttribute(property, propertyValue);
-							} else {
-								element.style[propertyName] = propertyValue;
-							}
-						}
-
-						if (Velocity.debug >= 2) {
-							console.log("Set " + property + " (" + propertyName + "): " + propertyValue);
-						}
-					}
-				}
-
-				/* Return the normalized property name and value in case the caller wants to know how these values were modified before being applied to the DOM. */
-				return [propertyName, propertyValue];
-			},
-			/* To increase performance by batching transform updates into a single SET, transforms are not directly applied to an element until flushTransformCache() is called. */
-			/* Note: Velocity applies transform properties in the same order that they are chronogically introduced to the element's CSS styles. */
-			flushTransformCache: function(element) {
-				var transformString = "",
-						data = Data(element);
-
-				/* Certain browsers require that SVG transforms be applied as an attribute. However, the SVG transform attribute takes a modified version of CSS's transform string
-				 (units are dropped and, except for skewX/Y, subproperties are merged into their master property -- e.g. scaleX and scaleY are merged into scale(X Y). */
-				if ((IE || (Velocity.State.isAndroid && !Velocity.State.isChrome)) && data && data.isSVG) {
-					/* Since transform values are stored in their parentheses-wrapped form, we use a helper function to strip out their numeric values.
-					 Further, SVG transform properties only take unitless (representing pixels) values, so it's okay that parseFloat() strips the unit suffixed to the float value. */
-					var getTransformFloat = function(transformProperty) {
-						return parseFloat(CSS.getPropertyValue(element, transformProperty));
-					};
-
-					/* Create an object to organize all the transforms that we'll apply to the SVG element. To keep the logic simple,
-					 we process *all* transform properties -- even those that may not be explicitly applied (since they default to their zero-values anyway). */
-					var SVGTransforms = {
-						translate: [getTransformFloat("translateX"), getTransformFloat("translateY")],
-						skewX: [getTransformFloat("skewX")], skewY: [getTransformFloat("skewY")],
-						/* If the scale property is set (non-1), use that value for the scaleX and scaleY values
-						 (this behavior mimics the result of animating all these properties at once on HTML elements). */
-						scale: getTransformFloat("scale") !== 1 ? [getTransformFloat("scale"), getTransformFloat("scale")] : [getTransformFloat("scaleX"), getTransformFloat("scaleY")],
-						/* Note: SVG's rotate transform takes three values: rotation degrees followed by the X and Y values
-						 defining the rotation's origin point. We ignore the origin values (default them to 0). */
-						rotate: [getTransformFloat("rotateZ"), 0, 0]
-					};
-
-					/* Iterate through the transform properties in the user-defined property map order.
-					 (This mimics the behavior of non-SVG transform animation.) */
-					$.each(Data(element).transformCache, function(transformName) {
-						/* Except for with skewX/Y, revert the axis-specific transform subproperties to their axis-free master
-						 properties so that they match up with SVG's accepted transform properties. */
-						if (/^translate/i.test(transformName)) {
-							transformName = "translate";
-						} else if (/^scale/i.test(transformName)) {
-							transformName = "scale";
-						} else if (/^rotate/i.test(transformName)) {
-							transformName = "rotate";
-						}
-
-						/* Check that we haven't yet deleted the property from the SVGTransforms container. */
-						if (SVGTransforms[transformName]) {
-							/* Append the transform property in the SVG-supported transform format. As per the spec, surround the space-delimited values in parentheses. */
-							transformString += transformName + "(" + SVGTransforms[transformName].join(" ") + ")" + " ";
-
-							/* After processing an SVG transform property, delete it from the SVGTransforms container so we don't
-							 re-insert the same master property if we encounter another one of its axis-specific properties. */
-							delete SVGTransforms[transformName];
-						}
-					});
-				} else {
-					var transformValue,
-							perspective;
-
-					/* Transform properties are stored as members of the transformCache object. Concatenate all the members into a string. */
-					$.each(Data(element).transformCache, function(transformName) {
-						transformValue = Data(element).transformCache[transformName];
-
-						/* Transform's perspective subproperty must be set first in order to take effect. Store it temporarily. */
-						if (transformName === "transformPerspective") {
-							perspective = transformValue;
-							return true;
-						}
-
-						/* IE9 only supports one rotation type, rotateZ, which it refers to as "rotate". */
-						if (IE === 9 && transformName === "rotateZ") {
-							transformName = "rotate";
-						}
-
-						transformString += transformName + transformValue + " ";
-					});
-
-					/* If present, set the perspective subproperty first. */
-					if (perspective) {
-						transformString = "perspective" + perspective + " " + transformString;
-					}
-				}
-
-				CSS.setPropertyValue(element, "transform", transformString);
-			}
-		};
-
-		/* Register hooks and normalizations. */
-		CSS.Hooks.register();
-		CSS.Normalizations.register();
-
-		/* Allow hook setting in the same fashion as jQuery's $.css(). */
-		Velocity.hook = function(elements, arg2, arg3) {
-			var value;
-
-			elements = sanitizeElements(elements);
-
-			$.each(elements, function(i, element) {
-				/* Initialize Velocity's per-element data cache if this element hasn't previously been animated. */
-				if (Data(element) === undefined) {
-					Velocity.init(element);
-				}
-
-				/* Get property value. If an element set was passed in, only return the value for the first element. */
-				if (arg3 === undefined) {
-					if (value === undefined) {
-						value = CSS.getPropertyValue(element, arg2);
-					}
-					/* Set property value. */
-				} else {
-					/* sPV returns an array of the normalized propertyName/propertyValue pair used to update the DOM. */
-					var adjustedSet = CSS.setPropertyValue(element, arg2, arg3);
-
-					/* Transform properties don't automatically set. They have to be flushed to the DOM. */
-					if (adjustedSet[0] === "transform") {
-						Velocity.CSS.flushTransformCache(element);
-					}
-
-					value = adjustedSet;
-				}
-			});
-
-			return value;
-		};
-
-		/*****************
-		 Animation
-		 *****************/
-
-		var animate = function() {
-			var opts;
-
-			/******************
-			 Call Chain
-			 ******************/
-
-			/* Logic for determining what to return to the call stack when exiting out of Velocity. */
-			function getChain() {
-				/* If we are using the utility function, attempt to return this call's promise. If no promise library was detected,
-				 default to null instead of returning the targeted elements so that utility function's return value is standardized. */
-				if (isUtility) {
-					return promiseData.promise || null;
-					/* Otherwise, if we're using $.fn, return the jQuery-/Zepto-wrapped element set. */
-				} else {
-					return elementsWrapped;
-				}
-			}
-
-			/*************************
-			 Arguments Assignment
-			 *************************/
-
-			/* To allow for expressive CoffeeScript code, Velocity supports an alternative syntax in which "elements" (or "e"), "properties" (or "p"), and "options" (or "o")
-			 objects are defined on a container object that's passed in as Velocity's sole argument. */
-			/* Note: Some browsers automatically populate arguments with a "properties" object. We detect it by checking for its default "names" property. */
-			var syntacticSugar = (arguments[0] && (arguments[0].p || (($.isPlainObject(arguments[0].properties) && !arguments[0].properties.names) || Type.isString(arguments[0].properties)))),
-					/* Whether Velocity was called via the utility function (as opposed to on a jQuery/Zepto object). */
-					isUtility,
-					/* When Velocity is called via the utility function ($.Velocity()/Velocity()), elements are explicitly
-					 passed in as the first parameter. Thus, argument positioning varies. We normalize them here. */
-					elementsWrapped,
-					argumentIndex;
-
-			var elements,
-					propertiesMap,
-					options;
-
-			/* Detect jQuery/Zepto elements being animated via the $.fn method. */
-			if (Type.isWrapped(this)) {
-				isUtility = false;
-
-				argumentIndex = 0;
-				elements = this;
-				elementsWrapped = this;
-				/* Otherwise, raw elements are being animated via the utility function. */
-			} else {
-				isUtility = true;
-
-				argumentIndex = 1;
-				elements = syntacticSugar ? (arguments[0].elements || arguments[0].e) : arguments[0];
-			}
-
-			/***************
-			 Promises
-			 ***************/
-
-			var promiseData = {
-				promise: null,
-				resolver: null,
-				rejecter: null
-			};
-
-			/* If this call was made via the utility function (which is the default method of invocation when jQuery/Zepto are not being used), and if
-			 promise support was detected, create a promise object for this call and store references to its resolver and rejecter methods. The resolve
-			 method is used when a call completes naturally or is prematurely stopped by the user. In both cases, completeCall() handles the associated
-			 call cleanup and promise resolving logic. The reject method is used when an invalid set of arguments is passed into a Velocity call. */
-			/* Note: Velocity employs a call-based queueing architecture, which means that stopping an animating element actually stops the full call that
-			 triggered it -- not that one element exclusively. Similarly, there is one promise per call, and all elements targeted by a Velocity call are
-			 grouped together for the purposes of resolving and rejecting a promise. */
-			if (isUtility && Velocity.Promise) {
-				promiseData.promise = new Velocity.Promise(function(resolve, reject) {
-					promiseData.resolver = resolve;
-					promiseData.rejecter = reject;
-				});
-			}
-
-			if (syntacticSugar) {
-				propertiesMap = arguments[0].properties || arguments[0].p;
-				options = arguments[0].options || arguments[0].o;
-			} else {
-				propertiesMap = arguments[argumentIndex];
-				options = arguments[argumentIndex + 1];
-			}
-
-			elements = sanitizeElements(elements);
-
-			if (!elements) {
-				if (promiseData.promise) {
-					if (!propertiesMap || !options || options.promiseRejectEmpty !== false) {
-						promiseData.rejecter();
-					} else {
-						promiseData.resolver();
-					}
-				}
-				return;
-			}
-
-			/* The length of the element set (in the form of a nodeList or an array of elements) is defaulted to 1 in case a
-			 single raw DOM element is passed in (which doesn't contain a length property). */
-			var elementsLength = elements.length,
-					elementsIndex = 0;
-
-			/***************************
-			 Argument Overloading
-			 ***************************/
-
-			/* Support is included for jQuery's argument overloading: $.animate(propertyMap [, duration] [, easing] [, complete]).
-			 Overloading is detected by checking for the absence of an object being passed into options. */
-			/* Note: The stop/finish/pause/resume actions do not accept animation options, and are therefore excluded from this check. */
-			if (!/^(stop|finish|finishAll|pause|resume)$/i.test(propertiesMap) && !$.isPlainObject(options)) {
-				/* The utility function shifts all arguments one position to the right, so we adjust for that offset. */
-				var startingArgumentPosition = argumentIndex + 1;
-
-				options = {};
-
-				/* Iterate through all options arguments */
-				for (var i = startingArgumentPosition; i < arguments.length; i++) {
-					/* Treat a number as a duration. Parse it out. */
-					/* Note: The following RegEx will return true if passed an array with a number as its first item.
-					 Thus, arrays are skipped from this check. */
-					if (!Type.isArray(arguments[i]) && (/^(fast|normal|slow)$/i.test(arguments[i]) || /^\d/.test(arguments[i]))) {
-						options.duration = arguments[i];
-						/* Treat strings and arrays as easings. */
-					} else if (Type.isString(arguments[i]) || Type.isArray(arguments[i])) {
-						options.easing = arguments[i];
-						/* Treat a function as a complete callback. */
-					} else if (Type.isFunction(arguments[i])) {
-						options.complete = arguments[i];
-					}
-				}
-			}
-
-			/*********************
-			 Action Detection
-			 *********************/
-
-			/* Velocity's behavior is categorized into "actions": Elements can either be specially scrolled into view,
-			 or they can be started, stopped, paused, resumed, or reversed . If a literal or referenced properties map is passed in as Velocity's
-			 first argument, the associated action is "start". Alternatively, "scroll", "reverse", "pause", "resume" or "stop" can be passed in 
-			 instead of a properties map. */
-			var action;
-
-			switch (propertiesMap) {
-				case "scroll":
-					action = "scroll";
-					break;
-
-				case "reverse":
-					action = "reverse";
-					break;
-
-				case "pause":
-
-					/*******************
-					 Action: Pause
-					 *******************/
-
-					var currentTime = (new Date()).getTime();
-
-					/* Handle delay timers */
-					$.each(elements, function(i, element) {
-						pauseDelayOnElement(element, currentTime);
-					});
-
-					/* Pause and Resume are call-wide (not on a per element basis). Thus, calling pause or resume on a 
-					 single element will cause any calls that containt tweens for that element to be paused/resumed
-					 as well. */
-
-					/* Iterate through all calls and pause any that contain any of our elements */
-					$.each(Velocity.State.calls, function(i, activeCall) {
-
-						var found = false;
-						/* Inactive calls are set to false by the logic inside completeCall(). Skip them. */
-						if (activeCall) {
-							/* Iterate through the active call's targeted elements. */
-							$.each(activeCall[1], function(k, activeElement) {
-								var queueName = (options === undefined) ? "" : options;
-
-								if (queueName !== true && (activeCall[2].queue !== queueName) && !(options === undefined && activeCall[2].queue === false)) {
-									return true;
-								}
-
-								/* Iterate through the calls targeted by the stop command. */
-								$.each(elements, function(l, element) {
-									/* Check that this call was applied to the target element. */
-									if (element === activeElement) {
-
-										/* Set call to paused */
-										activeCall[5] = {
-											resume: false
-										};
-
-										/* Once we match an element, we can bounce out to the next call entirely */
-										found = true;
-										return false;
-									}
-								});
-
-								/* Proceed to check next call if we have already matched */
-								if (found) {
-									return false;
-								}
-							});
-						}
-
-					});
-
-					/* Since pause creates no new tweens, exit out of Velocity. */
-					return getChain();
-
-				case "resume":
-
-					/*******************
-					 Action: Resume
-					 *******************/
-
-					/* Handle delay timers */
-					$.each(elements, function(i, element) {
-						resumeDelayOnElement(element, currentTime);
-					});
-
-					/* Pause and Resume are call-wide (not on a per elemnt basis). Thus, calling pause or resume on a 
-					 single element will cause any calls that containt tweens for that element to be paused/resumed
-					 as well. */
-
-					/* Iterate through all calls and pause any that contain any of our elements */
-					$.each(Velocity.State.calls, function(i, activeCall) {
-						var found = false;
-						/* Inactive calls are set to false by the logic inside completeCall(). Skip them. */
-						if (activeCall) {
-							/* Iterate through the active call's targeted elements. */
-							$.each(activeCall[1], function(k, activeElement) {
-								var queueName = (options === undefined) ? "" : options;
-
-								if (queueName !== true && (activeCall[2].queue !== queueName) && !(options === undefined && activeCall[2].queue === false)) {
-									return true;
-								}
-
-								/* Skip any calls that have never been paused */
-								if (!activeCall[5]) {
-									return true;
-								}
-
-								/* Iterate through the calls targeted by the stop command. */
-								$.each(elements, function(l, element) {
-									/* Check that this call was applied to the target element. */
-									if (element === activeElement) {
-
-										/* Flag a pause object to be resumed, which will occur during the next tick. In
-										 addition, the pause object will at that time be deleted */
-										activeCall[5].resume = true;
-
-										/* Once we match an element, we can bounce out to the next call entirely */
-										found = true;
-										return false;
-									}
-								});
-
-								/* Proceed to check next call if we have already matched */
-								if (found) {
-									return false;
-								}
-							});
-						}
-
-					});
-
-					/* Since resume creates no new tweens, exit out of Velocity. */
-					return getChain();
-
-				case "finish":
-				case "finishAll":
-				case "stop":
-					/*******************
-					 Action: Stop
-					 *******************/
-
-					/* Clear the currently-active delay on each targeted element. */
-					$.each(elements, function(i, element) {
-						if (Data(element) && Data(element).delayTimer) {
-							/* Stop the timer from triggering its cached next() function. */
-							clearTimeout(Data(element).delayTimer.setTimeout);
-
-							/* Manually call the next() function so that the subsequent queue items can progress. */
-							if (Data(element).delayTimer.next) {
-								Data(element).delayTimer.next();
-							}
-
-							delete Data(element).delayTimer;
-						}
-
-						/* If we want to finish everything in the queue, we have to iterate through it
-						 and call each function. This will make them active calls below, which will
-						 cause them to be applied via the duration setting. */
-						if (propertiesMap === "finishAll" && (options === true || Type.isString(options))) {
-							/* Iterate through the items in the element's queue. */
-							$.each($.queue(element, Type.isString(options) ? options : ""), function(_, item) {
-								/* The queue array can contain an "inprogress" string, which we skip. */
-								if (Type.isFunction(item)) {
-									item();
-								}
-							});
-
-							/* Clearing the $.queue() array is achieved by resetting it to []. */
-							$.queue(element, Type.isString(options) ? options : "", []);
-						}
-					});
-
-					var callsToStop = [];
-
-					/* When the stop action is triggered, the elements' currently active call is immediately stopped. The active call might have
-					 been applied to multiple elements, in which case all of the call's elements will be stopped. When an element
-					 is stopped, the next item in its animation queue is immediately triggered. */
-					/* An additional argument may be passed in to clear an element's remaining queued calls. Either true (which defaults to the "fx" queue)
-					 or a custom queue string can be passed in. */
-					/* Note: The stop command runs prior to Velocity's Queueing phase since its behavior is intended to take effect *immediately*,
-					 regardless of the element's current queue state. */
-
-					/* Iterate through every active call. */
-					$.each(Velocity.State.calls, function(i, activeCall) {
-						/* Inactive calls are set to false by the logic inside completeCall(). Skip them. */
-						if (activeCall) {
-							/* Iterate through the active call's targeted elements. */
-							$.each(activeCall[1], function(k, activeElement) {
-								/* If true was passed in as a secondary argument, clear absolutely all calls on this element. Otherwise, only
-								 clear calls associated with the relevant queue. */
-								/* Call stopping logic works as follows:
-								 - options === true --> stop current default queue calls (and queue:false calls), including remaining queued ones.
-								 - options === undefined --> stop current queue:"" call and all queue:false calls.
-								 - options === false --> stop only queue:false calls.
-								 - options === "custom" --> stop current queue:"custom" call, including remaining queued ones (there is no functionality to only clear the currently-running queue:"custom" call). */
-								var queueName = (options === undefined) ? "" : options;
-
-								if (queueName !== true && (activeCall[2].queue !== queueName) && !(options === undefined && activeCall[2].queue === false)) {
-									return true;
-								}
-
-								/* Iterate through the calls targeted by the stop command. */
-								$.each(elements, function(l, element) {
-									/* Check that this call was applied to the target element. */
-									if (element === activeElement) {
-										/* Optionally clear the remaining queued calls. If we're doing "finishAll" this won't find anything,
-										 due to the queue-clearing above. */
-										if (options === true || Type.isString(options)) {
-											/* Iterate through the items in the element's queue. */
-											$.each($.queue(element, Type.isString(options) ? options : ""), function(_, item) {
-												/* The queue array can contain an "inprogress" string, which we skip. */
-												if (Type.isFunction(item)) {
-													/* Pass the item's callback a flag indicating that we want to abort from the queue call.
-													 (Specifically, the queue will resolve the call's associated promise then abort.)  */
-													item(null, true);
-												}
-											});
-
-											/* Clearing the $.queue() array is achieved by resetting it to []. */
-											$.queue(element, Type.isString(options) ? options : "", []);
-										}
-
-										if (propertiesMap === "stop") {
-											/* Since "reverse" uses cached start values (the previous call's endValues), these values must be
-											 changed to reflect the final value that the elements were actually tweened to. */
-											/* Note: If only queue:false animations are currently running on an element, it won't have a tweensContainer
-											 object. Also, queue:false animations can't be reversed. */
-											var data = Data(element);
-											if (data && data.tweensContainer && queueName !== false) {
-												$.each(data.tweensContainer, function(m, activeTween) {
-													activeTween.endValue = activeTween.currentValue;
-												});
-											}
-
-											callsToStop.push(i);
-										} else if (propertiesMap === "finish" || propertiesMap === "finishAll") {
-											/* To get active tweens to finish immediately, we forcefully shorten their durations to 1ms so that
-											 they finish upon the next rAf tick then proceed with normal call completion logic. */
-											activeCall[2].duration = 1;
-										}
-									}
-								});
-							});
-						}
-					});
-
-					/* Prematurely call completeCall() on each matched active call. Pass an additional flag for "stop" to indicate
-					 that the complete callback and display:none setting should be skipped since we're completing prematurely. */
-					if (propertiesMap === "stop") {
-						$.each(callsToStop, function(i, j) {
-							completeCall(j, true);
-						});
-
-						if (promiseData.promise) {
-							/* Immediately resolve the promise associated with this stop call since stop runs synchronously. */
-							promiseData.resolver(elements);
-						}
-					}
-
-					/* Since we're stopping, and not proceeding with queueing, exit out of Velocity. */
-					return getChain();
-
-				default:
-					/* Treat a non-empty plain object as a literal properties map. */
-					if ($.isPlainObject(propertiesMap) && !Type.isEmptyObject(propertiesMap)) {
-						action = "start";
-
-						/****************
-						 Redirects
-						 ****************/
-
-						/* Check if a string matches a registered redirect (see Redirects above). */
-					} else if (Type.isString(propertiesMap) && Velocity.Redirects[propertiesMap]) {
-						opts = $.extend({}, options);
-
-						var durationOriginal = opts.duration,
-								delayOriginal = opts.delay || 0;
-
-						/* If the backwards option was passed in, reverse the element set so that elements animate from the last to the first. */
-						if (opts.backwards === true) {
-							elements = $.extend(true, [], elements).reverse();
-						}
-
-						/* Individually trigger the redirect for each element in the set to prevent users from having to handle iteration logic in their redirect. */
-						$.each(elements, function(elementIndex, element) {
-							/* If the stagger option was passed in, successively delay each element by the stagger value (in ms). Retain the original delay value. */
-							if (parseFloat(opts.stagger)) {
-								opts.delay = delayOriginal + (parseFloat(opts.stagger) * elementIndex);
-							} else if (Type.isFunction(opts.stagger)) {
-								opts.delay = delayOriginal + opts.stagger.call(element, elementIndex, elementsLength);
-							}
-
-							/* If the drag option was passed in, successively increase/decrease (depending on the presense of opts.backwards)
-							 the duration of each element's animation, using floors to prevent producing very short durations. */
-							if (opts.drag) {
-								/* Default the duration of UI pack effects (callouts and transitions) to 1000ms instead of the usual default duration of 400ms. */
-								opts.duration = parseFloat(durationOriginal) || (/^(callout|transition)/.test(propertiesMap) ? 1000 : DURATION_DEFAULT);
-
-								/* For each element, take the greater duration of: A) animation completion percentage relative to the original duration,
-								 B) 75% of the original duration, or C) a 200ms fallback (in case duration is already set to a low value).
-								 The end result is a baseline of 75% of the redirect's duration that increases/decreases as the end of the element set is approached. */
-								opts.duration = Math.max(opts.duration * (opts.backwards ? 1 - elementIndex / elementsLength : (elementIndex + 1) / elementsLength), opts.duration * 0.75, 200);
-							}
-
-							/* Pass in the call's opts object so that the redirect can optionally extend it. It defaults to an empty object instead of null to
-							 reduce the opts checking logic required inside the redirect. */
-							Velocity.Redirects[propertiesMap].call(element, element, opts || {}, elementIndex, elementsLength, elements, promiseData.promise ? promiseData : undefined);
-						});
-
-						/* Since the animation logic resides within the redirect's own code, abort the remainder of this call.
-						 (The performance overhead up to this point is virtually non-existant.) */
-						/* Note: The jQuery call chain is kept intact by returning the complete element set. */
-						return getChain();
-					} else {
-						var abortError = "Velocity: First argument (" + propertiesMap + ") was not a property map, a known action, or a registered redirect. Aborting.";
-
-						if (promiseData.promise) {
-							promiseData.rejecter(new Error(abortError));
-						} else if (window.console) {
-							console.log(abortError);
-						}
-
-						return getChain();
-					}
-			}
-
-			/**************************
-			 Call-Wide Variables
-			 **************************/
-
-			/* A container for CSS unit conversion ratios (e.g. %, rem, and em ==> px) that is used to cache ratios across all elements
-			 being animated in a single Velocity call. Calculating unit ratios necessitates DOM querying and updating, and is therefore
-			 avoided (via caching) wherever possible. This container is call-wide instead of page-wide to avoid the risk of using stale
-			 conversion metrics across Velocity animations that are not immediately consecutively chained. */
-			var callUnitConversionData = {
-				lastParent: null,
-				lastPosition: null,
-				lastFontSize: null,
-				lastPercentToPxWidth: null,
-				lastPercentToPxHeight: null,
-				lastEmToPx: null,
-				remToPx: null,
-				vwToPx: null,
-				vhToPx: null
-			};
-
-			/* A container for all the ensuing tween data and metadata associated with this call. This container gets pushed to the page-wide
-			 Velocity.State.calls array that is processed during animation ticking. */
-			var call = [];
-
-			/************************
-			 Element Processing
-			 ************************/
-
-			/* Element processing consists of three parts -- data processing that cannot go stale and data processing that *can* go stale (i.e. third-party style modifications):
-			 1) Pre-Queueing: Element-wide variables, including the element's data storage, are instantiated. Call options are prepared. If triggered, the Stop action is executed.
-			 2) Queueing: The logic that runs once this call has reached its point of execution in the element's $.queue() stack. Most logic is placed here to avoid risking it becoming stale.
-			 3) Pushing: Consolidation of the tween data followed by its push onto the global in-progress calls container.
-			 `elementArrayIndex` allows passing index of the element in the original array to value functions.
-			 If `elementsIndex` were used instead the index would be determined by the elements' per-element queue.
-			 */
-			function processElement(element, elementArrayIndex) {
-
-				/*************************
-				 Part I: Pre-Queueing
-				 *************************/
-
-				/***************************
-				 Element-Wide Variables
-				 ***************************/
-
-				var /* The runtime opts object is the extension of the current call's options and Velocity's page-wide option defaults. */
-						opts = $.extend({}, Velocity.defaults, options),
-						/* A container for the processed data associated with each property in the propertyMap.
-						 (Each property in the map produces its own "tween".) */
-						tweensContainer = {},
-						elementUnitConversionData;
-
-				/******************
-				 Element Init
-				 ******************/
-
-				if (Data(element) === undefined) {
-					Velocity.init(element);
-				}
-
-				/******************
-				 Option: Delay
-				 ******************/
-
-				/* Since queue:false doesn't respect the item's existing queue, we avoid injecting its delay here (it's set later on). */
-				/* Note: Velocity rolls its own delay function since jQuery doesn't have a utility alias for $.fn.delay()
-				 (and thus requires jQuery element creation, which we avoid since its overhead includes DOM querying). */
-				if (parseFloat(opts.delay) && opts.queue !== false) {
-					$.queue(element, opts.queue, function(next) {
-						/* This is a flag used to indicate to the upcoming completeCall() function that this queue entry was initiated by Velocity. See completeCall() for further details. */
-						Velocity.velocityQueueEntryFlag = true;
-
-						/* The ensuing queue item (which is assigned to the "next" argument that $.queue() automatically passes in) will be triggered after a setTimeout delay.
-						 The setTimeout is stored so that it can be subjected to clearTimeout() if this animation is prematurely stopped via Velocity's "stop" command, and
-						 delayBegin/delayTime is used to ensure we can "pause" and "resume" a tween that is still mid-delay. */
-
-						/* Temporarily store delayed elements to facilite access for global pause/resume */
-						var callIndex = Velocity.State.delayedElements.count++;
-						Velocity.State.delayedElements[callIndex] = element;
-
-						var delayComplete = (function(index) {
-							return function() {
-								/* Clear the temporary element */
-								Velocity.State.delayedElements[index] = false;
-
-								/* Finally, issue the call */
-								next();
-							};
-						})(callIndex);
-
-
-						Data(element).delayBegin = (new Date()).getTime();
-						Data(element).delay = parseFloat(opts.delay);
-						Data(element).delayTimer = {
-							setTimeout: setTimeout(next, parseFloat(opts.delay)),
-							next: delayComplete
-						};
-					});
-				}
-
-				/*********************
-				 Option: Duration
-				 *********************/
-
-				/* Support for jQuery's named durations. */
-				switch (opts.duration.toString().toLowerCase()) {
-					case "fast":
-						opts.duration = 200;
-						break;
-
-					case "normal":
-						opts.duration = DURATION_DEFAULT;
-						break;
-
-					case "slow":
-						opts.duration = 600;
-						break;
-
-					default:
-						/* Remove the potential "ms" suffix and default to 1 if the user is attempting to set a duration of 0 (in order to produce an immediate style change). */
-						opts.duration = parseFloat(opts.duration) || 1;
-				}
-
-				/************************
-				 Global Option: Mock
-				 ************************/
-
-				if (Velocity.mock !== false) {
-					/* In mock mode, all animations are forced to 1ms so that they occur immediately upon the next rAF tick.
-					 Alternatively, a multiplier can be passed in to time remap all delays and durations. */
-					if (Velocity.mock === true) {
-						opts.duration = opts.delay = 1;
-					} else {
-						opts.duration *= parseFloat(Velocity.mock) || 1;
-						opts.delay *= parseFloat(Velocity.mock) || 1;
-					}
-				}
-
-				/*******************
-				 Option: Easing
-				 *******************/
-
-				opts.easing = getEasing(opts.easing, opts.duration);
-
-				/**********************
-				 Option: Callbacks
-				 **********************/
-
-				/* Callbacks must functions. Otherwise, default to null. */
-				if (opts.begin && !Type.isFunction(opts.begin)) {
-					opts.begin = null;
-				}
-
-				if (opts.progress && !Type.isFunction(opts.progress)) {
-					opts.progress = null;
-				}
-
-				if (opts.complete && !Type.isFunction(opts.complete)) {
-					opts.complete = null;
-				}
-
-				/*********************************
-				 Option: Display & Visibility
-				 *********************************/
-
-				/* Refer to Velocity's documentation (VelocityJS.org/#displayAndVisibility) for a description of the display and visibility options' behavior. */
-				/* Note: We strictly check for undefined instead of falsiness because display accepts an empty string value. */
-				if (opts.display !== undefined && opts.display !== null) {
-					opts.display = opts.display.toString().toLowerCase();
-
-					/* Users can pass in a special "auto" value to instruct Velocity to set the element to its default display value. */
-					if (opts.display === "auto") {
-						opts.display = Velocity.CSS.Values.getDisplayType(element);
-					}
-				}
-
-				if (opts.visibility !== undefined && opts.visibility !== null) {
-					opts.visibility = opts.visibility.toString().toLowerCase();
-				}
-
-				/**********************
-				 Option: mobileHA
-				 **********************/
-
-				/* When set to true, and if this is a mobile device, mobileHA automatically enables hardware acceleration (via a null transform hack)
-				 on animating elements. HA is removed from the element at the completion of its animation. */
-				/* Note: Android Gingerbread doesn't support HA. If a null transform hack (mobileHA) is in fact set, it will prevent other tranform subproperties from taking effect. */
-				/* Note: You can read more about the use of mobileHA in Velocity's documentation: VelocityJS.org/#mobileHA. */
-				opts.mobileHA = (opts.mobileHA && Velocity.State.isMobile && !Velocity.State.isGingerbread);
-
-				/***********************
-				 Part II: Queueing
-				 ***********************/
-
-				/* When a set of elements is targeted by a Velocity call, the set is broken up and each element has the current Velocity call individually queued onto it.
-				 In this way, each element's existing queue is respected; some elements may already be animating and accordingly should not have this current Velocity call triggered immediately. */
-				/* In each queue, tween data is processed for each animating property then pushed onto the call-wide calls array. When the last element in the set has had its tweens processed,
-				 the call array is pushed to Velocity.State.calls for live processing by the requestAnimationFrame tick. */
-				function buildQueue(next) {
-					var data, lastTweensContainer;
-
-					/*******************
-					 Option: Begin
-					 *******************/
-
-					/* The begin callback is fired once per call -- not once per elemenet -- and is passed the full raw DOM element set as both its context and its first argument. */
-					if (opts.begin && elementsIndex === 0) {
-						/* We throw callbacks in a setTimeout so that thrown errors don't halt the execution of Velocity itself. */
-						try {
-							opts.begin.call(elements, elements);
-						} catch (error) {
-							setTimeout(function() {
-								throw error;
-							}, 1);
-						}
-					}
-
-					/*****************************************
-					 Tween Data Construction (for Scroll)
-					 *****************************************/
-
-					/* Note: In order to be subjected to chaining and animation options, scroll's tweening is routed through Velocity as if it were a standard CSS property animation. */
-					if (action === "scroll") {
-						/* The scroll action uniquely takes an optional "offset" option -- specified in pixels -- that offsets the targeted scroll position. */
-						var scrollDirection = (/^x$/i.test(opts.axis) ? "Left" : "Top"),
-								scrollOffset = parseFloat(opts.offset) || 0,
-								scrollPositionCurrent,
-								scrollPositionCurrentAlternate,
-								scrollPositionEnd;
-
-						/* Scroll also uniquely takes an optional "container" option, which indicates the parent element that should be scrolled --
-						 as opposed to the browser window itself. This is useful for scrolling toward an element that's inside an overflowing parent element. */
-						if (opts.container) {
-							/* Ensure that either a jQuery object or a raw DOM element was passed in. */
-							if (Type.isWrapped(opts.container) || Type.isNode(opts.container)) {
-								/* Extract the raw DOM element from the jQuery wrapper. */
-								opts.container = opts.container[0] || opts.container;
-								/* Note: Unlike other properties in Velocity, the browser's scroll position is never cached since it so frequently changes
-								 (due to the user's natural interaction with the page). */
-								scrollPositionCurrent = opts.container["scroll" + scrollDirection]; /* GET */
-
-								/* $.position() values are relative to the container's currently viewable area (without taking into account the container's true dimensions
-								 -- say, for example, if the container was not overflowing). Thus, the scroll end value is the sum of the child element's position *and*
-								 the scroll container's current scroll position. */
-								scrollPositionEnd = (scrollPositionCurrent + $(element).position()[scrollDirection.toLowerCase()]) + scrollOffset; /* GET */
-								/* If a value other than a jQuery object or a raw DOM element was passed in, default to null so that this option is ignored. */
-							} else {
-								opts.container = null;
-							}
-						} else {
-							/* If the window itself is being scrolled -- not a containing element -- perform a live scroll position lookup using
-							 the appropriate cached property names (which differ based on browser type). */
-							scrollPositionCurrent = Velocity.State.scrollAnchor[Velocity.State["scrollProperty" + scrollDirection]]; /* GET */
-							/* When scrolling the browser window, cache the alternate axis's current value since window.scrollTo() doesn't let us change only one value at a time. */
-							scrollPositionCurrentAlternate = Velocity.State.scrollAnchor[Velocity.State["scrollProperty" + (scrollDirection === "Left" ? "Top" : "Left")]]; /* GET */
-
-							/* Unlike $.position(), $.offset() values are relative to the browser window's true dimensions -- not merely its currently viewable area --
-							 and therefore end values do not need to be compounded onto current values. */
-							scrollPositionEnd = $(element).offset()[scrollDirection.toLowerCase()] + scrollOffset; /* GET */
-						}
-
-						/* Since there's only one format that scroll's associated tweensContainer can take, we create it manually. */
-						tweensContainer = {
-							scroll: {
-								rootPropertyValue: false,
-								startValue: scrollPositionCurrent,
-								currentValue: scrollPositionCurrent,
-								endValue: scrollPositionEnd,
-								unitType: "",
-								easing: opts.easing,
-								scrollData: {
-									container: opts.container,
-									direction: scrollDirection,
-									alternateValue: scrollPositionCurrentAlternate
-								}
-							},
-							element: element
-						};
-
-						if (Velocity.debug) {
-							console.log("tweensContainer (scroll): ", tweensContainer.scroll, element);
-						}
-
-						/******************************************
-						 Tween Data Construction (for Reverse)
-						 ******************************************/
-
-						/* Reverse acts like a "start" action in that a property map is animated toward. The only difference is
-						 that the property map used for reverse is the inverse of the map used in the previous call. Thus, we manipulate
-						 the previous call to construct our new map: use the previous map's end values as our new map's start values. Copy over all other data. */
-						/* Note: Reverse can be directly called via the "reverse" parameter, or it can be indirectly triggered via the loop option. (Loops are composed of multiple reverses.) */
-						/* Note: Reverse calls do not need to be consecutively chained onto a currently-animating element in order to operate on cached values;
-						 there is no harm to reverse being called on a potentially stale data cache since reverse's behavior is simply defined
-						 as reverting to the element's values as they were prior to the previous *Velocity* call. */
-					} else if (action === "reverse") {
-						data = Data(element);
-
-						/* Abort if there is no prior animation data to reverse to. */
-						if (!data) {
-							return;
-						}
-
-						if (!data.tweensContainer) {
-							/* Dequeue the element so that this queue entry releases itself immediately, allowing subsequent queue entries to run. */
-							$.dequeue(element, opts.queue);
-
-							return;
-						} else {
-							/*********************
-							 Options Parsing
-							 *********************/
-
-							/* If the element was hidden via the display option in the previous call,
-							 revert display to "auto" prior to reversal so that the element is visible again. */
-							if (data.opts.display === "none") {
-								data.opts.display = "auto";
-							}
-
-							if (data.opts.visibility === "hidden") {
-								data.opts.visibility = "visible";
-							}
-
-							/* If the loop option was set in the previous call, disable it so that "reverse" calls aren't recursively generated.
-							 Further, remove the previous call's callback options; typically, users do not want these to be refired. */
-							data.opts.loop = false;
-							data.opts.begin = null;
-							data.opts.complete = null;
-
-							/* Since we're extending an opts object that has already been extended with the defaults options object,
-							 we remove non-explicitly-defined properties that are auto-assigned values. */
-							if (!options.easing) {
-								delete opts.easing;
-							}
-
-							if (!options.duration) {
-								delete opts.duration;
-							}
-
-							/* The opts object used for reversal is an extension of the options object optionally passed into this
-							 reverse call plus the options used in the previous Velocity call. */
-							opts = $.extend({}, data.opts, opts);
-
-							/*************************************
-							 Tweens Container Reconstruction
-							 *************************************/
-
-							/* Create a deepy copy (indicated via the true flag) of the previous call's tweensContainer. */
-							lastTweensContainer = $.extend(true, {}, data ? data.tweensContainer : null);
-
-							/* Manipulate the previous tweensContainer by replacing its end values and currentValues with its start values. */
-							for (var lastTween in lastTweensContainer) {
-								/* In addition to tween data, tweensContainers contain an element property that we ignore here. */
-								if (lastTweensContainer.hasOwnProperty(lastTween) && lastTween !== "element") {
-									var lastStartValue = lastTweensContainer[lastTween].startValue;
-
-									lastTweensContainer[lastTween].startValue = lastTweensContainer[lastTween].currentValue = lastTweensContainer[lastTween].endValue;
-									lastTweensContainer[lastTween].endValue = lastStartValue;
-
-									/* Easing is the only option that embeds into the individual tween data (since it can be defined on a per-property basis).
-									 Accordingly, every property's easing value must be updated when an options object is passed in with a reverse call.
-									 The side effect of this extensibility is that all per-property easing values are forcefully reset to the new value. */
-									if (!Type.isEmptyObject(options)) {
-										lastTweensContainer[lastTween].easing = opts.easing;
-									}
-
-									if (Velocity.debug) {
-										console.log("reverse tweensContainer (" + lastTween + "): " + JSON.stringify(lastTweensContainer[lastTween]), element);
-									}
-								}
-							}
-
-							tweensContainer = lastTweensContainer;
-						}
-
-						/*****************************************
-						 Tween Data Construction (for Start)
-						 *****************************************/
-
-					} else if (action === "start") {
-
-						/*************************
-						 Value Transferring
-						 *************************/
-
-						/* If this queue entry follows a previous Velocity-initiated queue entry *and* if this entry was created
-						 while the element was in the process of being animated by Velocity, then this current call is safe to use
-						 the end values from the prior call as its start values. Velocity attempts to perform this value transfer
-						 process whenever possible in order to avoid requerying the DOM. */
-						/* If values aren't transferred from a prior call and start values were not forcefed by the user (more on this below),
-						 then the DOM is queried for the element's current values as a last resort. */
-						/* Note: Conversely, animation reversal (and looping) *always* perform inter-call value transfers; they never requery the DOM. */
-
-						data = Data(element);
-
-						/* The per-element isAnimating flag is used to indicate whether it's safe (i.e. the data isn't stale)
-						 to transfer over end values to use as start values. If it's set to true and there is a previous
-						 Velocity call to pull values from, do so. */
-						if (data && data.tweensContainer && data.isAnimating === true) {
-							lastTweensContainer = data.tweensContainer;
-						}
-
-						/***************************
-						 Tween Data Calculation
-						 ***************************/
-
-						/* This function parses property data and defaults endValue, easing, and startValue as appropriate. */
-						/* Property map values can either take the form of 1) a single value representing the end value,
-						 or 2) an array in the form of [ endValue, [, easing] [, startValue] ].
-						 The optional third parameter is a forcefed startValue to be used instead of querying the DOM for
-						 the element's current value. Read Velocity's docmentation to learn more about forcefeeding: VelocityJS.org/#forcefeeding */
-						var parsePropertyValue = function(valueData, skipResolvingEasing) {
-							var endValue, easing, startValue;
-
-							/* If we have a function as the main argument then resolve it first, in case it returns an array that needs to be split */
-							if (Type.isFunction(valueData)) {
-								valueData = valueData.call(element, elementArrayIndex, elementsLength);
-							}
-
-							/* Handle the array format, which can be structured as one of three potential overloads:
-							 A) [ endValue, easing, startValue ], B) [ endValue, easing ], or C) [ endValue, startValue ] */
-							if (Type.isArray(valueData)) {
-								/* endValue is always the first item in the array. Don't bother validating endValue's value now
-								 since the ensuing property cycling logic does that. */
-								endValue = valueData[0];
-
-								/* Two-item array format: If the second item is a number, function, or hex string, treat it as a
-								 start value since easings can only be non-hex strings or arrays. */
-								if ((!Type.isArray(valueData[1]) && /^[\d-]/.test(valueData[1])) || Type.isFunction(valueData[1]) || CSS.RegEx.isHex.test(valueData[1])) {
-									startValue = valueData[1];
-									/* Two or three-item array: If the second item is a non-hex string easing name or an array, treat it as an easing. */
-								} else if ((Type.isString(valueData[1]) && !CSS.RegEx.isHex.test(valueData[1]) && Velocity.Easings[valueData[1]]) || Type.isArray(valueData[1])) {
-									easing = skipResolvingEasing ? valueData[1] : getEasing(valueData[1], opts.duration);
-
-									/* Don't bother validating startValue's value now since the ensuing property cycling logic inherently does that. */
-									startValue = valueData[2];
-								} else {
-									startValue = valueData[1] || valueData[2];
-								}
-								/* Handle the single-value format. */
-							} else {
-								endValue = valueData;
-							}
-
-							/* Default to the call's easing if a per-property easing type was not defined. */
-							if (!skipResolvingEasing) {
-								easing = easing || opts.easing;
-							}
-
-							/* If functions were passed in as values, pass the function the current element as its context,
-							 plus the element's index and the element set's size as arguments. Then, assign the returned value. */
-							if (Type.isFunction(endValue)) {
-								endValue = endValue.call(element, elementArrayIndex, elementsLength);
-							}
-
-							if (Type.isFunction(startValue)) {
-								startValue = startValue.call(element, elementArrayIndex, elementsLength);
-							}
-
-							/* Allow startValue to be left as undefined to indicate to the ensuing code that its value was not forcefed. */
-							return [endValue || 0, easing, startValue];
-						};
-
-						var fixPropertyValue = function(property, valueData) {
-							/* In case this property is a hook, there are circumstances where we will intend to work on the hook's root property and not the hooked subproperty. */
-							var rootProperty = CSS.Hooks.getRoot(property),
-									rootPropertyValue = false,
-									/* Parse out endValue, easing, and startValue from the property's data. */
-									endValue = valueData[0],
-									easing = valueData[1],
-									startValue = valueData[2],
-									pattern;
-
-							/**************************
-							 Start Value Sourcing
-							 **************************/
-
-							/* Other than for the dummy tween property, properties that are not supported by the browser (and do not have an associated normalization) will
-							 inherently produce no style changes when set, so they are skipped in order to decrease animation tick overhead.
-							 Property support is determined via prefixCheck(), which returns a false flag when no supported is detected. */
-							/* Note: Since SVG elements have some of their properties directly applied as HTML attributes,
-							 there is no way to check for their explicit browser support, and so we skip skip this check for them. */
-							if ((!data || !data.isSVG) && rootProperty !== "tween" && CSS.Names.prefixCheck(rootProperty)[1] === false && CSS.Normalizations.registered[rootProperty] === undefined) {
-								if (Velocity.debug) {
-									console.log("Skipping [" + rootProperty + "] due to a lack of browser support.");
-								}
-								return;
-							}
-
-							/* If the display option is being set to a non-"none" (e.g. "block") and opacity (filter on IE<=8) is being
-							 animated to an endValue of non-zero, the user's intention is to fade in from invisible, thus we forcefeed opacity
-							 a startValue of 0 if its startValue hasn't already been sourced by value transferring or prior forcefeeding. */
-							if (((opts.display !== undefined && opts.display !== null && opts.display !== "none") || (opts.visibility !== undefined && opts.visibility !== "hidden")) && /opacity|filter/.test(property) && !startValue && endValue !== 0) {
-								startValue = 0;
-							}
-
-							/* If values have been transferred from the previous Velocity call, extract the endValue and rootPropertyValue
-							 for all of the current call's properties that were *also* animated in the previous call. */
-							/* Note: Value transferring can optionally be disabled by the user via the _cacheValues option. */
-							if (opts._cacheValues && lastTweensContainer && lastTweensContainer[property]) {
-								if (startValue === undefined) {
-									startValue = lastTweensContainer[property].endValue + lastTweensContainer[property].unitType;
-								}
-
-								/* The previous call's rootPropertyValue is extracted from the element's data cache since that's the
-								 instance of rootPropertyValue that gets freshly updated by the tweening process, whereas the rootPropertyValue
-								 attached to the incoming lastTweensContainer is equal to the root property's value prior to any tweening. */
-								rootPropertyValue = data.rootPropertyValueCache[rootProperty];
-								/* If values were not transferred from a previous Velocity call, query the DOM as needed. */
-							} else {
-								/* Handle hooked properties. */
-								if (CSS.Hooks.registered[property]) {
-									if (startValue === undefined) {
-										rootPropertyValue = CSS.getPropertyValue(element, rootProperty); /* GET */
-										/* Note: The following getPropertyValue() call does not actually trigger a DOM query;
-										 getPropertyValue() will extract the hook from rootPropertyValue. */
-										startValue = CSS.getPropertyValue(element, property, rootPropertyValue);
-										/* If startValue is already defined via forcefeeding, do not query the DOM for the root property's value;
-										 just grab rootProperty's zero-value template from CSS.Hooks. This overwrites the element's actual
-										 root property value (if one is set), but this is acceptable since the primary reason users forcefeed is
-										 to avoid DOM queries, and thus we likewise avoid querying the DOM for the root property's value. */
-									} else {
-										/* Grab this hook's zero-value template, e.g. "0px 0px 0px black". */
-										rootPropertyValue = CSS.Hooks.templates[rootProperty][1];
-									}
-									/* Handle non-hooked properties that haven't already been defined via forcefeeding. */
-								} else if (startValue === undefined) {
-									startValue = CSS.getPropertyValue(element, property); /* GET */
-								}
-							}
-
-							/**************************
-							 Value Data Extraction
-							 **************************/
-
-							var separatedValue,
-									endValueUnitType,
-									startValueUnitType,
-									operator = false;
-
-							/* Separates a property value into its numeric value and its unit type. */
-							var separateValue = function(property, value) {
-								var unitType,
-										numericValue;
-
-								numericValue = (value || "0")
-										.toString()
-										.toLowerCase()
-										/* Match the unit type at the end of the value. */
-										.replace(/[%A-z]+$/, function(match) {
-											/* Grab the unit type. */
-											unitType = match;
-
-											/* Strip the unit type off of value. */
-											return "";
-										});
-
-								/* If no unit type was supplied, assign one that is appropriate for this property (e.g. "deg" for rotateZ or "px" for width). */
-								if (!unitType) {
-									unitType = CSS.Values.getUnitType(property);
-								}
-
-								return [numericValue, unitType];
-							};
-
-							if (startValue !== endValue && Type.isString(startValue) && Type.isString(endValue)) {
-								pattern = "";
-								var iStart = 0, // index in startValue
-										iEnd = 0, // index in endValue
-										aStart = [], // array of startValue numbers
-										aEnd = [], // array of endValue numbers
-										inCalc = 0, // Keep track of being inside a "calc()" so we don't duplicate it
-										inRGB = 0, // Keep track of being inside an RGB as we can't use fractional values
-										inRGBA = 0; // Keep track of being inside an RGBA as we must pass fractional for the alpha channel
-
-								startValue = CSS.Hooks.fixColors(startValue);
-								endValue = CSS.Hooks.fixColors(endValue);
-								while (iStart < startValue.length && iEnd < endValue.length) {
-									var cStart = startValue[iStart],
-											cEnd = endValue[iEnd];
-
-									if (/[\d\.-]/.test(cStart) && /[\d\.-]/.test(cEnd)) {
-										var tStart = cStart, // temporary character buffer
-												tEnd = cEnd, // temporary character buffer
-												dotStart = ".", // Make sure we can only ever match a single dot in a decimal
-												dotEnd = "."; // Make sure we can only ever match a single dot in a decimal
-
-										while (++iStart < startValue.length) {
-											cStart = startValue[iStart];
-											if (cStart === dotStart) {
-												dotStart = ".."; // Can never match two characters
-											} else if (!/\d/.test(cStart)) {
-												break;
-											}
-											tStart += cStart;
-										}
-										while (++iEnd < endValue.length) {
-											cEnd = endValue[iEnd];
-											if (cEnd === dotEnd) {
-												dotEnd = ".."; // Can never match two characters
-											} else if (!/\d/.test(cEnd)) {
-												break;
-											}
-											tEnd += cEnd;
-										}
-										var uStart = CSS.Hooks.getUnit(startValue, iStart), // temporary unit type
-												uEnd = CSS.Hooks.getUnit(endValue, iEnd); // temporary unit type
-
-										iStart += uStart.length;
-										iEnd += uEnd.length;
-										if (uStart === uEnd) {
-											// Same units
-											if (tStart === tEnd) {
-												// Same numbers, so just copy over
-												pattern += tStart + uStart;
-											} else {
-												// Different numbers, so store them
-												pattern += "{" + aStart.length + (inRGB ? "!" : "") + "}" + uStart;
-												aStart.push(parseFloat(tStart));
-												aEnd.push(parseFloat(tEnd));
-											}
-										} else {
-											// Different units, so put into a "calc(from + to)" and animate each side to/from zero
-											var nStart = parseFloat(tStart),
-													nEnd = parseFloat(tEnd);
-
-											pattern += (inCalc < 5 ? "calc" : "") + "("
-													+ (nStart ? "{" + aStart.length + (inRGB ? "!" : "") + "}" : "0") + uStart
-													+ " + "
-													+ (nEnd ? "{" + (aStart.length + (nStart ? 1 : 0)) + (inRGB ? "!" : "") + "}" : "0") + uEnd
-													+ ")";
-											if (nStart) {
-												aStart.push(nStart);
-												aEnd.push(0);
-											}
-											if (nEnd) {
-												aStart.push(0);
-												aEnd.push(nEnd);
-											}
-										}
-									} else if (cStart === cEnd) {
-										pattern += cStart;
-										iStart++;
-										iEnd++;
-										// Keep track of being inside a calc()
-										if (inCalc === 0 && cStart === "c"
-												|| inCalc === 1 && cStart === "a"
-												|| inCalc === 2 && cStart === "l"
-												|| inCalc === 3 && cStart === "c"
-												|| inCalc >= 4 && cStart === "("
-												) {
-											inCalc++;
-										} else if ((inCalc && inCalc < 5)
-												|| inCalc >= 4 && cStart === ")" && --inCalc < 5) {
-											inCalc = 0;
-										}
-										// Keep track of being inside an rgb() / rgba()
-										if (inRGB === 0 && cStart === "r"
-												|| inRGB === 1 && cStart === "g"
-												|| inRGB === 2 && cStart === "b"
-												|| inRGB === 3 && cStart === "a"
-												|| inRGB >= 3 && cStart === "("
-												) {
-											if (inRGB === 3 && cStart === "a") {
-												inRGBA = 1;
-											}
-											inRGB++;
-										} else if (inRGBA && cStart === ",") {
-											if (++inRGBA > 3) {
-												inRGB = inRGBA = 0;
-											}
-										} else if ((inRGBA && inRGB < (inRGBA ? 5 : 4))
-												|| inRGB >= (inRGBA ? 4 : 3) && cStart === ")" && --inRGB < (inRGBA ? 5 : 4)) {
-											inRGB = inRGBA = 0;
-										}
-									} else {
-										inCalc = 0;
-										// TODO: changing units, fixing colours
-										break;
-									}
-								}
-								if (iStart !== startValue.length || iEnd !== endValue.length) {
-									if (Velocity.debug) {
-										console.error("Trying to pattern match mis-matched strings [\"" + endValue + "\", \"" + startValue + "\"]");
-									}
-									pattern = undefined;
-								}
-								if (pattern) {
-									if (aStart.length) {
-										if (Velocity.debug) {
-											console.log("Pattern found \"" + pattern + "\" -> ", aStart, aEnd, "[" + startValue + "," + endValue + "]");
-										}
-										startValue = aStart;
-										endValue = aEnd;
-										endValueUnitType = startValueUnitType = "";
-									} else {
-										pattern = undefined;
-									}
-								}
-							}
-
-							if (!pattern) {
-								/* Separate startValue. */
-								separatedValue = separateValue(property, startValue);
-								startValue = separatedValue[0];
-								startValueUnitType = separatedValue[1];
-
-								/* Separate endValue, and extract a value operator (e.g. "+=", "-=") if one exists. */
-								separatedValue = separateValue(property, endValue);
-								endValue = separatedValue[0].replace(/^([+-\/*])=/, function(match, subMatch) {
-									operator = subMatch;
-
-									/* Strip the operator off of the value. */
-									return "";
-								});
-								endValueUnitType = separatedValue[1];
-
-								/* Parse float values from endValue and startValue. Default to 0 if NaN is returned. */
-								startValue = parseFloat(startValue) || 0;
-								endValue = parseFloat(endValue) || 0;
-
-								/***************************************
-								 Property-Specific Value Conversion
-								 ***************************************/
-
-								/* Custom support for properties that don't actually accept the % unit type, but where pollyfilling is trivial and relatively foolproof. */
-								if (endValueUnitType === "%") {
-									/* A %-value fontSize/lineHeight is relative to the parent's fontSize (as opposed to the parent's dimensions),
-									 which is identical to the em unit's behavior, so we piggyback off of that. */
-									if (/^(fontSize|lineHeight)$/.test(property)) {
-										/* Convert % into an em decimal value. */
-										endValue = endValue / 100;
-										endValueUnitType = "em";
-										/* For scaleX and scaleY, convert the value into its decimal format and strip off the unit type. */
-									} else if (/^scale/.test(property)) {
-										endValue = endValue / 100;
-										endValueUnitType = "";
-										/* For RGB components, take the defined percentage of 255 and strip off the unit type. */
-									} else if (/(Red|Green|Blue)$/i.test(property)) {
-										endValue = (endValue / 100) * 255;
-										endValueUnitType = "";
-									}
-								}
-							}
-
-							/***************************
-							 Unit Ratio Calculation
-							 ***************************/
-
-							/* When queried, the browser returns (most) CSS property values in pixels. Therefore, if an endValue with a unit type of
-							 %, em, or rem is animated toward, startValue must be converted from pixels into the same unit type as endValue in order
-							 for value manipulation logic (increment/decrement) to proceed. Further, if the startValue was forcefed or transferred
-							 from a previous call, startValue may also not be in pixels. Unit conversion logic therefore consists of two steps:
-							 1) Calculating the ratio of %/em/rem/vh/vw relative to pixels
-							 2) Converting startValue into the same unit of measurement as endValue based on these ratios. */
-							/* Unit conversion ratios are calculated by inserting a sibling node next to the target node, copying over its position property,
-							 setting values with the target unit type then comparing the returned pixel value. */
-							/* Note: Even if only one of these unit types is being animated, all unit ratios are calculated at once since the overhead
-							 of batching the SETs and GETs together upfront outweights the potential overhead
-							 of layout thrashing caused by re-querying for uncalculated ratios for subsequently-processed properties. */
-							/* Todo: Shift this logic into the calls' first tick instance so that it's synced with RAF. */
-							var calculateUnitRatios = function() {
-
-								/************************
-								 Same Ratio Checks
-								 ************************/
-
-								/* The properties below are used to determine whether the element differs sufficiently from this call's
-								 previously iterated element to also differ in its unit conversion ratios. If the properties match up with those
-								 of the prior element, the prior element's conversion ratios are used. Like most optimizations in Velocity,
-								 this is done to minimize DOM querying. */
-								var sameRatioIndicators = {
-									myParent: element.parentNode || document.body, /* GET */
-									position: CSS.getPropertyValue(element, "position"), /* GET */
-									fontSize: CSS.getPropertyValue(element, "fontSize") /* GET */
-								},
-										/* Determine if the same % ratio can be used. % is based on the element's position value and its parent's width and height dimensions. */
-										samePercentRatio = ((sameRatioIndicators.position === callUnitConversionData.lastPosition) && (sameRatioIndicators.myParent === callUnitConversionData.lastParent)),
-										/* Determine if the same em ratio can be used. em is relative to the element's fontSize. */
-										sameEmRatio = (sameRatioIndicators.fontSize === callUnitConversionData.lastFontSize);
-
-								/* Store these ratio indicators call-wide for the next element to compare against. */
-								callUnitConversionData.lastParent = sameRatioIndicators.myParent;
-								callUnitConversionData.lastPosition = sameRatioIndicators.position;
-								callUnitConversionData.lastFontSize = sameRatioIndicators.fontSize;
-
-								/***************************
-								 Element-Specific Units
-								 ***************************/
-
-								/* Note: IE8 rounds to the nearest pixel when returning CSS values, thus we perform conversions using a measurement
-								 of 100 (instead of 1) to give our ratios a precision of at least 2 decimal values. */
-								var measurement = 100,
-										unitRatios = {};
-
-								if (!sameEmRatio || !samePercentRatio) {
-									var dummy = data && data.isSVG ? document.createElementNS("http://www.w3.org/2000/svg", "rect") : document.createElement("div");
-
-									Velocity.init(dummy);
-									sameRatioIndicators.myParent.appendChild(dummy);
-
-									/* To accurately and consistently calculate conversion ratios, the element's cascaded overflow and box-sizing are stripped.
-									 Similarly, since width/height can be artificially constrained by their min-/max- equivalents, these are controlled for as well. */
-									/* Note: Overflow must be also be controlled for per-axis since the overflow property overwrites its per-axis values. */
-									$.each(["overflow", "overflowX", "overflowY"], function(i, property) {
-										Velocity.CSS.setPropertyValue(dummy, property, "hidden");
-									});
-									Velocity.CSS.setPropertyValue(dummy, "position", sameRatioIndicators.position);
-									Velocity.CSS.setPropertyValue(dummy, "fontSize", sameRatioIndicators.fontSize);
-									Velocity.CSS.setPropertyValue(dummy, "boxSizing", "content-box");
-
-									/* width and height act as our proxy properties for measuring the horizontal and vertical % ratios. */
-									$.each(["minWidth", "maxWidth", "width", "minHeight", "maxHeight", "height"], function(i, property) {
-										Velocity.CSS.setPropertyValue(dummy, property, measurement + "%");
-									});
-									/* paddingLeft arbitrarily acts as our proxy property for the em ratio. */
-									Velocity.CSS.setPropertyValue(dummy, "paddingLeft", measurement + "em");
-
-									/* Divide the returned value by the measurement to get the ratio between 1% and 1px. Default to 1 since working with 0 can produce Infinite. */
-									unitRatios.percentToPxWidth = callUnitConversionData.lastPercentToPxWidth = (parseFloat(CSS.getPropertyValue(dummy, "width", null, true)) || 1) / measurement; /* GET */
-									unitRatios.percentToPxHeight = callUnitConversionData.lastPercentToPxHeight = (parseFloat(CSS.getPropertyValue(dummy, "height", null, true)) || 1) / measurement; /* GET */
-									unitRatios.emToPx = callUnitConversionData.lastEmToPx = (parseFloat(CSS.getPropertyValue(dummy, "paddingLeft")) || 1) / measurement; /* GET */
-
-									sameRatioIndicators.myParent.removeChild(dummy);
-								} else {
-									unitRatios.emToPx = callUnitConversionData.lastEmToPx;
-									unitRatios.percentToPxWidth = callUnitConversionData.lastPercentToPxWidth;
-									unitRatios.percentToPxHeight = callUnitConversionData.lastPercentToPxHeight;
-								}
-
-								/***************************
-								 Element-Agnostic Units
-								 ***************************/
-
-								/* Whereas % and em ratios are determined on a per-element basis, the rem unit only needs to be checked
-								 once per call since it's exclusively dependant upon document.body's fontSize. If this is the first time
-								 that calculateUnitRatios() is being run during this call, remToPx will still be set to its default value of null,
-								 so we calculate it now. */
-								if (callUnitConversionData.remToPx === null) {
-									/* Default to browsers' default fontSize of 16px in the case of 0. */
-									callUnitConversionData.remToPx = parseFloat(CSS.getPropertyValue(document.body, "fontSize")) || 16; /* GET */
-								}
-
-								/* Similarly, viewport units are %-relative to the window's inner dimensions. */
-								if (callUnitConversionData.vwToPx === null) {
-									callUnitConversionData.vwToPx = parseFloat(window.innerWidth) / 100; /* GET */
-									callUnitConversionData.vhToPx = parseFloat(window.innerHeight) / 100; /* GET */
-								}
-
-								unitRatios.remToPx = callUnitConversionData.remToPx;
-								unitRatios.vwToPx = callUnitConversionData.vwToPx;
-								unitRatios.vhToPx = callUnitConversionData.vhToPx;
-
-								if (Velocity.debug >= 1) {
-									console.log("Unit ratios: " + JSON.stringify(unitRatios), element);
-								}
-								return unitRatios;
-							};
-
-							/********************
-							 Unit Conversion
-							 ********************/
-
-							/* The * and / operators, which are not passed in with an associated unit, inherently use startValue's unit. Skip value and unit conversion. */
-							if (/[\/*]/.test(operator)) {
-								endValueUnitType = startValueUnitType;
-								/* If startValue and endValue differ in unit type, convert startValue into the same unit type as endValue so that if endValueUnitType
-								 is a relative unit (%, em, rem), the values set during tweening will continue to be accurately relative even if the metrics they depend
-								 on are dynamically changing during the course of the animation. Conversely, if we always normalized into px and used px for setting values, the px ratio
-								 would become stale if the original unit being animated toward was relative and the underlying metrics change during the animation. */
-								/* Since 0 is 0 in any unit type, no conversion is necessary when startValue is 0 -- we just start at 0 with endValueUnitType. */
-							} else if ((startValueUnitType !== endValueUnitType) && startValue !== 0) {
-								/* Unit conversion is also skipped when endValue is 0, but *startValueUnitType* must be used for tween values to remain accurate. */
-								/* Note: Skipping unit conversion here means that if endValueUnitType was originally a relative unit, the animation won't relatively
-								 match the underlying metrics if they change, but this is acceptable since we're animating toward invisibility instead of toward visibility,
-								 which remains past the point of the animation's completion. */
-								if (endValue === 0) {
-									endValueUnitType = startValueUnitType;
-								} else {
-									/* By this point, we cannot avoid unit conversion (it's undesirable since it causes layout thrashing).
-									 If we haven't already, we trigger calculateUnitRatios(), which runs once per element per call. */
-									elementUnitConversionData = elementUnitConversionData || calculateUnitRatios();
-
-									/* The following RegEx matches CSS properties that have their % values measured relative to the x-axis. */
-									/* Note: W3C spec mandates that all of margin and padding's properties (even top and bottom) are %-relative to the *width* of the parent element. */
-									var axis = (/margin|padding|left|right|width|text|word|letter/i.test(property) || /X$/.test(property) || property === "x") ? "x" : "y";
-
-									/* In order to avoid generating n^2 bespoke conversion functions, unit conversion is a two-step process:
-									 1) Convert startValue into pixels. 2) Convert this new pixel value into endValue's unit type. */
-									switch (startValueUnitType) {
-										case "%":
-											/* Note: translateX and translateY are the only properties that are %-relative to an element's own dimensions -- not its parent's dimensions.
-											 Velocity does not include a special conversion process to account for this behavior. Therefore, animating translateX/Y from a % value
-											 to a non-% value will produce an incorrect start value. Fortunately, this sort of cross-unit conversion is rarely done by users in practice. */
-											startValue *= (axis === "x" ? elementUnitConversionData.percentToPxWidth : elementUnitConversionData.percentToPxHeight);
-											break;
-
-										case "px":
-											/* px acts as our midpoint in the unit conversion process; do nothing. */
-											break;
-
-										default:
-											startValue *= elementUnitConversionData[startValueUnitType + "ToPx"];
-									}
-
-									/* Invert the px ratios to convert into to the target unit. */
-									switch (endValueUnitType) {
-										case "%":
-											startValue *= 1 / (axis === "x" ? elementUnitConversionData.percentToPxWidth : elementUnitConversionData.percentToPxHeight);
-											break;
-
-										case "px":
-											/* startValue is already in px, do nothing; we're done. */
-											break;
-
-										default:
-											startValue *= 1 / elementUnitConversionData[endValueUnitType + "ToPx"];
-									}
-								}
-							}
-
-							/*********************
-							 Relative Values
-							 *********************/
-
-							/* Operator logic must be performed last since it requires unit-normalized start and end values. */
-							/* Note: Relative *percent values* do not behave how most people think; while one would expect "+=50%"
-							 to increase the property 1.5x its current value, it in fact increases the percent units in absolute terms:
-							 50 points is added on top of the current % value. */
-							switch (operator) {
-								case "+":
-									endValue = startValue + endValue;
-									break;
-
-								case "-":
-									endValue = startValue - endValue;
-									break;
-
-								case "*":
-									endValue = startValue * endValue;
-									break;
-
-								case "/":
-									endValue = startValue / endValue;
-									break;
-							}
-
-							/**************************
-							 tweensContainer Push
-							 **************************/
-
-							/* Construct the per-property tween object, and push it to the element's tweensContainer. */
-							tweensContainer[property] = {
-								rootPropertyValue: rootPropertyValue,
-								startValue: startValue,
-								currentValue: startValue,
-								endValue: endValue,
-								unitType: endValueUnitType,
-								easing: easing
-							};
-							if (pattern) {
-								tweensContainer[property].pattern = pattern;
-							}
-
-							if (Velocity.debug) {
-								console.log("tweensContainer (" + property + "): " + JSON.stringify(tweensContainer[property]), element);
-							}
-						};
-
-						/* Create a tween out of each property, and append its associated data to tweensContainer. */
-						for (var property in propertiesMap) {
-
-							if (!propertiesMap.hasOwnProperty(property)) {
-								continue;
-							}
-							/* The original property name's format must be used for the parsePropertyValue() lookup,
-							 but we then use its camelCase styling to normalize it for manipulation. */
-							var propertyName = CSS.Names.camelCase(property),
-									valueData = parsePropertyValue(propertiesMap[property]);
-
-							/* Find shorthand color properties that have been passed a hex string. */
-							/* Would be quicker to use CSS.Lists.colors.includes() if possible */
-							if (_inArray(CSS.Lists.colors, propertyName)) {
-								/* Parse the value data for each shorthand. */
-								var endValue = valueData[0],
-										easing = valueData[1],
-										startValue = valueData[2];
-
-								if (CSS.RegEx.isHex.test(endValue)) {
-									/* Convert the hex strings into their RGB component arrays. */
-									var colorComponents = ["Red", "Green", "Blue"],
-											endValueRGB = CSS.Values.hexToRgb(endValue),
-											startValueRGB = startValue ? CSS.Values.hexToRgb(startValue) : undefined;
-
-									/* Inject the RGB component tweens into propertiesMap. */
-									for (var i = 0; i < colorComponents.length; i++) {
-										var dataArray = [endValueRGB[i]];
-
-										if (easing) {
-											dataArray.push(easing);
-										}
-
-										if (startValueRGB !== undefined) {
-											dataArray.push(startValueRGB[i]);
-										}
-
-										fixPropertyValue(propertyName + colorComponents[i], dataArray);
-									}
-									/* If we have replaced a shortcut color value then don't update the standard property name */
-									continue;
-								}
-							}
-							fixPropertyValue(propertyName, valueData);
-						}
-
-						/* Along with its property data, store a reference to the element itself onto tweensContainer. */
-						tweensContainer.element = element;
-					}
-
-					/*****************
-					 Call Push
-					 *****************/
-
-					/* Note: tweensContainer can be empty if all of the properties in this call's property map were skipped due to not
-					 being supported by the browser. The element property is used for checking that the tweensContainer has been appended to. */
-					if (tweensContainer.element) {
-						/* Apply the "velocity-animating" indicator class. */
-						CSS.Values.addClass(element, "velocity-animating");
-
-						/* The call array houses the tweensContainers for each element being animated in the current call. */
-						call.push(tweensContainer);
-
-						data = Data(element);
-
-						if (data) {
-							/* Store the tweensContainer and options if we're working on the default effects queue, so that they can be used by the reverse command. */
-							if (opts.queue === "") {
-
-								data.tweensContainer = tweensContainer;
-								data.opts = opts;
-							}
-
-							/* Switch on the element's animating flag. */
-							data.isAnimating = true;
-						}
-
-						/* Once the final element in this call's element set has been processed, push the call array onto
-						 Velocity.State.calls for the animation tick to immediately begin processing. */
-						if (elementsIndex === elementsLength - 1) {
-							/* Add the current call plus its associated metadata (the element set and the call's options) onto the global call container.
-							 Anything on this call container is subjected to tick() processing. */
-							Velocity.State.calls.push([call, elements, opts, null, promiseData.resolver, null, 0]);
-
-							/* If the animation tick isn't running, start it. (Velocity shuts it off when there are no active calls to process.) */
-							if (Velocity.State.isTicking === false) {
-								Velocity.State.isTicking = true;
-
-								/* Start the tick loop. */
-								tick();
-							}
-						} else {
-							elementsIndex++;
-						}
-					}
-				}
-
-				/* When the queue option is set to false, the call skips the element's queue and fires immediately. */
-				if (opts.queue === false) {
-					/* Since this buildQueue call doesn't respect the element's existing queue (which is where a delay option would have been appended),
-					 we manually inject the delay property here with an explicit setTimeout. */
-					if (opts.delay) {
-
-						/* Temporarily store delayed elements to facilitate access for global pause/resume */
-						var callIndex = Velocity.State.delayedElements.count++;
-						Velocity.State.delayedElements[callIndex] = element;
-
-						var delayComplete = (function(index) {
-							return function() {
-								/* Clear the temporary element */
-								Velocity.State.delayedElements[index] = false;
-
-								/* Finally, issue the call */
-								buildQueue();
-							};
-						})(callIndex);
-
-						Data(element).delayBegin = (new Date()).getTime();
-						Data(element).delay = parseFloat(opts.delay);
-						Data(element).delayTimer = {
-							setTimeout: setTimeout(buildQueue, parseFloat(opts.delay)),
-							next: delayComplete
-						};
-					} else {
-						buildQueue();
-					}
-					/* Otherwise, the call undergoes element queueing as normal. */
-					/* Note: To interoperate with jQuery, Velocity uses jQuery's own $.queue() stack for queuing logic. */
-				} else {
-					$.queue(element, opts.queue, function(next, clearQueue) {
-						/* If the clearQueue flag was passed in by the stop command, resolve this call's promise. (Promises can only be resolved once,
-						 so it's fine if this is repeatedly triggered for each element in the associated call.) */
-						if (clearQueue === true) {
-							if (promiseData.promise) {
-								promiseData.resolver(elements);
-							}
-
-							/* Do not continue with animation queueing. */
-							return true;
-						}
-
-						/* This flag indicates to the upcoming completeCall() function that this queue entry was initiated by Velocity.
-						 See completeCall() for further details. */
-						Velocity.velocityQueueEntryFlag = true;
-
-						buildQueue(next);
-					});
-				}
-
-				/*********************
-				 Auto-Dequeuing
-				 *********************/
-
-				/* As per jQuery's $.queue() behavior, to fire the first non-custom-queue entry on an element, the element
-				 must be dequeued if its queue stack consists *solely* of the current call. (This can be determined by checking
-				 for the "inprogress" item that jQuery prepends to active queue stack arrays.) Regardless, whenever the element's
-				 queue is further appended with additional items -- including $.delay()'s or even $.animate() calls, the queue's
-				 first entry is automatically fired. This behavior contrasts that of custom queues, which never auto-fire. */
-				/* Note: When an element set is being subjected to a non-parallel Velocity call, the animation will not begin until
-				 each one of the elements in the set has reached the end of its individually pre-existing queue chain. */
-				/* Note: Unfortunately, most people don't fully grasp jQuery's powerful, yet quirky, $.queue() function.
-				 Lean more here: http://stackoverflow.com/questions/1058158/can-somebody-explain-jquery-queue-to-me */
-				if ((opts.queue === "" || opts.queue === "fx") && $.queue(element)[0] !== "inprogress") {
-					$.dequeue(element);
-				}
-			}
-
-			/**************************
-			 Element Set Iteration
-			 **************************/
-
-			/* If the "nodeType" property exists on the elements variable, we're animating a single element.
-			 Place it in an array so that $.each() can iterate over it. */
-			$.each(elements, function(i, element) {
-				/* Ensure each element in a set has a nodeType (is a real element) to avoid throwing errors. */
-				if (Type.isNode(element)) {
-					processElement(element, i);
-				}
-			});
-
-			/******************
-			 Option: Loop
-			 ******************/
-
-			/* The loop option accepts an integer indicating how many times the element should loop between the values in the
-			 current call's properties map and the element's property values prior to this call. */
-			/* Note: The loop option's logic is performed here -- after element processing -- because the current call needs
-			 to undergo its queue insertion prior to the loop option generating its series of constituent "reverse" calls,
-			 which chain after the current call. Two reverse calls (two "alternations") constitute one loop. */
-			opts = $.extend({}, Velocity.defaults, options);
-			opts.loop = parseInt(opts.loop, 10);
-			var reverseCallsCount = (opts.loop * 2) - 1;
-
-			if (opts.loop) {
-				/* Double the loop count to convert it into its appropriate number of "reverse" calls.
-				 Subtract 1 from the resulting value since the current call is included in the total alternation count. */
-				for (var x = 0; x < reverseCallsCount; x++) {
-					/* Since the logic for the reverse action occurs inside Queueing and therefore this call's options object
-					 isn't parsed until then as well, the current call's delay option must be explicitly passed into the reverse
-					 call so that the delay logic that occurs inside *Pre-Queueing* can process it. */
-					var reverseOptions = {
-						delay: opts.delay,
-						progress: opts.progress
-					};
-
-					/* If a complete callback was passed into this call, transfer it to the loop redirect's final "reverse" call
-					 so that it's triggered when the entire redirect is complete (and not when the very first animation is complete). */
-					if (x === reverseCallsCount - 1) {
-						reverseOptions.display = opts.display;
-						reverseOptions.visibility = opts.visibility;
-						reverseOptions.complete = opts.complete;
-					}
-
-					animate(elements, "reverse", reverseOptions);
-				}
-			}
-
-			/***************
-			 Chaining
-			 ***************/
-
-			/* Return the elements back to the call chain, with wrapped elements taking precedence in case Velocity was called via the $.fn. extension. */
-			return getChain();
-		};
-
-		/* Turn Velocity into the animation function, extended with the pre-existing Velocity object. */
-		Velocity = $.extend(animate, Velocity);
-		/* For legacy support, also expose the literal animate method. */
-		Velocity.animate = animate;
-
-		/**************
-		 Timing
-		 **************/
-
-		/* Ticker function. */
-		var ticker = window.requestAnimationFrame || rAFShim;
-
-		/* Inactive browser tabs pause rAF, which results in all active animations immediately sprinting to their completion states when the tab refocuses.
-		 To get around this, we dynamically switch rAF to setTimeout (which the browser *doesn't* pause) when the tab loses focus. We skip this for mobile
-		 devices to avoid wasting battery power on inactive tabs. */
-		/* Note: Tab focus detection doesn't work on older versions of IE, but that's okay since they don't support rAF to begin with. */
-		if (!Velocity.State.isMobile && document.hidden !== undefined) {
-			var updateTicker = function() {
-				/* Reassign the rAF function (which the global tick() function uses) based on the tab's focus state. */
-				if (document.hidden) {
-					ticker = function(callback) {
-						/* The tick function needs a truthy first argument in order to pass its internal timestamp check. */
-						return setTimeout(function() {
-							callback(true);
-						}, 16);
-					};
-
-					/* The rAF loop has been paused by the browser, so we manually restart the tick. */
-					tick();
-				} else {
-					ticker = window.requestAnimationFrame || rAFShim;
-				}
-			};
-
-			/* Page could be sitting in the background at this time (i.e. opened as new tab) so making sure we use correct ticker from the start */
-			updateTicker();
-
-			/* And then run check again every time visibility changes */
-			document.addEventListener("visibilitychange", updateTicker);
-		}
-
-		/************
-		 Tick
-		 ************/
-
-		/* Note: All calls to Velocity are pushed to the Velocity.State.calls array, which is fully iterated through upon each tick. */
-		function tick(timestamp) {
-			/* An empty timestamp argument indicates that this is the first tick occurence since ticking was turned on.
-			 We leverage this metadata to fully ignore the first tick pass since RAF's initial pass is fired whenever
-			 the browser's next tick sync time occurs, which results in the first elements subjected to Velocity
-			 calls being animated out of sync with any elements animated immediately thereafter. In short, we ignore
-			 the first RAF tick pass so that elements being immediately consecutively animated -- instead of simultaneously animated
-			 by the same Velocity call -- are properly batched into the same initial RAF tick and consequently remain in sync thereafter. */
-			if (timestamp) {
-				/* We normally use RAF's high resolution timestamp but as it can be significantly offset when the browser is
-				 under high stress we give the option for choppiness over allowing the browser to drop huge chunks of frames.
-				 We use performance.now() and shim it if it doesn't exist for when the tab is hidden. */
-				var timeCurrent = Velocity.timestamp && timestamp !== true ? timestamp : performance.now();
-
-				/********************
-				 Call Iteration
-				 ********************/
-
-				var callsLength = Velocity.State.calls.length;
-
-				/* To speed up iterating over this array, it is compacted (falsey items -- calls that have completed -- are removed)
-				 when its length has ballooned to a point that can impact tick performance. This only becomes necessary when animation
-				 has been continuous with many elements over a long period of time; whenever all active calls are completed, completeCall() clears Velocity.State.calls. */
-				if (callsLength > 10000) {
-					Velocity.State.calls = compactSparseArray(Velocity.State.calls);
-					callsLength = Velocity.State.calls.length;
-				}
-
-				/* Iterate through each active call. */
-				for (var i = 0; i < callsLength; i++) {
-					/* When a Velocity call is completed, its Velocity.State.calls entry is set to false. Continue on to the next call. */
-					if (!Velocity.State.calls[i]) {
-						continue;
-					}
-
-					/************************
-					 Call-Wide Variables
-					 ************************/
-
-					var callContainer = Velocity.State.calls[i],
-							call = callContainer[0],
-							opts = callContainer[2],
-							timeStart = callContainer[3],
-							firstTick = !!timeStart,
-							tweenDummyValue = null,
-							pauseObject = callContainer[5],
-							millisecondsEllapsed = callContainer[6];
-
-
-
-					/* If timeStart is undefined, then this is the first time that this call has been processed by tick().
-					 We assign timeStart now so that its value is as close to the real animation start time as possible.
-					 (Conversely, had timeStart been defined when this call was added to Velocity.State.calls, the delay
-					 between that time and now would cause the first few frames of the tween to be skipped since
-					 percentComplete is calculated relative to timeStart.) */
-					/* Further, subtract 16ms (the approximate resolution of RAF) from the current time value so that the
-					 first tick iteration isn't wasted by animating at 0% tween completion, which would produce the
-					 same style value as the element's current value. */
-					if (!timeStart) {
-						timeStart = Velocity.State.calls[i][3] = timeCurrent - 16;
-					}
-
-					/* If a pause object is present, skip processing unless it has been set to resume */
-					if (pauseObject) {
-						if (pauseObject.resume === true) {
-							/* Update the time start to accomodate the paused completion amount */
-							timeStart = callContainer[3] = Math.round(timeCurrent - millisecondsEllapsed - 16);
-
-							/* Remove pause object after processing */
-							callContainer[5] = null;
-						} else {
-							continue;
-						}
-					}
-
-					millisecondsEllapsed = callContainer[6] = timeCurrent - timeStart;
-
-					/* The tween's completion percentage is relative to the tween's start time, not the tween's start value
-					 (which would result in unpredictable tween durations since JavaScript's timers are not particularly accurate).
-					 Accordingly, we ensure that percentComplete does not exceed 1. */
-					var percentComplete = Math.min((millisecondsEllapsed) / opts.duration, 1);
-
-					/**********************
-					 Element Iteration
-					 **********************/
-
-					/* For every call, iterate through each of the elements in its set. */
-					for (var j = 0, callLength = call.length; j < callLength; j++) {
-						var tweensContainer = call[j],
-								element = tweensContainer.element;
-
-						/* Check to see if this element has been deleted midway through the animation by checking for the
-						 continued existence of its data cache. If it's gone, or the element is currently paused, skip animating this element. */
-						if (!Data(element)) {
-							continue;
-						}
-
-						var transformPropertyExists = false;
-
-						/**********************************
-						 Display & Visibility Toggling
-						 **********************************/
-
-						/* If the display option is set to non-"none", set it upfront so that the element can become visible before tweening begins.
-						 (Otherwise, display's "none" value is set in completeCall() once the animation has completed.) */
-						if (opts.display !== undefined && opts.display !== null && opts.display !== "none") {
-							if (opts.display === "flex") {
-								var flexValues = ["-webkit-box", "-moz-box", "-ms-flexbox", "-webkit-flex"];
-
-								$.each(flexValues, function(i, flexValue) {
-									CSS.setPropertyValue(element, "display", flexValue);
-								});
-							}
-
-							CSS.setPropertyValue(element, "display", opts.display);
-						}
-
-						/* Same goes with the visibility option, but its "none" equivalent is "hidden". */
-						if (opts.visibility !== undefined && opts.visibility !== "hidden") {
-							CSS.setPropertyValue(element, "visibility", opts.visibility);
-						}
-
-						/************************
-						 Property Iteration
-						 ************************/
-
-						/* For every element, iterate through each property. */
-						for (var property in tweensContainer) {
-							/* Note: In addition to property tween data, tweensContainer contains a reference to its associated element. */
-							if (tweensContainer.hasOwnProperty(property) && property !== "element") {
-								var tween = tweensContainer[property],
-										currentValue,
-										/* Easing can either be a pre-genereated function or a string that references a pre-registered easing
-										 on the Velocity.Easings object. In either case, return the appropriate easing *function*. */
-										easing = Type.isString(tween.easing) ? Velocity.Easings[tween.easing] : tween.easing;
-
-								/******************************
-								 Current Value Calculation
-								 ******************************/
-
-								if (Type.isString(tween.pattern)) {
-									var patternReplace = percentComplete === 1 ?
-											function($0, index, round) {
-												var result = tween.endValue[index];
-
-												return round ? Math.round(result) : result;
-											} :
-											function($0, index, round) {
-												var startValue = tween.startValue[index],
-														tweenDelta = tween.endValue[index] - startValue,
-														result = startValue + (tweenDelta * easing(percentComplete, opts, tweenDelta));
-
-												return round ? Math.round(result) : result;
-											};
-
-									currentValue = tween.pattern.replace(/{(\d+)(!)?}/g, patternReplace);
-								} else if (percentComplete === 1) {
-									/* If this is the last tick pass (if we've reached 100% completion for this tween),
-									 ensure that currentValue is explicitly set to its target endValue so that it's not subjected to any rounding. */
-									currentValue = tween.endValue;
-								} else {
-									/* Otherwise, calculate currentValue based on the current delta from startValue. */
-									var tweenDelta = tween.endValue - tween.startValue;
-
-									currentValue = tween.startValue + (tweenDelta * easing(percentComplete, opts, tweenDelta));
-									/* If no value change is occurring, don't proceed with DOM updating. */
-								}
-								if (!firstTick && (currentValue === tween.currentValue)) {
-									continue;
-								}
-
-								tween.currentValue = currentValue;
-
-								/* If we're tweening a fake 'tween' property in order to log transition values, update the one-per-call variable so that
-								 it can be passed into the progress callback. */
-								if (property === "tween") {
-									tweenDummyValue = currentValue;
-								} else {
-									/******************
-									 Hooks: Part I
-									 ******************/
-									var hookRoot;
-
-									/* For hooked properties, the newly-updated rootPropertyValueCache is cached onto the element so that it can be used
-									 for subsequent hooks in this call that are associated with the same root property. If we didn't cache the updated
-									 rootPropertyValue, each subsequent update to the root property in this tick pass would reset the previous hook's
-									 updates to rootPropertyValue prior to injection. A nice performance byproduct of rootPropertyValue caching is that
-									 subsequently chained animations using the same hookRoot but a different hook can use this cached rootPropertyValue. */
-									if (CSS.Hooks.registered[property]) {
-										hookRoot = CSS.Hooks.getRoot(property);
-
-										var rootPropertyValueCache = Data(element).rootPropertyValueCache[hookRoot];
-
-										if (rootPropertyValueCache) {
-											tween.rootPropertyValue = rootPropertyValueCache;
-										}
-									}
-
-									/*****************
-									 DOM Update
-									 *****************/
-
-									/* setPropertyValue() returns an array of the property name and property value post any normalization that may have been performed. */
-									/* Note: To solve an IE<=8 positioning bug, the unit type is dropped when setting a property value of 0. */
-									var adjustedSetData = CSS.setPropertyValue(element, /* SET */
-											property,
-											tween.currentValue + (IE < 9 && parseFloat(currentValue) === 0 ? "" : tween.unitType),
-											tween.rootPropertyValue,
-											tween.scrollData);
-
-									/*******************
-									 Hooks: Part II
-									 *******************/
-
-									/* Now that we have the hook's updated rootPropertyValue (the post-processed value provided by adjustedSetData), cache it onto the element. */
-									if (CSS.Hooks.registered[property]) {
-										/* Since adjustedSetData contains normalized data ready for DOM updating, the rootPropertyValue needs to be re-extracted from its normalized form. ?? */
-										if (CSS.Normalizations.registered[hookRoot]) {
-											Data(element).rootPropertyValueCache[hookRoot] = CSS.Normalizations.registered[hookRoot]("extract", null, adjustedSetData[1]);
-										} else {
-											Data(element).rootPropertyValueCache[hookRoot] = adjustedSetData[1];
-										}
-									}
-
-									/***************
-									 Transforms
-									 ***************/
-
-									/* Flag whether a transform property is being animated so that flushTransformCache() can be triggered once this tick pass is complete. */
-									if (adjustedSetData[0] === "transform") {
-										transformPropertyExists = true;
-									}
-
-								}
-							}
-						}
-
-						/****************
-						 mobileHA
-						 ****************/
-
-						/* If mobileHA is enabled, set the translate3d transform to null to force hardware acceleration.
-						 It's safe to override this property since Velocity doesn't actually support its animation (hooks are used in its place). */
-						if (opts.mobileHA) {
-							/* Don't set the null transform hack if we've already done so. */
-							if (Data(element).transformCache.translate3d === undefined) {
-								/* All entries on the transformCache object are later concatenated into a single transform string via flushTransformCache(). */
-								Data(element).transformCache.translate3d = "(0px, 0px, 0px)";
-
-								transformPropertyExists = true;
-							}
-						}
-
-						if (transformPropertyExists) {
-							CSS.flushTransformCache(element);
-						}
-					}
-
-					/* The non-"none" display value is only applied to an element once -- when its associated call is first ticked through.
-					 Accordingly, it's set to false so that it isn't re-processed by this call in the next tick. */
-					if (opts.display !== undefined && opts.display !== "none") {
-						Velocity.State.calls[i][2].display = false;
-					}
-					if (opts.visibility !== undefined && opts.visibility !== "hidden") {
-						Velocity.State.calls[i][2].visibility = false;
-					}
-
-					/* Pass the elements and the timing data (percentComplete, msRemaining, timeStart, tweenDummyValue) into the progress callback. */
-					if (opts.progress) {
-						opts.progress.call(callContainer[1],
-								callContainer[1],
-								percentComplete,
-								Math.max(0, (timeStart + opts.duration) - timeCurrent),
-								timeStart,
-								tweenDummyValue);
-					}
-
-					/* If this call has finished tweening, pass its index to completeCall() to handle call cleanup. */
-					if (percentComplete === 1) {
-						completeCall(i);
-					}
-				}
-			}
-
-			/* Note: completeCall() sets the isTicking flag to false when the last call on Velocity.State.calls has completed. */
-			if (Velocity.State.isTicking) {
-				ticker(tick);
-			}
-		}
-
-		/**********************
-		 Call Completion
-		 **********************/
-
-		/* Note: Unlike tick(), which processes all active calls at once, call completion is handled on a per-call basis. */
-		function completeCall(callIndex, isStopped) {
-			/* Ensure the call exists. */
-			if (!Velocity.State.calls[callIndex]) {
-				return false;
-			}
-
-			/* Pull the metadata from the call. */
-			var call = Velocity.State.calls[callIndex][0],
-					elements = Velocity.State.calls[callIndex][1],
-					opts = Velocity.State.calls[callIndex][2],
-					resolver = Velocity.State.calls[callIndex][4];
-
-			var remainingCallsExist = false;
-
-			/*************************
-			 Element Finalization
-			 *************************/
-
-			for (var i = 0, callLength = call.length; i < callLength; i++) {
-				var element = call[i].element;
-
-				/* If the user set display to "none" (intending to hide the element), set it now that the animation has completed. */
-				/* Note: display:none isn't set when calls are manually stopped (via Velocity("stop"). */
-				/* Note: Display gets ignored with "reverse" calls and infinite loops, since this behavior would be undesirable. */
-				if (!isStopped && !opts.loop) {
-					if (opts.display === "none") {
-						CSS.setPropertyValue(element, "display", opts.display);
-					}
-
-					if (opts.visibility === "hidden") {
-						CSS.setPropertyValue(element, "visibility", opts.visibility);
-					}
-				}
-
-				/* If the element's queue is empty (if only the "inprogress" item is left at position 0) or if its queue is about to run
-				 a non-Velocity-initiated entry, turn off the isAnimating flag. A non-Velocity-initiatied queue entry's logic might alter
-				 an element's CSS values and thereby cause Velocity's cached value data to go stale. To detect if a queue entry was initiated by Velocity,
-				 we check for the existence of our special Velocity.queueEntryFlag declaration, which minifiers won't rename since the flag
-				 is assigned to jQuery's global $ object and thus exists out of Velocity's own scope. */
-				var data = Data(element);
-
-				if (opts.loop !== true && ($.queue(element)[1] === undefined || !/\.velocityQueueEntryFlag/i.test($.queue(element)[1]))) {
-					/* The element may have been deleted. Ensure that its data cache still exists before acting on it. */
-					if (data) {
-						data.isAnimating = false;
-						/* Clear the element's rootPropertyValueCache, which will become stale. */
-						data.rootPropertyValueCache = {};
-
-						var transformHAPropertyExists = false;
-						/* If any 3D transform subproperty is at its default value (regardless of unit type), remove it. */
-						$.each(CSS.Lists.transforms3D, function(i, transformName) {
-							var defaultValue = /^scale/.test(transformName) ? 1 : 0,
-									currentValue = data.transformCache[transformName];
-
-							if (data.transformCache[transformName] !== undefined && new RegExp("^\\(" + defaultValue + "[^.]").test(currentValue)) {
-								transformHAPropertyExists = true;
-
-								delete data.transformCache[transformName];
-							}
-						});
-
-						/* Mobile devices have hardware acceleration removed at the end of the animation in order to avoid hogging the GPU's memory. */
-						if (opts.mobileHA) {
-							transformHAPropertyExists = true;
-							delete data.transformCache.translate3d;
-						}
-
-						/* Flush the subproperty removals to the DOM. */
-						if (transformHAPropertyExists) {
-							CSS.flushTransformCache(element);
-						}
-
-						/* Remove the "velocity-animating" indicator class. */
-						CSS.Values.removeClass(element, "velocity-animating");
-					}
-				}
-
-				/*********************
-				 Option: Complete
-				 *********************/
-
-				/* Complete is fired once per call (not once per element) and is passed the full raw DOM element set as both its context and its first argument. */
-				/* Note: Callbacks aren't fired when calls are manually stopped (via Velocity("stop"). */
-				if (!isStopped && opts.complete && !opts.loop && (i === callLength - 1)) {
-					/* We throw callbacks in a setTimeout so that thrown errors don't halt the execution of Velocity itself. */
-					try {
-						opts.complete.call(elements, elements);
-					} catch (error) {
-						setTimeout(function() {
-							throw error;
-						}, 1);
-					}
-				}
-
-				/**********************
-				 Promise Resolving
-				 **********************/
-
-				/* Note: Infinite loops don't return promises. */
-				if (resolver && opts.loop !== true) {
-					resolver(elements);
-				}
-
-				/****************************
-				 Option: Loop (Infinite)
-				 ****************************/
-
-				if (data && opts.loop === true && !isStopped) {
-					/* If a rotateX/Y/Z property is being animated by 360 deg with loop:true, swap tween start/end values to enable
-					 continuous iterative rotation looping. (Otherise, the element would just rotate back and forth.) */
-					$.each(data.tweensContainer, function(propertyName, tweenContainer) {
-						if (/^rotate/.test(propertyName) && ((parseFloat(tweenContainer.startValue) - parseFloat(tweenContainer.endValue)) % 360 === 0)) {
-							var oldStartValue = tweenContainer.startValue;
-
-							tweenContainer.startValue = tweenContainer.endValue;
-							tweenContainer.endValue = oldStartValue;
-						}
-
-						if (/^backgroundPosition/.test(propertyName) && parseFloat(tweenContainer.endValue) === 100 && tweenContainer.unitType === "%") {
-							tweenContainer.endValue = 0;
-							tweenContainer.startValue = 100;
-						}
-					});
-
-					Velocity(element, "reverse", {loop: true, delay: opts.delay});
-				}
-
-				/***************
-				 Dequeueing
-				 ***************/
-
-				/* Fire the next call in the queue so long as this call's queue wasn't set to false (to trigger a parallel animation),
-				 which would have already caused the next call to fire. Note: Even if the end of the animation queue has been reached,
-				 $.dequeue() must still be called in order to completely clear jQuery's animation queue. */
-				if (opts.queue !== false) {
-					$.dequeue(element, opts.queue);
-				}
-			}
-
-			/************************
-			 Calls Array Cleanup
-			 ************************/
-
-			/* Since this call is complete, set it to false so that the rAF tick skips it. This array is later compacted via compactSparseArray().
-			 (For performance reasons, the call is set to false instead of being deleted from the array: http://www.html5rocks.com/en/tutorials/speed/v8/) */
-			Velocity.State.calls[callIndex] = false;
-
-			/* Iterate through the calls array to determine if this was the final in-progress animation.
-			 If so, set a flag to end ticking and clear the calls array. */
-			for (var j = 0, callsLength = Velocity.State.calls.length; j < callsLength; j++) {
-				if (Velocity.State.calls[j] !== false) {
-					remainingCallsExist = true;
-
-					break;
-				}
-			}
-
-			if (remainingCallsExist === false) {
-				/* tick() will detect this flag upon its next iteration and subsequently turn itself off. */
-				Velocity.State.isTicking = false;
-
-				/* Clear the calls array so that its length is reset. */
-				delete Velocity.State.calls;
-				Velocity.State.calls = [];
-			}
-		}
-
-		/******************
-		 Frameworks
-		 ******************/
-
-		/* Both jQuery and Zepto allow their $.fn object to be extended to allow wrapped elements to be subjected to plugin calls.
-		 If either framework is loaded, register a "velocity" extension pointing to Velocity's core animate() method.  Velocity
-		 also registers itself onto a global container (window.jQuery || window.Zepto || window) so that certain features are
-		 accessible beyond just a per-element scope. This master object contains an .animate() method, which is later assigned to $.fn
-		 (if jQuery or Zepto are present). Accordingly, Velocity can both act on wrapped DOM elements and stand alone for targeting raw DOM elements. */
-		global.Velocity = Velocity;
-
-		if (global !== window) {
-			/* Assign the element function to Velocity's core animate() method. */
-			global.fn.velocity = animate;
-			/* Assign the object function's defaults to Velocity's global defaults object. */
-			global.fn.velocity.defaults = Velocity.defaults;
-		}
-
-		/***********************
-		 Packaged Redirects
-		 ***********************/
-
-		/* slideUp, slideDown */
-		$.each(["Down", "Up"], function(i, direction) {
-			Velocity.Redirects["slide" + direction] = function(element, options, elementsIndex, elementsSize, elements, promiseData) {
-				var opts = $.extend({}, options),
-						begin = opts.begin,
-						complete = opts.complete,
-						inlineValues = {},
-						computedValues = {height: "", marginTop: "", marginBottom: "", paddingTop: "", paddingBottom: ""};
-
-				if (opts.display === undefined) {
-					/* Show the element before slideDown begins and hide the element after slideUp completes. */
-					/* Note: Inline elements cannot have dimensions animated, so they're reverted to inline-block. */
-					opts.display = (direction === "Down" ? (Velocity.CSS.Values.getDisplayType(element) === "inline" ? "inline-block" : "block") : "none");
-				}
-
-				opts.begin = function() {
-					/* If the user passed in a begin callback, fire it now. */
-					if (elementsIndex === 0 && begin) {
-						begin.call(elements, elements);
-					}
-
-					/* Cache the elements' original vertical dimensional property values so that we can animate back to them. */
-					for (var property in computedValues) {
-						if (!computedValues.hasOwnProperty(property)) {
-							continue;
-						}
-						inlineValues[property] = element.style[property];
-
-						/* For slideDown, use forcefeeding to animate all vertical properties from 0. For slideUp,
-						 use forcefeeding to start from computed values and animate down to 0. */
-						var propertyValue = CSS.getPropertyValue(element, property);
-						computedValues[property] = (direction === "Down") ? [propertyValue, 0] : [0, propertyValue];
-					}
-
-					/* Force vertical overflow content to clip so that sliding works as expected. */
-					inlineValues.overflow = element.style.overflow;
-					element.style.overflow = "hidden";
-				};
-
-				opts.complete = function() {
-					/* Reset element to its pre-slide inline values once its slide animation is complete. */
-					for (var property in inlineValues) {
-						if (inlineValues.hasOwnProperty(property)) {
-							element.style[property] = inlineValues[property];
-						}
-					}
-
-					/* If the user passed in a complete callback, fire it now. */
-					if (elementsIndex === elementsSize - 1) {
-						if (complete) {
-							complete.call(elements, elements);
-						}
-						if (promiseData) {
-							promiseData.resolver(elements);
-						}
-					}
-				};
-
-				Velocity(element, computedValues, opts);
-			};
-		});
-
-		/* fadeIn, fadeOut */
-		$.each(["In", "Out"], function(i, direction) {
-			Velocity.Redirects["fade" + direction] = function(element, options, elementsIndex, elementsSize, elements, promiseData) {
-				var opts = $.extend({}, options),
-						complete = opts.complete,
-						propertiesMap = {opacity: (direction === "In") ? 1 : 0};
-
-				/* Since redirects are triggered individually for each element in the animated set, avoid repeatedly triggering
-				 callbacks by firing them only when the final element has been reached. */
-				if (elementsIndex !== 0) {
-					opts.begin = null;
-				}
-				if (elementsIndex !== elementsSize - 1) {
-					opts.complete = null;
-				} else {
-					opts.complete = function() {
-						if (complete) {
-							complete.call(elements, elements);
-						}
-						if (promiseData) {
-							promiseData.resolver(elements);
-						}
-					};
-				}
-
-				/* If a display was passed in, use it. Otherwise, default to "none" for fadeOut or the element-specific default for fadeIn. */
-				/* Note: We allow users to pass in "null" to skip display setting altogether. */
-				if (opts.display === undefined) {
-					opts.display = (direction === "In" ? "auto" : "none");
-				}
-
-				Velocity(this, propertiesMap, opts);
-			};
-		});
-
-		return Velocity;
-	}((window.jQuery || window.Zepto || window), window, (window ? window.document : undefined));
-}));
-
-/******************
- Known Issues
- ******************/
-
-/* The CSS spec mandates that the translateX/Y/Z transforms are %-relative to the element itself -- not its parent.
- Velocity, however, doesn't make this distinction. Thus, converting to or from the % unit with these subproperties
- will produce an inaccurate conversion value. The same issue exists with the cx/cy attributes of SVG circles and ellipses. */
-;define('velocity-animate', ['velocity-animate/velocity'], function (main) { return main; });
-
-/**********************
- Velocity UI Pack
- **********************/
-
-/* VelocityJS.org UI Pack (5.2.0). (C) 2014 Julian Shapiro. MIT @license: en.wikipedia.org/wiki/MIT_License. Portions copyright Daniel Eden, Christian Pucci. */
-
-(function(factory) {
-	"use strict";
-	/* CommonJS module. */
-	if (typeof require === "function" && typeof exports === "object") {
-		module.exports = factory();
-		/* AMD module. */
-	} else if (typeof define === "function" && define.amd) {
-		define('velocity-animate/velocity.ui',["velocity"], factory);
-		/* Browser globals. */
-	} else {
-		factory();
-	}
-}(function() {
-	"use strict";
-	return function(global, window, document, undefined) {
-
-		/*************
-		 Checks
-		 *************/
-		var Velocity = global.Velocity;
-
-		if (!Velocity || !Velocity.Utilities) {
-			if (window.console) {
-				console.log("Velocity UI Pack: Velocity must be loaded first. Aborting.");
-			}
-			return;
-		}
-		var $ = Velocity.Utilities;
-
-		var velocityVersion = Velocity.version,
-				requiredVersion = {major: 1, minor: 1, patch: 0};
-
-		function greaterSemver(primary, secondary) {
-			var versionInts = [];
-
-			if (!primary || !secondary) {
-				return false;
-			}
-
-			$.each([primary, secondary], function(i, versionObject) {
-				var versionIntsComponents = [];
-
-				$.each(versionObject, function(component, value) {
-					while (value.toString().length < 5) {
-						value = "0" + value;
-					}
-					versionIntsComponents.push(value);
-				});
-
-				versionInts.push(versionIntsComponents.join(""));
-			});
-
-			return (parseFloat(versionInts[0]) > parseFloat(versionInts[1]));
-		}
-
-		if (greaterSemver(requiredVersion, velocityVersion)) {
-			var abortError = "Velocity UI Pack: You need to update Velocity (velocity.js) to a newer version. Visit http://github.com/julianshapiro/velocity.";
-			alert(abortError);
-			throw new Error(abortError);
-		}
-
-		/************************
-		 Effect Registration
-		 ************************/
-
-		/* Note: RegisterUI is a legacy name. */
-		Velocity.RegisterEffect = Velocity.RegisterUI = function(effectName, properties) {
-			/* Animate the expansion/contraction of the elements' parent's height for In/Out effects. */
-			function animateParentHeight(elements, direction, totalDuration, stagger) {
-				var totalHeightDelta = 0,
-						parentNode;
-
-				/* Sum the total height (including padding and margin) of all targeted elements. */
-				$.each(elements.nodeType ? [elements] : elements, function(i, element) {
-					if (stagger) {
-						/* Increase the totalDuration by the successive delay amounts produced by the stagger option. */
-						totalDuration += i * stagger;
-					}
-
-					parentNode = element.parentNode;
-
-					var propertiesToSum = ["height", "paddingTop", "paddingBottom", "marginTop", "marginBottom"];
-
-					/* If box-sizing is border-box, the height already includes padding and margin */
-					if (Velocity.CSS.getPropertyValue(element, "boxSizing").toString().toLowerCase() === "border-box") {
-						propertiesToSum = ["height"];
-					}
-
-					$.each(propertiesToSum, function(i, property) {
-						totalHeightDelta += parseFloat(Velocity.CSS.getPropertyValue(element, property));
-					});
-				});
-
-				/* Animate the parent element's height adjustment (with a varying duration multiplier for aesthetic benefits). */
-				Velocity.animate(
-						parentNode,
-						{height: (direction === "In" ? "+" : "-") + "=" + totalHeightDelta},
-						{queue: false, easing: "ease-in-out", duration: totalDuration * (direction === "In" ? 0.6 : 1)}
-				);
-			}
-
-			/* Register a custom redirect for each effect. */
-			Velocity.Redirects[effectName] = function(element, redirectOptions, elementsIndex, elementsSize, elements, promiseData, loop) {
-				var finalElement = (elementsIndex === elementsSize - 1),
-						totalDuration = 0;
-
-				loop = loop || properties.loop;
-				if (typeof properties.defaultDuration === "function") {
-					properties.defaultDuration = properties.defaultDuration.call(elements, elements);
-				} else {
-					properties.defaultDuration = parseFloat(properties.defaultDuration);
-				}
-
-				/* Get the total duration used, so we can share it out with everything that doesn't have a duration */
-				for (var callIndex = 0; callIndex < properties.calls.length; callIndex++) {
-					durationPercentage = properties.calls[callIndex][1];
-					if (typeof durationPercentage === "number") {
-						totalDuration += durationPercentage;
-					}
-				}
-				var shareDuration = totalDuration >= 1 ? 0 : properties.calls.length ? (1 - totalDuration) / properties.calls.length : 1;
-
-				/* Iterate through each effect's call array. */
-				for (callIndex = 0; callIndex < properties.calls.length; callIndex++) {
-					var call = properties.calls[callIndex],
-							propertyMap = call[0],
-							redirectDuration = 1000,
-							durationPercentage = call[1],
-							callOptions = call[2] || {},
-							opts = {};
-
-					if (redirectOptions.duration !== undefined) {
-						redirectDuration = redirectOptions.duration;
-					} else if (properties.defaultDuration !== undefined) {
-						redirectDuration = properties.defaultDuration;
-					}
-
-					/* Assign the whitelisted per-call options. */
-					opts.duration = redirectDuration * (typeof durationPercentage === "number" ? durationPercentage : shareDuration);
-					opts.queue = redirectOptions.queue || "";
-					opts.easing = callOptions.easing || "ease";
-					opts.delay = parseFloat(callOptions.delay) || 0;
-					opts.loop = !properties.loop && callOptions.loop;
-					opts._cacheValues = callOptions._cacheValues || true;
-
-					/* Special processing for the first effect call. */
-					if (callIndex === 0) {
-						/* If a delay was passed into the redirect, combine it with the first call's delay. */
-						opts.delay += (parseFloat(redirectOptions.delay) || 0);
-
-						if (elementsIndex === 0) {
-							opts.begin = function() {
-								/* Only trigger a begin callback on the first effect call with the first element in the set. */
-								if (redirectOptions.begin) {
-									redirectOptions.begin.call(elements, elements);
-								}
-
-								var direction = effectName.match(/(In|Out)$/);
-
-								/* Make "in" transitioning elements invisible immediately so that there's no FOUC between now
-								 and the first RAF tick. */
-								if ((direction && direction[0] === "In") && propertyMap.opacity !== undefined) {
-									$.each(elements.nodeType ? [elements] : elements, function(i, element) {
-										Velocity.CSS.setPropertyValue(element, "opacity", 0);
-									});
-								}
-
-								/* Only trigger animateParentHeight() if we're using an In/Out transition. */
-								if (redirectOptions.animateParentHeight && direction) {
-									animateParentHeight(elements, direction[0], redirectDuration + opts.delay, redirectOptions.stagger);
-								}
-							};
-						}
-
-						/* If the user isn't overriding the display option, default to "auto" for "In"-suffixed transitions. */
-						if (redirectOptions.display !== null) {
-							if (redirectOptions.display !== undefined && redirectOptions.display !== "none") {
-								opts.display = redirectOptions.display;
-							} else if (/In$/.test(effectName)) {
-								/* Inline elements cannot be subjected to transforms, so we switch them to inline-block. */
-								var defaultDisplay = Velocity.CSS.Values.getDisplayType(element);
-								opts.display = (defaultDisplay === "inline") ? "inline-block" : defaultDisplay;
-							}
-						}
-
-						if (redirectOptions.visibility && redirectOptions.visibility !== "hidden") {
-							opts.visibility = redirectOptions.visibility;
-						}
-					}
-
-					/* Special processing for the last effect call. */
-					if (callIndex === properties.calls.length - 1) {
-						/* Append promise resolving onto the user's redirect callback. */
-						var injectFinalCallbacks = function() {
-							if ((redirectOptions.display === undefined || redirectOptions.display === "none") && /Out$/.test(effectName)) {
-								$.each(elements.nodeType ? [elements] : elements, function(i, element) {
-									Velocity.CSS.setPropertyValue(element, "display", "none");
-								});
-							}
-							if (redirectOptions.complete) {
-								redirectOptions.complete.call(elements, elements);
-							}
-							if (promiseData) {
-								promiseData.resolver(elements || element);
-							}
-						};
-
-						opts.complete = function() {
-							if (loop) {
-								Velocity.Redirects[effectName](element, redirectOptions, elementsIndex, elementsSize, elements, promiseData, loop === true ? true : Math.max(0, loop - 1));
-							}
-							if (properties.reset) {
-								for (var resetProperty in properties.reset) {
-									if (!properties.reset.hasOwnProperty(resetProperty)) {
-										continue;
-									}
-									var resetValue = properties.reset[resetProperty];
-
-									/* Format each non-array value in the reset property map to [ value, value ] so that changes apply
-									 immediately and DOM querying is avoided (via forcefeeding). */
-									/* Note: Don't forcefeed hooks, otherwise their hook roots will be defaulted to their null values. */
-									if (Velocity.CSS.Hooks.registered[resetProperty] === undefined && (typeof resetValue === "string" || typeof resetValue === "number")) {
-										properties.reset[resetProperty] = [properties.reset[resetProperty], properties.reset[resetProperty]];
-									}
-								}
-
-								/* So that the reset values are applied instantly upon the next rAF tick, use a zero duration and parallel queueing. */
-								var resetOptions = {duration: 0, queue: false};
-
-								/* Since the reset option uses up the complete callback, we trigger the user's complete callback at the end of ours. */
-								if (finalElement) {
-									resetOptions.complete = injectFinalCallbacks;
-								}
-
-								Velocity.animate(element, properties.reset, resetOptions);
-								/* Only trigger the user's complete callback on the last effect call with the last element in the set. */
-							} else if (finalElement) {
-								injectFinalCallbacks();
-							}
-						};
-
-						if (redirectOptions.visibility === "hidden") {
-							opts.visibility = redirectOptions.visibility;
-						}
-					}
-
-					Velocity.animate(element, propertyMap, opts);
-				}
-			};
-
-			/* Return the Velocity object so that RegisterUI calls can be chained. */
-			return Velocity;
-		};
-
-		/*********************
-		 Packaged Effects
-		 *********************/
-
-		/* Externalize the packagedEffects data so that they can optionally be modified and re-registered. */
-		/* Support: <=IE8: Callouts will have no effect, and transitions will simply fade in/out. IE9/Android 2.3: Most effects are fully supported, the rest fade in/out. All other browsers: full support. */
-		Velocity.RegisterEffect.packagedEffects =
-				{
-					/* Animate.css */
-					"callout.bounce": {
-						defaultDuration: 550,
-						calls: [
-							[{translateY: -30}, 0.25],
-							[{translateY: 0}, 0.125],
-							[{translateY: -15}, 0.125],
-							[{translateY: 0}, 0.25]
-						]
-					},
-					/* Animate.css */
-					"callout.shake": {
-						defaultDuration: 800,
-						calls: [
-							[{translateX: -11}],
-							[{translateX: 11}],
-							[{translateX: -11}],
-							[{translateX: 11}],
-							[{translateX: -11}],
-							[{translateX: 11}],
-							[{translateX: -11}],
-							[{translateX: 0}]
-						]
-					},
-					/* Animate.css */
-					"callout.flash": {
-						defaultDuration: 1100,
-						calls: [
-							[{opacity: [0, "easeInOutQuad", 1]}],
-							[{opacity: [1, "easeInOutQuad"]}],
-							[{opacity: [0, "easeInOutQuad"]}],
-							[{opacity: [1, "easeInOutQuad"]}]
-						]
-					},
-					/* Animate.css */
-					"callout.pulse": {
-						defaultDuration: 825,
-						calls: [
-							[{scaleX: 1.1, scaleY: 1.1}, 0.50, {easing: "easeInExpo"}],
-							[{scaleX: 1, scaleY: 1}, 0.50]
-						]
-					},
-					/* Animate.css */
-					"callout.swing": {
-						defaultDuration: 950,
-						calls: [
-							[{rotateZ: 15}],
-							[{rotateZ: -10}],
-							[{rotateZ: 5}],
-							[{rotateZ: -5}],
-							[{rotateZ: 0}]
-						]
-					},
-					/* Animate.css */
-					"callout.tada": {
-						defaultDuration: 1000,
-						calls: [
-							[{scaleX: 0.9, scaleY: 0.9, rotateZ: -3}, 0.10],
-							[{scaleX: 1.1, scaleY: 1.1, rotateZ: 3}, 0.10],
-							[{scaleX: 1.1, scaleY: 1.1, rotateZ: -3}, 0.10],
-							["reverse", 0.125],
-							["reverse", 0.125],
-							["reverse", 0.125],
-							["reverse", 0.125],
-							["reverse", 0.125],
-							[{scaleX: 1, scaleY: 1, rotateZ: 0}, 0.20]
-						]
-					},
-					"transition.fadeIn": {
-						defaultDuration: 500,
-						calls: [
-							[{opacity: [1, 0]}]
-						]
-					},
-					"transition.fadeOut": {
-						defaultDuration: 500,
-						calls: [
-							[{opacity: [0, 1]}]
-						]
-					},
-					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
-					"transition.flipXIn": {
-						defaultDuration: 700,
-						calls: [
-							[{opacity: [1, 0], transformPerspective: [800, 800], rotateY: [0, -55]}]
-						],
-						reset: {transformPerspective: 0}
-					},
-					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
-					"transition.flipXOut": {
-						defaultDuration: 700,
-						calls: [
-							[{opacity: [0, 1], transformPerspective: [800, 800], rotateY: 55}]
-						],
-						reset: {transformPerspective: 0, rotateY: 0}
-					},
-					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
-					"transition.flipYIn": {
-						defaultDuration: 800,
-						calls: [
-							[{opacity: [1, 0], transformPerspective: [800, 800], rotateX: [0, -45]}]
-						],
-						reset: {transformPerspective: 0}
-					},
-					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
-					"transition.flipYOut": {
-						defaultDuration: 800,
-						calls: [
-							[{opacity: [0, 1], transformPerspective: [800, 800], rotateX: 25}]
-						],
-						reset: {transformPerspective: 0, rotateX: 0}
-					},
-					/* Animate.css */
-					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
-					"transition.flipBounceXIn": {
-						defaultDuration: 900,
-						calls: [
-							[{opacity: [0.725, 0], transformPerspective: [400, 400], rotateY: [-10, 90]}, 0.50],
-							[{opacity: 0.80, rotateY: 10}, 0.25],
-							[{opacity: 1, rotateY: 0}, 0.25]
-						],
-						reset: {transformPerspective: 0}
-					},
-					/* Animate.css */
-					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
-					"transition.flipBounceXOut": {
-						defaultDuration: 800,
-						calls: [
-							[{opacity: [0.9, 1], transformPerspective: [400, 400], rotateY: -10}],
-							[{opacity: 0, rotateY: 90}]
-						],
-						reset: {transformPerspective: 0, rotateY: 0}
-					},
-					/* Animate.css */
-					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
-					"transition.flipBounceYIn": {
-						defaultDuration: 850,
-						calls: [
-							[{opacity: [0.725, 0], transformPerspective: [400, 400], rotateX: [-10, 90]}, 0.50],
-							[{opacity: 0.80, rotateX: 10}, 0.25],
-							[{opacity: 1, rotateX: 0}, 0.25]
-						],
-						reset: {transformPerspective: 0}
-					},
-					/* Animate.css */
-					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
-					"transition.flipBounceYOut": {
-						defaultDuration: 800,
-						calls: [
-							[{opacity: [0.9, 1], transformPerspective: [400, 400], rotateX: -15}],
-							[{opacity: 0, rotateX: 90}]
-						],
-						reset: {transformPerspective: 0, rotateX: 0}
-					},
-					/* Magic.css */
-					"transition.swoopIn": {
-						defaultDuration: 850,
-						calls: [
-							[{opacity: [1, 0], transformOriginX: ["100%", "50%"], transformOriginY: ["100%", "100%"], scaleX: [1, 0], scaleY: [1, 0], translateX: [0, -700], translateZ: 0}]
-						],
-						reset: {transformOriginX: "50%", transformOriginY: "50%"}
-					},
-					/* Magic.css */
-					"transition.swoopOut": {
-						defaultDuration: 850,
-						calls: [
-							[{opacity: [0, 1], transformOriginX: ["50%", "100%"], transformOriginY: ["100%", "100%"], scaleX: 0, scaleY: 0, translateX: -700, translateZ: 0}]
-						],
-						reset: {transformOriginX: "50%", transformOriginY: "50%", scaleX: 1, scaleY: 1, translateX: 0}
-					},
-					/* Magic.css */
-					/* Support: Loses rotation in IE9/Android 2.3. (Fades and scales only.) */
-					"transition.whirlIn": {
-						defaultDuration: 850,
-						calls: [
-							[{opacity: [1, 0], transformOriginX: ["50%", "50%"], transformOriginY: ["50%", "50%"], scaleX: [1, 0], scaleY: [1, 0], rotateY: [0, 160]}, 1, {easing: "easeInOutSine"}]
-						]
-					},
-					/* Magic.css */
-					/* Support: Loses rotation in IE9/Android 2.3. (Fades and scales only.) */
-					"transition.whirlOut": {
-						defaultDuration: 750,
-						calls: [
-							[{opacity: [0, "easeInOutQuint", 1], transformOriginX: ["50%", "50%"], transformOriginY: ["50%", "50%"], scaleX: 0, scaleY: 0, rotateY: 160}, 1, {easing: "swing"}]
-						],
-						reset: {scaleX: 1, scaleY: 1, rotateY: 0}
-					},
-					"transition.shrinkIn": {
-						defaultDuration: 750,
-						calls: [
-							[{opacity: [1, 0], transformOriginX: ["50%", "50%"], transformOriginY: ["50%", "50%"], scaleX: [1, 1.5], scaleY: [1, 1.5], translateZ: 0}]
-						]
-					},
-					"transition.shrinkOut": {
-						defaultDuration: 600,
-						calls: [
-							[{opacity: [0, 1], transformOriginX: ["50%", "50%"], transformOriginY: ["50%", "50%"], scaleX: 1.3, scaleY: 1.3, translateZ: 0}]
-						],
-						reset: {scaleX: 1, scaleY: 1}
-					},
-					"transition.expandIn": {
-						defaultDuration: 700,
-						calls: [
-							[{opacity: [1, 0], transformOriginX: ["50%", "50%"], transformOriginY: ["50%", "50%"], scaleX: [1, 0.625], scaleY: [1, 0.625], translateZ: 0}]
-						]
-					},
-					"transition.expandOut": {
-						defaultDuration: 700,
-						calls: [
-							[{opacity: [0, 1], transformOriginX: ["50%", "50%"], transformOriginY: ["50%", "50%"], scaleX: 0.5, scaleY: 0.5, translateZ: 0}]
-						],
-						reset: {scaleX: 1, scaleY: 1}
-					},
-					/* Animate.css */
-					"transition.bounceIn": {
-						defaultDuration: 800,
-						calls: [
-							[{opacity: [1, 0], scaleX: [1.05, 0.3], scaleY: [1.05, 0.3]}, 0.35],
-							[{scaleX: 0.9, scaleY: 0.9, translateZ: 0}, 0.20],
-							[{scaleX: 1, scaleY: 1}, 0.45]
-						]
-					},
-					/* Animate.css */
-					"transition.bounceOut": {
-						defaultDuration: 800,
-						calls: [
-							[{scaleX: 0.95, scaleY: 0.95}, 0.35],
-							[{scaleX: 1.1, scaleY: 1.1, translateZ: 0}, 0.35],
-							[{opacity: [0, 1], scaleX: 0.3, scaleY: 0.3}, 0.30]
-						],
-						reset: {scaleX: 1, scaleY: 1}
-					},
-					/* Animate.css */
-					"transition.bounceUpIn": {
-						defaultDuration: 800,
-						calls: [
-							[{opacity: [1, 0], translateY: [-30, 1000]}, 0.60, {easing: "easeOutCirc"}],
-							[{translateY: 10}, 0.20],
-							[{translateY: 0}, 0.20]
-						]
-					},
-					/* Animate.css */
-					"transition.bounceUpOut": {
-						defaultDuration: 1000,
-						calls: [
-							[{translateY: 20}, 0.20],
-							[{opacity: [0, "easeInCirc", 1], translateY: -1000}, 0.80]
-						],
-						reset: {translateY: 0}
-					},
-					/* Animate.css */
-					"transition.bounceDownIn": {
-						defaultDuration: 800,
-						calls: [
-							[{opacity: [1, 0], translateY: [30, -1000]}, 0.60, {easing: "easeOutCirc"}],
-							[{translateY: -10}, 0.20],
-							[{translateY: 0}, 0.20]
-						]
-					},
-					/* Animate.css */
-					"transition.bounceDownOut": {
-						defaultDuration: 1000,
-						calls: [
-							[{translateY: -20}, 0.20],
-							[{opacity: [0, "easeInCirc", 1], translateY: 1000}, 0.80]
-						],
-						reset: {translateY: 0}
-					},
-					/* Animate.css */
-					"transition.bounceLeftIn": {
-						defaultDuration: 750,
-						calls: [
-							[{opacity: [1, 0], translateX: [30, -1250]}, 0.60, {easing: "easeOutCirc"}],
-							[{translateX: -10}, 0.20],
-							[{translateX: 0}, 0.20]
-						]
-					},
-					/* Animate.css */
-					"transition.bounceLeftOut": {
-						defaultDuration: 750,
-						calls: [
-							[{translateX: 30}, 0.20],
-							[{opacity: [0, "easeInCirc", 1], translateX: -1250}, 0.80]
-						],
-						reset: {translateX: 0}
-					},
-					/* Animate.css */
-					"transition.bounceRightIn": {
-						defaultDuration: 750,
-						calls: [
-							[{opacity: [1, 0], translateX: [-30, 1250]}, 0.60, {easing: "easeOutCirc"}],
-							[{translateX: 10}, 0.20],
-							[{translateX: 0}, 0.20]
-						]
-					},
-					/* Animate.css */
-					"transition.bounceRightOut": {
-						defaultDuration: 750,
-						calls: [
-							[{translateX: -30}, 0.20],
-							[{opacity: [0, "easeInCirc", 1], translateX: 1250}, 0.80]
-						],
-						reset: {translateX: 0}
-					},
-					"transition.slideUpIn": {
-						defaultDuration: 900,
-						calls: [
-							[{opacity: [1, 0], translateY: [0, 20], translateZ: 0}]
-						]
-					},
-					"transition.slideUpOut": {
-						defaultDuration: 900,
-						calls: [
-							[{opacity: [0, 1], translateY: -20, translateZ: 0}]
-						],
-						reset: {translateY: 0}
-					},
-					"transition.slideDownIn": {
-						defaultDuration: 900,
-						calls: [
-							[{opacity: [1, 0], translateY: [0, -20], translateZ: 0}]
-						]
-					},
-					"transition.slideDownOut": {
-						defaultDuration: 900,
-						calls: [
-							[{opacity: [0, 1], translateY: 20, translateZ: 0}]
-						],
-						reset: {translateY: 0}
-					},
-					"transition.slideLeftIn": {
-						defaultDuration: 1000,
-						calls: [
-							[{opacity: [1, 0], translateX: [0, -20], translateZ: 0}]
-						]
-					},
-					"transition.slideLeftOut": {
-						defaultDuration: 1050,
-						calls: [
-							[{opacity: [0, 1], translateX: -20, translateZ: 0}]
-						],
-						reset: {translateX: 0}
-					},
-					"transition.slideRightIn": {
-						defaultDuration: 1000,
-						calls: [
-							[{opacity: [1, 0], translateX: [0, 20], translateZ: 0}]
-						]
-					},
-					"transition.slideRightOut": {
-						defaultDuration: 1050,
-						calls: [
-							[{opacity: [0, 1], translateX: 20, translateZ: 0}]
-						],
-						reset: {translateX: 0}
-					},
-					"transition.slideUpBigIn": {
-						defaultDuration: 850,
-						calls: [
-							[{opacity: [1, 0], translateY: [0, 75], translateZ: 0}]
-						]
-					},
-					"transition.slideUpBigOut": {
-						defaultDuration: 800,
-						calls: [
-							[{opacity: [0, 1], translateY: -75, translateZ: 0}]
-						],
-						reset: {translateY: 0}
-					},
-					"transition.slideDownBigIn": {
-						defaultDuration: 850,
-						calls: [
-							[{opacity: [1, 0], translateY: [0, -75], translateZ: 0}]
-						]
-					},
-					"transition.slideDownBigOut": {
-						defaultDuration: 800,
-						calls: [
-							[{opacity: [0, 1], translateY: 75, translateZ: 0}]
-						],
-						reset: {translateY: 0}
-					},
-					"transition.slideLeftBigIn": {
-						defaultDuration: 800,
-						calls: [
-							[{opacity: [1, 0], translateX: [0, -75], translateZ: 0}]
-						]
-					},
-					"transition.slideLeftBigOut": {
-						defaultDuration: 750,
-						calls: [
-							[{opacity: [0, 1], translateX: -75, translateZ: 0}]
-						],
-						reset: {translateX: 0}
-					},
-					"transition.slideRightBigIn": {
-						defaultDuration: 800,
-						calls: [
-							[{opacity: [1, 0], translateX: [0, 75], translateZ: 0}]
-						]
-					},
-					"transition.slideRightBigOut": {
-						defaultDuration: 750,
-						calls: [
-							[{opacity: [0, 1], translateX: 75, translateZ: 0}]
-						],
-						reset: {translateX: 0}
-					},
-					/* Magic.css */
-					"transition.perspectiveUpIn": {
-						defaultDuration: 800,
-						calls: [
-							[{opacity: [1, 0], transformPerspective: [800, 800], transformOriginX: [0, 0], transformOriginY: ["100%", "100%"], rotateX: [0, -180]}]
-						],
-						reset: {transformPerspective: 0, transformOriginX: "50%", transformOriginY: "50%"}
-					},
-					/* Magic.css */
-					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
-					"transition.perspectiveUpOut": {
-						defaultDuration: 850,
-						calls: [
-							[{opacity: [0, 1], transformPerspective: [800, 800], transformOriginX: [0, 0], transformOriginY: ["100%", "100%"], rotateX: -180}]
-						],
-						reset: {transformPerspective: 0, transformOriginX: "50%", transformOriginY: "50%", rotateX: 0}
-					},
-					/* Magic.css */
-					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
-					"transition.perspectiveDownIn": {
-						defaultDuration: 800,
-						calls: [
-							[{opacity: [1, 0], transformPerspective: [800, 800], transformOriginX: [0, 0], transformOriginY: [0, 0], rotateX: [0, 180]}]
-						],
-						reset: {transformPerspective: 0, transformOriginX: "50%", transformOriginY: "50%"}
-					},
-					/* Magic.css */
-					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
-					"transition.perspectiveDownOut": {
-						defaultDuration: 850,
-						calls: [
-							[{opacity: [0, 1], transformPerspective: [800, 800], transformOriginX: [0, 0], transformOriginY: [0, 0], rotateX: 180}]
-						],
-						reset: {transformPerspective: 0, transformOriginX: "50%", transformOriginY: "50%", rotateX: 0}
-					},
-					/* Magic.css */
-					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
-					"transition.perspectiveLeftIn": {
-						defaultDuration: 950,
-						calls: [
-							[{opacity: [1, 0], transformPerspective: [2000, 2000], transformOriginX: [0, 0], transformOriginY: [0, 0], rotateY: [0, -180]}]
-						],
-						reset: {transformPerspective: 0, transformOriginX: "50%", transformOriginY: "50%"}
-					},
-					/* Magic.css */
-					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
-					"transition.perspectiveLeftOut": {
-						defaultDuration: 950,
-						calls: [
-							[{opacity: [0, 1], transformPerspective: [2000, 2000], transformOriginX: [0, 0], transformOriginY: [0, 0], rotateY: -180}]
-						],
-						reset: {transformPerspective: 0, transformOriginX: "50%", transformOriginY: "50%", rotateY: 0}
-					},
-					/* Magic.css */
-					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
-					"transition.perspectiveRightIn": {
-						defaultDuration: 950,
-						calls: [
-							[{opacity: [1, 0], transformPerspective: [2000, 2000], transformOriginX: ["100%", "100%"], transformOriginY: [0, 0], rotateY: [0, 180]}]
-						],
-						reset: {transformPerspective: 0, transformOriginX: "50%", transformOriginY: "50%"}
-					},
-					/* Magic.css */
-					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
-					"transition.perspectiveRightOut": {
-						defaultDuration: 950,
-						calls: [
-							[{opacity: [0, 1], transformPerspective: [2000, 2000], transformOriginX: ["100%", "100%"], transformOriginY: [0, 0], rotateY: 180}]
-						],
-						reset: {transformPerspective: 0, transformOriginX: "50%", transformOriginY: "50%", rotateY: 0}
-					}
-				};
-
-		/* Register the packaged effects. */
-		for (var effectName in Velocity.RegisterEffect.packagedEffects) {
-			if (Velocity.RegisterEffect.packagedEffects.hasOwnProperty(effectName)) {
-				Velocity.RegisterEffect(effectName, Velocity.RegisterEffect.packagedEffects[effectName]);
-			}
-		}
-
-		/*********************
-		 Sequence Running
-		 **********************/
-
-		/* Note: Sequence calls must use Velocity's single-object arguments syntax. */
-		Velocity.RunSequence = function(originalSequence) {
-			var sequence = $.extend(true, [], originalSequence);
-
-			if (sequence.length > 1) {
-				$.each(sequence.reverse(), function(i, currentCall) {
-					var nextCall = sequence[i + 1];
-
-					if (nextCall) {
-						/* Parallel sequence calls (indicated via sequenceQueue:false) are triggered
-						 in the previous call's begin callback. Otherwise, chained calls are normally triggered
-						 in the previous call's complete callback. */
-						var currentCallOptions = currentCall.o || currentCall.options,
-								nextCallOptions = nextCall.o || nextCall.options;
-
-						var timing = (currentCallOptions && currentCallOptions.sequenceQueue === false) ? "begin" : "complete",
-								callbackOriginal = nextCallOptions && nextCallOptions[timing],
-								options = {};
-
-						options[timing] = function() {
-							var nextCallElements = nextCall.e || nextCall.elements;
-							var elements = nextCallElements.nodeType ? [nextCallElements] : nextCallElements;
-
-							if (callbackOriginal) {
-								callbackOriginal.call(elements, elements);
-							}
-							Velocity(currentCall);
-						};
-
-						if (nextCall.o) {
-							nextCall.o = $.extend({}, nextCallOptions, options);
-						} else {
-							nextCall.options = $.extend({}, nextCallOptions, options);
-						}
-					}
-				});
-
-				sequence.reverse();
-			}
-
-			Velocity(sequence[0]);
-		};
-	}((window.jQuery || window.Zepto || window), window, (window ? window.document : undefined));
-}));
-
-define('aurelia-templating-resources/aurelia-templating-resources',['exports', 'aurelia-pal', './compose', './if', './with', './repeat', './show', './hide', './sanitize-html', './replaceable', './focus', 'aurelia-templating', './css-resource', './html-sanitizer', './attr-binding-behavior', './binding-mode-behaviors', './throttle-binding-behavior', './debounce-binding-behavior', './self-binding-behavior', './signal-binding-behavior', './binding-signaler', './update-trigger-binding-behavior', './abstract-repeater', './repeat-strategy-locator', './html-resource-plugin', './null-repeat-strategy', './array-repeat-strategy', './map-repeat-strategy', './set-repeat-strategy', './number-repeat-strategy', './repeat-utilities', './analyze-view-factory', './aurelia-hide-style'], function (exports, _aureliaPal, _compose, _if, _with, _repeat, _show, _hide, _sanitizeHtml, _replaceable, _focus, _aureliaTemplating, _cssResource, _htmlSanitizer, _attrBindingBehavior, _bindingModeBehaviors, _throttleBindingBehavior, _debounceBindingBehavior, _selfBindingBehavior, _signalBindingBehavior, _bindingSignaler, _updateTriggerBindingBehavior, _abstractRepeater, _repeatStrategyLocator, _htmlResourcePlugin, _nullRepeatStrategy, _arrayRepeatStrategy, _mapRepeatStrategy, _setRepeatStrategy, _numberRepeatStrategy, _repeatUtilities, _analyzeViewFactory, _aureliaHideStyle) {
+define('aurelia-templating-resources/aurelia-templating-resources',['exports', './compose', './if', './with', './repeat', './show', './hide', './sanitize-html', './replaceable', './focus', 'aurelia-templating', './css-resource', './html-sanitizer', './attr-binding-behavior', './binding-mode-behaviors', './throttle-binding-behavior', './debounce-binding-behavior', './signal-binding-behavior', './binding-signaler', './update-trigger-binding-behavior', './abstract-repeater', './repeat-strategy-locator', './html-resource-plugin', './null-repeat-strategy', './array-repeat-strategy', './map-repeat-strategy', './set-repeat-strategy', './number-repeat-strategy', './repeat-utilities', './analyze-view-factory', './aurelia-hide-style'], function (exports, _compose, _if, _with, _repeat, _show, _hide, _sanitizeHtml, _replaceable, _focus, _aureliaTemplating, _cssResource, _htmlSanitizer, _attrBindingBehavior, _bindingModeBehaviors, _throttleBindingBehavior, _debounceBindingBehavior, _signalBindingBehavior, _bindingSignaler, _updateTriggerBindingBehavior, _abstractRepeater, _repeatStrategyLocator, _htmlResourcePlugin, _nullRepeatStrategy, _arrayRepeatStrategy, _mapRepeatStrategy, _setRepeatStrategy, _numberRepeatStrategy, _repeatUtilities, _analyzeViewFactory, _aureliaHideStyle) {
   'use strict';
 
   Object.defineProperty(exports, "__esModule", {
     value: true
   });
-  exports.viewsRequireLifecycle = exports.unwrapExpression = exports.updateOneTimeBinding = exports.isOneTime = exports.getItemsSourceExpression = exports.updateOverrideContext = exports.createFullOverrideContext = exports.NumberRepeatStrategy = exports.SetRepeatStrategy = exports.MapRepeatStrategy = exports.ArrayRepeatStrategy = exports.NullRepeatStrategy = exports.RepeatStrategyLocator = exports.AbstractRepeater = exports.UpdateTriggerBindingBehavior = exports.BindingSignaler = exports.SignalBindingBehavior = exports.SelfBindingBehavior = exports.DebounceBindingBehavior = exports.ThrottleBindingBehavior = exports.TwoWayBindingBehavior = exports.OneWayBindingBehavior = exports.OneTimeBindingBehavior = exports.AttrBindingBehavior = exports.configure = exports.Focus = exports.Replaceable = exports.SanitizeHTMLValueConverter = exports.HTMLSanitizer = exports.Hide = exports.Show = exports.Repeat = exports.With = exports.If = exports.Compose = undefined;
+  exports.viewsRequireLifecycle = exports.unwrapExpression = exports.updateOneTimeBinding = exports.isOneTime = exports.getItemsSourceExpression = exports.updateOverrideContext = exports.createFullOverrideContext = exports.NumberRepeatStrategy = exports.SetRepeatStrategy = exports.MapRepeatStrategy = exports.ArrayRepeatStrategy = exports.NullRepeatStrategy = exports.RepeatStrategyLocator = exports.AbstractRepeater = exports.UpdateTriggerBindingBehavior = exports.BindingSignaler = exports.SignalBindingBehavior = exports.DebounceBindingBehavior = exports.ThrottleBindingBehavior = exports.TwoWayBindingBehavior = exports.OneWayBindingBehavior = exports.OneTimeBindingBehavior = exports.AttrBindingBehavior = exports.configure = exports.Focus = exports.Replaceable = exports.SanitizeHTMLValueConverter = exports.HTMLSanitizer = exports.Hide = exports.Show = exports.Repeat = exports.With = exports.If = exports.Compose = undefined;
 
 
   function configure(config) {
     (0, _aureliaHideStyle.injectAureliaHideStyleAtHead)();
 
-    config.globalResources(_aureliaPal.PLATFORM.moduleName('./compose'), _aureliaPal.PLATFORM.moduleName('./if'), _aureliaPal.PLATFORM.moduleName('./with'), _aureliaPal.PLATFORM.moduleName('./repeat'), _aureliaPal.PLATFORM.moduleName('./show'), _aureliaPal.PLATFORM.moduleName('./hide'), _aureliaPal.PLATFORM.moduleName('./replaceable'), _aureliaPal.PLATFORM.moduleName('./sanitize-html'), _aureliaPal.PLATFORM.moduleName('./focus'), _aureliaPal.PLATFORM.moduleName('./binding-mode-behaviors'), _aureliaPal.PLATFORM.moduleName('./self-binding-behavior'), _aureliaPal.PLATFORM.moduleName('./throttle-binding-behavior'), _aureliaPal.PLATFORM.moduleName('./debounce-binding-behavior'), _aureliaPal.PLATFORM.moduleName('./signal-binding-behavior'), _aureliaPal.PLATFORM.moduleName('./update-trigger-binding-behavior'), _aureliaPal.PLATFORM.moduleName('./attr-binding-behavior'));
+    config.globalResources('./compose', './if', './with', './repeat', './show', './hide', './replaceable', './sanitize-html', './focus', './binding-mode-behaviors', './throttle-binding-behavior', './debounce-binding-behavior', './signal-binding-behavior', './update-trigger-binding-behavior', './attr-binding-behavior');
 
     (0, _htmlResourcePlugin.configure)(config);
 
     var viewEngine = config.container.get(_aureliaTemplating.ViewEngine);
-    var styleResourcePlugin = {
-      fetch: function fetch(address) {
+    viewEngine.addResourcePlugin('.css', {
+      'fetch': function fetch(address) {
         var _ref;
 
         return _ref = {}, _ref[address] = (0, _cssResource._createCSSResource)(address), _ref;
       }
-    };
-    ['.css', '.less', '.sass', '.scss', '.styl'].forEach(function (ext) {
-      return viewEngine.addResourcePlugin(ext, styleResourcePlugin);
     });
   }
 
@@ -30473,7 +24712,6 @@ define('aurelia-templating-resources/aurelia-templating-resources',['exports', '
   exports.TwoWayBindingBehavior = _bindingModeBehaviors.TwoWayBindingBehavior;
   exports.ThrottleBindingBehavior = _throttleBindingBehavior.ThrottleBindingBehavior;
   exports.DebounceBindingBehavior = _debounceBindingBehavior.DebounceBindingBehavior;
-  exports.SelfBindingBehavior = _selfBindingBehavior.SelfBindingBehavior;
   exports.SignalBindingBehavior = _signalBindingBehavior.SignalBindingBehavior;
   exports.BindingSignaler = _bindingSignaler.BindingSignaler;
   exports.UpdateTriggerBindingBehavior = _updateTriggerBindingBehavior.UpdateTriggerBindingBehavior;
@@ -30546,7 +24784,7 @@ define('aurelia-templating-resources/compose',['exports', 'aurelia-dependency-in
     throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
   }
 
-  var _dec, _dec2, _class, _desc, _value, _class2, _descriptor, _descriptor2, _descriptor3, _descriptor4;
+  var _dec, _dec2, _class, _desc, _value, _class2, _descriptor, _descriptor2, _descriptor3;
 
   var Compose = exports.Compose = (_dec = (0, _aureliaTemplating.customElement)('compose'), _dec2 = (0, _aureliaDependencyInjection.inject)(_aureliaPal.DOM.Element, _aureliaDependencyInjection.Container, _aureliaTemplating.CompositionEngine, _aureliaTemplating.ViewSlot, _aureliaTemplating.ViewResources, _aureliaTaskQueue.TaskQueue), _dec(_class = (0, _aureliaTemplating.noView)(_class = _dec2(_class = (_class2 = function () {
     function Compose(element, container, compositionEngine, viewSlot, viewResources, taskQueue) {
@@ -30557,8 +24795,6 @@ define('aurelia-templating-resources/compose',['exports', 'aurelia-dependency-in
       _initDefineProp(this, 'view', _descriptor2, this);
 
       _initDefineProp(this, 'viewModel', _descriptor3, this);
-
-      _initDefineProp(this, 'swapOrder', _descriptor4, this);
 
       this.element = element;
       this.container = container;
@@ -30664,9 +24900,6 @@ define('aurelia-templating-resources/compose',['exports', 'aurelia-dependency-in
   }), _descriptor3 = _applyDecoratedDescriptor(_class2.prototype, 'viewModel', [_aureliaTemplating.bindable], {
     enumerable: true,
     initializer: null
-  }), _descriptor4 = _applyDecoratedDescriptor(_class2.prototype, 'swapOrder', [_aureliaTemplating.bindable], {
-    enumerable: true,
-    initializer: null
   })), _class2)) || _class) || _class) || _class);
 
 
@@ -30679,8 +24912,7 @@ define('aurelia-templating-resources/compose',['exports', 'aurelia-dependency-in
       viewSlot: composer.viewSlot,
       viewResources: composer.viewResources,
       currentController: composer.currentController,
-      host: composer.element,
-      swapOrder: composer.swapOrder
+      host: composer.element
     });
   }
 
@@ -32597,44 +26829,6 @@ define('aurelia-templating-resources/debounce-binding-behavior',['exports', 'aur
     return DebounceBindingBehavior;
   }();
 });
-define('aurelia-templating-resources/self-binding-behavior',['exports'], function (exports) {
-  'use strict';
-
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-
-  
-
-  function findOriginalEventTarget(event) {
-    return event.path && event.path[0] || event.deepPath && event.deepPath[0] || event.target;
-  }
-
-  function handleSelfEvent(event) {
-    var target = findOriginalEventTarget(event);
-    if (this.target !== target) return;
-    this.selfEventCallSource(event);
-  }
-
-  var SelfBindingBehavior = exports.SelfBindingBehavior = function () {
-    function SelfBindingBehavior() {
-      
-    }
-
-    SelfBindingBehavior.prototype.bind = function bind(binding, source) {
-      if (!binding.callSource || !binding.targetEvent) throw new Error('Self binding behavior only supports event.');
-      binding.selfEventCallSource = binding.callSource;
-      binding.callSource = handleSelfEvent;
-    };
-
-    SelfBindingBehavior.prototype.unbind = function unbind(binding, source) {
-      binding.callSource = binding.selfEventCallSource;
-      binding.selfEventCallSource = null;
-    };
-
-    return SelfBindingBehavior;
-  }();
-});
 define('aurelia-templating-resources/signal-binding-behavior',['exports', './binding-signaler'], function (exports, _bindingSignaler) {
   'use strict';
 
@@ -32855,7 +27049,5487 @@ define('aurelia-templating-resources/dynamic-element',['exports', 'aurelia-templ
     return DynamicElement;
   }
 });
-define('aurelia-templating-router/aurelia-templating-router',['exports', 'aurelia-pal', 'aurelia-router', './route-loader', './router-view', './route-href'], function (exports, _aureliaPal, _aureliaRouter, _routeLoader, _routerView, _routeHref) {
+/*! VelocityJS.org (1.4.0). (C) 2014 Julian Shapiro. MIT @license: en.wikipedia.org/wiki/MIT_License */
+
+/*************************
+ Velocity jQuery Shim
+ *************************/
+
+/*! VelocityJS.org jQuery Shim (1.0.1). (C) 2014 The jQuery Foundation. MIT @license: en.wikipedia.org/wiki/MIT_License. */
+
+/* This file contains the jQuery functions that Velocity relies on, thereby removing Velocity's dependency on a full copy of jQuery, and allowing it to work in any environment. */
+/* These shimmed functions are only used if jQuery isn't present. If both this shim and jQuery are loaded, Velocity defaults to jQuery proper. */
+/* Browser support: Using this shim instead of jQuery proper removes support for IE8. */
+
+(function(window) {
+	"use strict";
+	/***************
+	 Setup
+	 ***************/
+
+	/* If jQuery is already loaded, there's no point in loading this shim. */
+	if (window.jQuery) {
+		return;
+	}
+
+	/* jQuery base. */
+	var $ = function(selector, context) {
+		return new $.fn.init(selector, context);
+	};
+
+	/********************
+	 Private Methods
+	 ********************/
+
+	/* jQuery */
+	$.isWindow = function(obj) {
+		/* jshint eqeqeq: false */
+		return obj && obj === obj.window;
+	};
+
+	/* jQuery */
+	$.type = function(obj) {
+		if (!obj) {
+			return obj + "";
+		}
+
+		return typeof obj === "object" || typeof obj === "function" ?
+				class2type[toString.call(obj)] || "object" :
+				typeof obj;
+	};
+
+	/* jQuery */
+	$.isArray = Array.isArray || function(obj) {
+		return $.type(obj) === "array";
+	};
+
+	/* jQuery */
+	function isArraylike(obj) {
+		var length = obj.length,
+				type = $.type(obj);
+
+		if (type === "function" || $.isWindow(obj)) {
+			return false;
+		}
+
+		if (obj.nodeType === 1 && length) {
+			return true;
+		}
+
+		return type === "array" || length === 0 || typeof length === "number" && length > 0 && (length - 1) in obj;
+	}
+
+	/***************
+	 $ Methods
+	 ***************/
+
+	/* jQuery: Support removed for IE<9. */
+	$.isPlainObject = function(obj) {
+		var key;
+
+		if (!obj || $.type(obj) !== "object" || obj.nodeType || $.isWindow(obj)) {
+			return false;
+		}
+
+		try {
+			if (obj.constructor &&
+					!hasOwn.call(obj, "constructor") &&
+					!hasOwn.call(obj.constructor.prototype, "isPrototypeOf")) {
+				return false;
+			}
+		} catch (e) {
+			return false;
+		}
+
+		for (key in obj) {
+		}
+
+		return key === undefined || hasOwn.call(obj, key);
+	};
+
+	/* jQuery */
+	$.each = function(obj, callback, args) {
+		var value,
+				i = 0,
+				length = obj.length,
+				isArray = isArraylike(obj);
+
+		if (args) {
+			if (isArray) {
+				for (; i < length; i++) {
+					value = callback.apply(obj[i], args);
+
+					if (value === false) {
+						break;
+					}
+				}
+			} else {
+				for (i in obj) {
+					if (!obj.hasOwnProperty(i)) {
+						continue;
+					}
+					value = callback.apply(obj[i], args);
+
+					if (value === false) {
+						break;
+					}
+				}
+			}
+
+		} else {
+			if (isArray) {
+				for (; i < length; i++) {
+					value = callback.call(obj[i], i, obj[i]);
+
+					if (value === false) {
+						break;
+					}
+				}
+			} else {
+				for (i in obj) {
+					if (!obj.hasOwnProperty(i)) {
+						continue;
+					}
+					value = callback.call(obj[i], i, obj[i]);
+
+					if (value === false) {
+						break;
+					}
+				}
+			}
+		}
+
+		return obj;
+	};
+
+	/* Custom */
+	$.data = function(node, key, value) {
+		/* $.getData() */
+		if (value === undefined) {
+			var getId = node[$.expando],
+					store = getId && cache[getId];
+
+			if (key === undefined) {
+				return store;
+			} else if (store) {
+				if (key in store) {
+					return store[key];
+				}
+			}
+			/* $.setData() */
+		} else if (key !== undefined) {
+			var setId = node[$.expando] || (node[$.expando] = ++$.uuid);
+
+			cache[setId] = cache[setId] || {};
+			cache[setId][key] = value;
+
+			return value;
+		}
+	};
+
+	/* Custom */
+	$.removeData = function(node, keys) {
+		var id = node[$.expando],
+				store = id && cache[id];
+
+		if (store) {
+			// Cleanup the entire store if no keys are provided.
+			if (!keys) {
+				delete cache[id];
+			} else {
+				$.each(keys, function(_, key) {
+					delete store[key];
+				});
+			}
+		}
+	};
+
+	/* jQuery */
+	$.extend = function() {
+		var src, copyIsArray, copy, name, options, clone,
+				target = arguments[0] || {},
+				i = 1,
+				length = arguments.length,
+				deep = false;
+
+		if (typeof target === "boolean") {
+			deep = target;
+
+			target = arguments[i] || {};
+			i++;
+		}
+
+		if (typeof target !== "object" && $.type(target) !== "function") {
+			target = {};
+		}
+
+		if (i === length) {
+			target = this;
+			i--;
+		}
+
+		for (; i < length; i++) {
+			if ((options = arguments[i])) {
+				for (name in options) {
+					if (!options.hasOwnProperty(name)) {
+						continue;
+					}
+					src = target[name];
+					copy = options[name];
+
+					if (target === copy) {
+						continue;
+					}
+
+					if (deep && copy && ($.isPlainObject(copy) || (copyIsArray = $.isArray(copy)))) {
+						if (copyIsArray) {
+							copyIsArray = false;
+							clone = src && $.isArray(src) ? src : [];
+
+						} else {
+							clone = src && $.isPlainObject(src) ? src : {};
+						}
+
+						target[name] = $.extend(deep, clone, copy);
+
+					} else if (copy !== undefined) {
+						target[name] = copy;
+					}
+				}
+			}
+		}
+
+		return target;
+	};
+
+	/* jQuery 1.4.3 */
+	$.queue = function(elem, type, data) {
+		function $makeArray(arr, results) {
+			var ret = results || [];
+
+			if (arr) {
+				if (isArraylike(Object(arr))) {
+					/* $.merge */
+					(function(first, second) {
+						var len = +second.length,
+								j = 0,
+								i = first.length;
+
+						while (j < len) {
+							first[i++] = second[j++];
+						}
+
+						if (len !== len) {
+							while (second[j] !== undefined) {
+								first[i++] = second[j++];
+							}
+						}
+
+						first.length = i;
+
+						return first;
+					})(ret, typeof arr === "string" ? [arr] : arr);
+				} else {
+					[].push.call(ret, arr);
+				}
+			}
+
+			return ret;
+		}
+
+		if (!elem) {
+			return;
+		}
+
+		type = (type || "fx") + "queue";
+
+		var q = $.data(elem, type);
+
+		if (!data) {
+			return q || [];
+		}
+
+		if (!q || $.isArray(data)) {
+			q = $.data(elem, type, $makeArray(data));
+		} else {
+			q.push(data);
+		}
+
+		return q;
+	};
+
+	/* jQuery 1.4.3 */
+	$.dequeue = function(elems, type) {
+		/* Custom: Embed element iteration. */
+		$.each(elems.nodeType ? [elems] : elems, function(i, elem) {
+			type = type || "fx";
+
+			var queue = $.queue(elem, type),
+					fn = queue.shift();
+
+			if (fn === "inprogress") {
+				fn = queue.shift();
+			}
+
+			if (fn) {
+				if (type === "fx") {
+					queue.unshift("inprogress");
+				}
+
+				fn.call(elem, function() {
+					$.dequeue(elem, type);
+				});
+			}
+		});
+	};
+
+	/******************
+	 $.fn Methods
+	 ******************/
+
+	/* jQuery */
+	$.fn = $.prototype = {
+		init: function(selector) {
+			/* Just return the element wrapped inside an array; don't proceed with the actual jQuery node wrapping process. */
+			if (selector.nodeType) {
+				this[0] = selector;
+
+				return this;
+			} else {
+				throw new Error("Not a DOM node.");
+			}
+		},
+		offset: function() {
+			/* jQuery altered code: Dropped disconnected DOM node checking. */
+			var box = this[0].getBoundingClientRect ? this[0].getBoundingClientRect() : {top: 0, left: 0};
+
+			return {
+				top: box.top + (window.pageYOffset || document.scrollTop || 0) - (document.clientTop || 0),
+				left: box.left + (window.pageXOffset || document.scrollLeft || 0) - (document.clientLeft || 0)
+			};
+		},
+		position: function() {
+			/* jQuery */
+			function offsetParentFn(elem) {
+				var offsetParent = elem.offsetParent;
+
+				while (offsetParent && offsetParent.nodeName.toLowerCase() !== "html" && offsetParent.style && offsetParent.style.position === "static") {
+					offsetParent = offsetParent.offsetParent;
+				}
+
+				return offsetParent || document;
+			}
+
+			/* Zepto */
+			var elem = this[0],
+					offsetParent = offsetParentFn(elem),
+					offset = this.offset(),
+					parentOffset = /^(?:body|html)$/i.test(offsetParent.nodeName) ? {top: 0, left: 0} : $(offsetParent).offset();
+
+			offset.top -= parseFloat(elem.style.marginTop) || 0;
+			offset.left -= parseFloat(elem.style.marginLeft) || 0;
+
+			if (offsetParent.style) {
+				parentOffset.top += parseFloat(offsetParent.style.borderTopWidth) || 0;
+				parentOffset.left += parseFloat(offsetParent.style.borderLeftWidth) || 0;
+			}
+
+			return {
+				top: offset.top - parentOffset.top,
+				left: offset.left - parentOffset.left
+			};
+		}
+	};
+
+	/**********************
+	 Private Variables
+	 **********************/
+
+	/* For $.data() */
+	var cache = {};
+	$.expando = "velocity" + (new Date().getTime());
+	$.uuid = 0;
+
+	/* For $.queue() */
+	var class2type = {},
+			hasOwn = class2type.hasOwnProperty,
+			toString = class2type.toString;
+
+	var types = "Boolean Number String Function Array Date RegExp Object Error".split(" ");
+	for (var i = 0; i < types.length; i++) {
+		class2type["[object " + types[i] + "]"] = types[i].toLowerCase();
+	}
+
+	/* Makes $(node) possible, without having to call init. */
+	$.fn.init.prototype = $.fn;
+
+	/* Globalize Velocity onto the window, and assign its Utilities property. */
+	window.Velocity = {Utilities: $};
+})(window);
+
+/******************
+ Velocity.js
+ ******************/
+
+(function(factory) {
+	"use strict";
+	/* CommonJS module. */
+	if (typeof module === "object" && typeof module.exports === "object") {
+		module.exports = factory();
+		/* AMD module. */
+	} else if (typeof define === "function" && define.amd) {
+		define('velocity-animate/velocity',factory);
+		/* Browser globals. */
+	} else {
+		factory();
+	}
+}(function() {
+	"use strict";
+	return function(global, window, document, undefined) {
+
+		/***************
+		 Summary
+		 ***************/
+
+		/*
+		 - CSS: CSS stack that works independently from the rest of Velocity.
+		 - animate(): Core animation method that iterates over the targeted elements and queues the incoming call onto each element individually.
+		 - Pre-Queueing: Prepare the element for animation by instantiating its data cache and processing the call's options.
+		 - Queueing: The logic that runs once the call has reached its point of execution in the element's $.queue() stack.
+		 Most logic is placed here to avoid risking it becoming stale (if the element's properties have changed).
+		 - Pushing: Consolidation of the tween data followed by its push onto the global in-progress calls container.
+		 - tick(): The single requestAnimationFrame loop responsible for tweening all in-progress calls.
+		 - completeCall(): Handles the cleanup process for each Velocity call.
+		 */
+
+		/*********************
+		 Helper Functions
+		 *********************/
+
+		/* IE detection. Gist: https://gist.github.com/julianshapiro/9098609 */
+		var IE = (function() {
+			if (document.documentMode) {
+				return document.documentMode;
+			} else {
+				for (var i = 7; i > 4; i--) {
+					var div = document.createElement("div");
+
+					div.innerHTML = "<!--[if IE " + i + "]><span></span><![endif]-->";
+
+					if (div.getElementsByTagName("span").length) {
+						div = null;
+
+						return i;
+					}
+				}
+			}
+
+			return undefined;
+		})();
+
+		/* rAF shim. Gist: https://gist.github.com/julianshapiro/9497513 */
+		var rAFShim = (function() {
+			var timeLast = 0;
+
+			return window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || function(callback) {
+				var timeCurrent = (new Date()).getTime(),
+						timeDelta;
+
+				/* Dynamically set delay on a per-tick basis to match 60fps. */
+				/* Technique by Erik Moller. MIT license: https://gist.github.com/paulirish/1579671 */
+				timeDelta = Math.max(0, 16 - (timeCurrent - timeLast));
+				timeLast = timeCurrent + timeDelta;
+
+				return setTimeout(function() {
+					callback(timeCurrent + timeDelta);
+				}, timeDelta);
+			};
+		})();
+
+		var performance = (function() {
+			var perf = window.performance || {};
+
+			if (!perf.hasOwnProperty("now")) {
+				var nowOffset = perf.timing && perf.timing.domComplete ? perf.timing.domComplete : (new Date()).getTime();
+
+				perf.now = function() {
+					return (new Date()).getTime() - nowOffset;
+				};
+			}
+			return perf;
+		})();
+
+		/* Array compacting. Copyright Lo-Dash. MIT License: https://github.com/lodash/lodash/blob/master/LICENSE.txt */
+		function compactSparseArray(array) {
+			var index = -1,
+					length = array ? array.length : 0,
+					result = [];
+
+			while (++index < length) {
+				var value = array[index];
+
+				if (value) {
+					result.push(value);
+				}
+			}
+
+			return result;
+		}
+
+		function sanitizeElements(elements) {
+			/* Unwrap jQuery/Zepto objects. */
+			if (Type.isWrapped(elements)) {
+				elements = [].slice.call(elements);
+				/* Wrap a single element in an array so that $.each() can iterate with the element instead of its node's children. */
+			} else if (Type.isNode(elements)) {
+				elements = [elements];
+			}
+
+			return elements;
+		}
+
+		var Type = {
+			isNumber: function(variable) {
+				return (typeof variable === "number");
+			},
+			isString: function(variable) {
+				return (typeof variable === "string");
+			},
+			isArray: Array.isArray || function(variable) {
+				return Object.prototype.toString.call(variable) === "[object Array]";
+			},
+			isFunction: function(variable) {
+				return Object.prototype.toString.call(variable) === "[object Function]";
+			},
+			isNode: function(variable) {
+				return variable && variable.nodeType;
+			},
+			/* Copyright Martin Bohm. MIT License: https://gist.github.com/Tomalak/818a78a226a0738eaade */
+			isNodeList: function(variable) {
+				return typeof variable === "object" &&
+						/^\[object (HTMLCollection|NodeList|Object)\]$/.test(Object.prototype.toString.call(variable)) &&
+						variable.length !== undefined &&
+						(variable.length === 0 || (typeof variable[0] === "object" && variable[0].nodeType > 0));
+			},
+			/* Determine if variable is an array-like wrapped jQuery, Zepto or similar element. */
+			isWrapped: function(variable) {
+				return variable && (Type.isArray(variable) || (Type.isNumber(variable.length) && !Type.isString(variable) && !Type.isFunction(variable)));
+			},
+			isSVG: function(variable) {
+				return window.SVGElement && (variable instanceof window.SVGElement);
+			},
+			isEmptyObject: function(variable) {
+				for (var name in variable) {
+					if (variable.hasOwnProperty(name)) {
+						return false;
+					}
+				}
+
+				return true;
+			}
+		};
+
+		/*****************
+		 Dependencies
+		 *****************/
+
+		var $,
+				isJQuery = false;
+
+		if (global.fn && global.fn.jquery) {
+			$ = global;
+			isJQuery = true;
+		} else {
+			$ = window.Velocity.Utilities;
+		}
+
+		if (IE <= 8 && !isJQuery) {
+			throw new Error("Velocity: IE8 and below require jQuery to be loaded before Velocity.");
+		} else if (IE <= 7) {
+			/* Revert to jQuery's $.animate(), and lose Velocity's extra features. */
+			jQuery.fn.velocity = jQuery.fn.animate;
+
+			/* Now that $.fn.velocity is aliased, abort this Velocity declaration. */
+			return;
+		}
+
+		/*****************
+		 Constants
+		 *****************/
+
+		var DURATION_DEFAULT = 400,
+				EASING_DEFAULT = "swing";
+
+		/*************
+		 State
+		 *************/
+
+		var Velocity = {
+			/* Container for page-wide Velocity state data. */
+			State: {
+				/* Detect mobile devices to determine if mobileHA should be turned on. */
+				isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+				/* The mobileHA option's behavior changes on older Android devices (Gingerbread, versions 2.3.3-2.3.7). */
+				isAndroid: /Android/i.test(navigator.userAgent),
+				isGingerbread: /Android 2\.3\.[3-7]/i.test(navigator.userAgent),
+				isChrome: window.chrome,
+				isFirefox: /Firefox/i.test(navigator.userAgent),
+				/* Create a cached element for re-use when checking for CSS property prefixes. */
+				prefixElement: document.createElement("div"),
+				/* Cache every prefix match to avoid repeating lookups. */
+				prefixMatches: {},
+				/* Cache the anchor used for animating window scrolling. */
+				scrollAnchor: null,
+				/* Cache the browser-specific property names associated with the scroll anchor. */
+				scrollPropertyLeft: null,
+				scrollPropertyTop: null,
+				/* Keep track of whether our RAF tick is running. */
+				isTicking: false,
+				/* Container for every in-progress call to Velocity. */
+				calls: [],
+				delayedElements: {
+					count: 0
+				}
+			},
+			/* Velocity's custom CSS stack. Made global for unit testing. */
+			CSS: {/* Defined below. */},
+			/* A shim of the jQuery utility functions used by Velocity -- provided by Velocity's optional jQuery shim. */
+			Utilities: $,
+			/* Container for the user's custom animation redirects that are referenced by name in place of the properties map argument. */
+			Redirects: {/* Manually registered by the user. */},
+			Easings: {/* Defined below. */},
+			/* Attempt to use ES6 Promises by default. Users can override this with a third-party promises library. */
+			Promise: window.Promise,
+			/* Velocity option defaults, which can be overriden by the user. */
+			defaults: {
+				queue: "",
+				duration: DURATION_DEFAULT,
+				easing: EASING_DEFAULT,
+				begin: undefined,
+				complete: undefined,
+				progress: undefined,
+				display: undefined,
+				visibility: undefined,
+				loop: false,
+				delay: false,
+				mobileHA: true,
+				/* Advanced: Set to false to prevent property values from being cached between consecutive Velocity-initiated chain calls. */
+				_cacheValues: true,
+				/* Advanced: Set to false if the promise should always resolve on empty element lists. */
+				promiseRejectEmpty: true
+			},
+			/* A design goal of Velocity is to cache data wherever possible in order to avoid DOM requerying. Accordingly, each element has a data cache. */
+			init: function(element) {
+				$.data(element, "velocity", {
+					/* Store whether this is an SVG element, since its properties are retrieved and updated differently than standard HTML elements. */
+					isSVG: Type.isSVG(element),
+					/* Keep track of whether the element is currently being animated by Velocity.
+					 This is used to ensure that property values are not transferred between non-consecutive (stale) calls. */
+					isAnimating: false,
+					/* A reference to the element's live computedStyle object. Learn more here: https://developer.mozilla.org/en/docs/Web/API/window.getComputedStyle */
+					computedStyle: null,
+					/* Tween data is cached for each animation on the element so that data can be passed across calls --
+					 in particular, end values are used as subsequent start values in consecutive Velocity calls. */
+					tweensContainer: null,
+					/* The full root property values of each CSS hook being animated on this element are cached so that:
+					 1) Concurrently-animating hooks sharing the same root can have their root values' merged into one while tweening.
+					 2) Post-hook-injection root values can be transferred over to consecutively chained Velocity calls as starting root values. */
+					rootPropertyValueCache: {},
+					/* A cache for transform updates, which must be manually flushed via CSS.flushTransformCache(). */
+					transformCache: {}
+				});
+			},
+			/* A parallel to jQuery's $.css(), used for getting/setting Velocity's hooked CSS properties. */
+			hook: null, /* Defined below. */
+			/* Velocity-wide animation time remapping for testing purposes. */
+			mock: false,
+			version: {major: 1, minor: 4, patch: 0},
+			/* Set to 1 or 2 (most verbose) to output debug info to console. */
+			debug: false,
+			/* Use rAF high resolution timestamp when available */
+			timestamp: true,
+			/* Pause all animations */
+			pauseAll: function(queueName) {
+				var currentTime = (new Date()).getTime();
+
+				$.each(Velocity.State.calls, function(i, activeCall) {
+
+					if (activeCall) {
+
+						/* If we have a queueName and this call is not on that queue, skip */
+						if (queueName !== undefined && ((activeCall[2].queue !== queueName) || (activeCall[2].queue === false))) {
+							return true;
+						}
+
+						/* Set call to paused */
+						activeCall[5] = {
+							resume: false
+						};
+					}
+				});
+
+				/* Pause timers on any currently delayed calls */
+				$.each(Velocity.State.delayedElements, function(k, element) {
+					if (!element) {
+						return;
+					}
+					pauseDelayOnElement(element, currentTime);
+				});
+			},
+			/* Resume all animations */
+			resumeAll: function(queueName) {
+				var currentTime = (new Date()).getTime();
+
+				$.each(Velocity.State.calls, function(i, activeCall) {
+
+					if (activeCall) {
+
+						/* If we have a queueName and this call is not on that queue, skip */
+						if (queueName !== undefined && ((activeCall[2].queue !== queueName) || (activeCall[2].queue === false))) {
+							return true;
+						}
+
+						/* Set call to resumed if it was paused */
+						if (activeCall[5]) {
+							activeCall[5].resume = true;
+						}
+					}
+				});
+				/* Resume timers on any currently delayed calls */
+				$.each(Velocity.State.delayedElements, function(k, element) {
+					if (!element) {
+						return;
+					}
+					resumeDelayOnElement(element, currentTime);
+				});
+			}
+		};
+
+		/* Retrieve the appropriate scroll anchor and property name for the browser: https://developer.mozilla.org/en-US/docs/Web/API/Window.scrollY */
+		if (window.pageYOffset !== undefined) {
+			Velocity.State.scrollAnchor = window;
+			Velocity.State.scrollPropertyLeft = "pageXOffset";
+			Velocity.State.scrollPropertyTop = "pageYOffset";
+		} else {
+			Velocity.State.scrollAnchor = document.documentElement || document.body.parentNode || document.body;
+			Velocity.State.scrollPropertyLeft = "scrollLeft";
+			Velocity.State.scrollPropertyTop = "scrollTop";
+		}
+
+		/* Shorthand alias for jQuery's $.data() utility. */
+		function Data(element) {
+			/* Hardcode a reference to the plugin name. */
+			var response = $.data(element, "velocity");
+
+			/* jQuery <=1.4.2 returns null instead of undefined when no match is found. We normalize this behavior. */
+			return response === null ? undefined : response;
+		}
+
+		/**************
+		 Delay Timer
+		 **************/
+
+		function pauseDelayOnElement(element, currentTime) {
+			/* Check for any delay timers, and pause the set timeouts (while preserving time data)
+			 to be resumed when the "resume" command is issued */
+			var data = Data(element);
+			if (data && data.delayTimer && !data.delayPaused) {
+				data.delayRemaining = data.delay - currentTime + data.delayBegin;
+				data.delayPaused = true;
+				clearTimeout(data.delayTimer.setTimeout);
+			}
+		}
+
+		function resumeDelayOnElement(element, currentTime) {
+			/* Check for any paused timers and resume */
+			var data = Data(element);
+			if (data && data.delayTimer && data.delayPaused) {
+				/* If the element was mid-delay, re initiate the timeout with the remaining delay */
+				data.delayPaused = false;
+				data.delayTimer.setTimeout = setTimeout(data.delayTimer.next, data.delayRemaining);
+			}
+		}
+
+
+
+		/**************
+		 Easing
+		 **************/
+
+		/* Step easing generator. */
+		function generateStep(steps) {
+			return function(p) {
+				return Math.round(p * steps) * (1 / steps);
+			};
+		}
+
+		/* Bezier curve function generator. Copyright Gaetan Renaudeau. MIT License: http://en.wikipedia.org/wiki/MIT_License */
+		function generateBezier(mX1, mY1, mX2, mY2) {
+			var NEWTON_ITERATIONS = 4,
+					NEWTON_MIN_SLOPE = 0.001,
+					SUBDIVISION_PRECISION = 0.0000001,
+					SUBDIVISION_MAX_ITERATIONS = 10,
+					kSplineTableSize = 11,
+					kSampleStepSize = 1.0 / (kSplineTableSize - 1.0),
+					float32ArraySupported = "Float32Array" in window;
+
+			/* Must contain four arguments. */
+			if (arguments.length !== 4) {
+				return false;
+			}
+
+			/* Arguments must be numbers. */
+			for (var i = 0; i < 4; ++i) {
+				if (typeof arguments[i] !== "number" || isNaN(arguments[i]) || !isFinite(arguments[i])) {
+					return false;
+				}
+			}
+
+			/* X values must be in the [0, 1] range. */
+			mX1 = Math.min(mX1, 1);
+			mX2 = Math.min(mX2, 1);
+			mX1 = Math.max(mX1, 0);
+			mX2 = Math.max(mX2, 0);
+
+			var mSampleValues = float32ArraySupported ? new Float32Array(kSplineTableSize) : new Array(kSplineTableSize);
+
+			function A(aA1, aA2) {
+				return 1.0 - 3.0 * aA2 + 3.0 * aA1;
+			}
+			function B(aA1, aA2) {
+				return 3.0 * aA2 - 6.0 * aA1;
+			}
+			function C(aA1) {
+				return 3.0 * aA1;
+			}
+
+			function calcBezier(aT, aA1, aA2) {
+				return ((A(aA1, aA2) * aT + B(aA1, aA2)) * aT + C(aA1)) * aT;
+			}
+
+			function getSlope(aT, aA1, aA2) {
+				return 3.0 * A(aA1, aA2) * aT * aT + 2.0 * B(aA1, aA2) * aT + C(aA1);
+			}
+
+			function newtonRaphsonIterate(aX, aGuessT) {
+				for (var i = 0; i < NEWTON_ITERATIONS; ++i) {
+					var currentSlope = getSlope(aGuessT, mX1, mX2);
+
+					if (currentSlope === 0.0) {
+						return aGuessT;
+					}
+
+					var currentX = calcBezier(aGuessT, mX1, mX2) - aX;
+					aGuessT -= currentX / currentSlope;
+				}
+
+				return aGuessT;
+			}
+
+			function calcSampleValues() {
+				for (var i = 0; i < kSplineTableSize; ++i) {
+					mSampleValues[i] = calcBezier(i * kSampleStepSize, mX1, mX2);
+				}
+			}
+
+			function binarySubdivide(aX, aA, aB) {
+				var currentX, currentT, i = 0;
+
+				do {
+					currentT = aA + (aB - aA) / 2.0;
+					currentX = calcBezier(currentT, mX1, mX2) - aX;
+					if (currentX > 0.0) {
+						aB = currentT;
+					} else {
+						aA = currentT;
+					}
+				} while (Math.abs(currentX) > SUBDIVISION_PRECISION && ++i < SUBDIVISION_MAX_ITERATIONS);
+
+				return currentT;
+			}
+
+			function getTForX(aX) {
+				var intervalStart = 0.0,
+						currentSample = 1,
+						lastSample = kSplineTableSize - 1;
+
+				for (; currentSample !== lastSample && mSampleValues[currentSample] <= aX; ++currentSample) {
+					intervalStart += kSampleStepSize;
+				}
+
+				--currentSample;
+
+				var dist = (aX - mSampleValues[currentSample]) / (mSampleValues[currentSample + 1] - mSampleValues[currentSample]),
+						guessForT = intervalStart + dist * kSampleStepSize,
+						initialSlope = getSlope(guessForT, mX1, mX2);
+
+				if (initialSlope >= NEWTON_MIN_SLOPE) {
+					return newtonRaphsonIterate(aX, guessForT);
+				} else if (initialSlope === 0.0) {
+					return guessForT;
+				} else {
+					return binarySubdivide(aX, intervalStart, intervalStart + kSampleStepSize);
+				}
+			}
+
+			var _precomputed = false;
+
+			function precompute() {
+				_precomputed = true;
+				if (mX1 !== mY1 || mX2 !== mY2) {
+					calcSampleValues();
+				}
+			}
+
+			var f = function(aX) {
+				if (!_precomputed) {
+					precompute();
+				}
+				if (mX1 === mY1 && mX2 === mY2) {
+					return aX;
+				}
+				if (aX === 0) {
+					return 0;
+				}
+				if (aX === 1) {
+					return 1;
+				}
+
+				return calcBezier(getTForX(aX), mY1, mY2);
+			};
+
+			f.getControlPoints = function() {
+				return [{x: mX1, y: mY1}, {x: mX2, y: mY2}];
+			};
+
+			var str = "generateBezier(" + [mX1, mY1, mX2, mY2] + ")";
+			f.toString = function() {
+				return str;
+			};
+
+			return f;
+		}
+
+		/* Runge-Kutta spring physics function generator. Adapted from Framer.js, copyright Koen Bok. MIT License: http://en.wikipedia.org/wiki/MIT_License */
+		/* Given a tension, friction, and duration, a simulation at 60FPS will first run without a defined duration in order to calculate the full path. A second pass
+		 then adjusts the time delta -- using the relation between actual time and duration -- to calculate the path for the duration-constrained animation. */
+		var generateSpringRK4 = (function() {
+			function springAccelerationForState(state) {
+				return (-state.tension * state.x) - (state.friction * state.v);
+			}
+
+			function springEvaluateStateWithDerivative(initialState, dt, derivative) {
+				var state = {
+					x: initialState.x + derivative.dx * dt,
+					v: initialState.v + derivative.dv * dt,
+					tension: initialState.tension,
+					friction: initialState.friction
+				};
+
+				return {dx: state.v, dv: springAccelerationForState(state)};
+			}
+
+			function springIntegrateState(state, dt) {
+				var a = {
+					dx: state.v,
+					dv: springAccelerationForState(state)
+				},
+						b = springEvaluateStateWithDerivative(state, dt * 0.5, a),
+						c = springEvaluateStateWithDerivative(state, dt * 0.5, b),
+						d = springEvaluateStateWithDerivative(state, dt, c),
+						dxdt = 1.0 / 6.0 * (a.dx + 2.0 * (b.dx + c.dx) + d.dx),
+						dvdt = 1.0 / 6.0 * (a.dv + 2.0 * (b.dv + c.dv) + d.dv);
+
+				state.x = state.x + dxdt * dt;
+				state.v = state.v + dvdt * dt;
+
+				return state;
+			}
+
+			return function springRK4Factory(tension, friction, duration) {
+
+				var initState = {
+					x: -1,
+					v: 0,
+					tension: null,
+					friction: null
+				},
+						path = [0],
+						time_lapsed = 0,
+						tolerance = 1 / 10000,
+						DT = 16 / 1000,
+						have_duration, dt, last_state;
+
+				tension = parseFloat(tension) || 500;
+				friction = parseFloat(friction) || 20;
+				duration = duration || null;
+
+				initState.tension = tension;
+				initState.friction = friction;
+
+				have_duration = duration !== null;
+
+				/* Calculate the actual time it takes for this animation to complete with the provided conditions. */
+				if (have_duration) {
+					/* Run the simulation without a duration. */
+					time_lapsed = springRK4Factory(tension, friction);
+					/* Compute the adjusted time delta. */
+					dt = time_lapsed / duration * DT;
+				} else {
+					dt = DT;
+				}
+
+				while (true) {
+					/* Next/step function .*/
+					last_state = springIntegrateState(last_state || initState, dt);
+					/* Store the position. */
+					path.push(1 + last_state.x);
+					time_lapsed += 16;
+					/* If the change threshold is reached, break. */
+					if (!(Math.abs(last_state.x) > tolerance && Math.abs(last_state.v) > tolerance)) {
+						break;
+					}
+				}
+
+				/* If duration is not defined, return the actual time required for completing this animation. Otherwise, return a closure that holds the
+				 computed path and returns a snapshot of the position according to a given percentComplete. */
+				return !have_duration ? time_lapsed : function(percentComplete) {
+					return path[ (percentComplete * (path.length - 1)) | 0 ];
+				};
+			};
+		}());
+
+		/* jQuery easings. */
+		Velocity.Easings = {
+			linear: function(p) {
+				return p;
+			},
+			swing: function(p) {
+				return 0.5 - Math.cos(p * Math.PI) / 2;
+			},
+			/* Bonus "spring" easing, which is a less exaggerated version of easeInOutElastic. */
+			spring: function(p) {
+				return 1 - (Math.cos(p * 4.5 * Math.PI) * Math.exp(-p * 6));
+			}
+		};
+
+		/* CSS3 and Robert Penner easings. */
+		$.each(
+				[
+					["ease", [0.25, 0.1, 0.25, 1.0]],
+					["ease-in", [0.42, 0.0, 1.00, 1.0]],
+					["ease-out", [0.00, 0.0, 0.58, 1.0]],
+					["ease-in-out", [0.42, 0.0, 0.58, 1.0]],
+					["easeInSine", [0.47, 0, 0.745, 0.715]],
+					["easeOutSine", [0.39, 0.575, 0.565, 1]],
+					["easeInOutSine", [0.445, 0.05, 0.55, 0.95]],
+					["easeInQuad", [0.55, 0.085, 0.68, 0.53]],
+					["easeOutQuad", [0.25, 0.46, 0.45, 0.94]],
+					["easeInOutQuad", [0.455, 0.03, 0.515, 0.955]],
+					["easeInCubic", [0.55, 0.055, 0.675, 0.19]],
+					["easeOutCubic", [0.215, 0.61, 0.355, 1]],
+					["easeInOutCubic", [0.645, 0.045, 0.355, 1]],
+					["easeInQuart", [0.895, 0.03, 0.685, 0.22]],
+					["easeOutQuart", [0.165, 0.84, 0.44, 1]],
+					["easeInOutQuart", [0.77, 0, 0.175, 1]],
+					["easeInQuint", [0.755, 0.05, 0.855, 0.06]],
+					["easeOutQuint", [0.23, 1, 0.32, 1]],
+					["easeInOutQuint", [0.86, 0, 0.07, 1]],
+					["easeInExpo", [0.95, 0.05, 0.795, 0.035]],
+					["easeOutExpo", [0.19, 1, 0.22, 1]],
+					["easeInOutExpo", [1, 0, 0, 1]],
+					["easeInCirc", [0.6, 0.04, 0.98, 0.335]],
+					["easeOutCirc", [0.075, 0.82, 0.165, 1]],
+					["easeInOutCirc", [0.785, 0.135, 0.15, 0.86]]
+				], function(i, easingArray) {
+			Velocity.Easings[easingArray[0]] = generateBezier.apply(null, easingArray[1]);
+		});
+
+		/* Determine the appropriate easing type given an easing input. */
+		function getEasing(value, duration) {
+			var easing = value;
+
+			/* The easing option can either be a string that references a pre-registered easing,
+			 or it can be a two-/four-item array of integers to be converted into a bezier/spring function. */
+			if (Type.isString(value)) {
+				/* Ensure that the easing has been assigned to jQuery's Velocity.Easings object. */
+				if (!Velocity.Easings[value]) {
+					easing = false;
+				}
+			} else if (Type.isArray(value) && value.length === 1) {
+				easing = generateStep.apply(null, value);
+			} else if (Type.isArray(value) && value.length === 2) {
+				/* springRK4 must be passed the animation's duration. */
+				/* Note: If the springRK4 array contains non-numbers, generateSpringRK4() returns an easing
+				 function generated with default tension and friction values. */
+				easing = generateSpringRK4.apply(null, value.concat([duration]));
+			} else if (Type.isArray(value) && value.length === 4) {
+				/* Note: If the bezier array contains non-numbers, generateBezier() returns false. */
+				easing = generateBezier.apply(null, value);
+			} else {
+				easing = false;
+			}
+
+			/* Revert to the Velocity-wide default easing type, or fall back to "swing" (which is also jQuery's default)
+			 if the Velocity-wide default has been incorrectly modified. */
+			if (easing === false) {
+				if (Velocity.Easings[Velocity.defaults.easing]) {
+					easing = Velocity.defaults.easing;
+				} else {
+					easing = EASING_DEFAULT;
+				}
+			}
+
+			return easing;
+		}
+
+		/*****************
+		 CSS Stack
+		 *****************/
+
+		/* The CSS object is a highly condensed and performant CSS stack that fully replaces jQuery's.
+		 It handles the validation, getting, and setting of both standard CSS properties and CSS property hooks. */
+		/* Note: A "CSS" shorthand is aliased so that our code is easier to read. */
+		var CSS = Velocity.CSS = {
+			/*************
+			 RegEx
+			 *************/
+
+			RegEx: {
+				isHex: /^#([A-f\d]{3}){1,2}$/i,
+				/* Unwrap a property value's surrounding text, e.g. "rgba(4, 3, 2, 1)" ==> "4, 3, 2, 1" and "rect(4px 3px 2px 1px)" ==> "4px 3px 2px 1px". */
+				valueUnwrap: /^[A-z]+\((.*)\)$/i,
+				wrappedValueAlreadyExtracted: /[0-9.]+ [0-9.]+ [0-9.]+( [0-9.]+)?/,
+				/* Split a multi-value property into an array of subvalues, e.g. "rgba(4, 3, 2, 1) 4px 3px 2px 1px" ==> [ "rgba(4, 3, 2, 1)", "4px", "3px", "2px", "1px" ]. */
+				valueSplit: /([A-z]+\(.+\))|(([A-z0-9#-.]+?)(?=\s|$))/ig
+			},
+			/************
+			 Lists
+			 ************/
+
+			Lists: {
+				colors: ["fill", "stroke", "stopColor", "color", "backgroundColor", "borderColor", "borderTopColor", "borderRightColor", "borderBottomColor", "borderLeftColor", "outlineColor"],
+				transformsBase: ["translateX", "translateY", "scale", "scaleX", "scaleY", "skewX", "skewY", "rotateZ"],
+				transforms3D: ["transformPerspective", "translateZ", "scaleZ", "rotateX", "rotateY"],
+				units: [
+					"%", // relative
+					"em", "ex", "ch", "rem", // font relative
+					"vw", "vh", "vmin", "vmax", // viewport relative
+					"cm", "mm", "Q", "in", "pc", "pt", "px", // absolute lengths
+					"deg", "grad", "rad", "turn", // angles
+					"s", "ms" // time
+				],
+				colorNames: {
+					"aliceblue": "240,248,255",
+					"antiquewhite": "250,235,215",
+					"aquamarine": "127,255,212",
+					"aqua": "0,255,255",
+					"azure": "240,255,255",
+					"beige": "245,245,220",
+					"bisque": "255,228,196",
+					"black": "0,0,0",
+					"blanchedalmond": "255,235,205",
+					"blueviolet": "138,43,226",
+					"blue": "0,0,255",
+					"brown": "165,42,42",
+					"burlywood": "222,184,135",
+					"cadetblue": "95,158,160",
+					"chartreuse": "127,255,0",
+					"chocolate": "210,105,30",
+					"coral": "255,127,80",
+					"cornflowerblue": "100,149,237",
+					"cornsilk": "255,248,220",
+					"crimson": "220,20,60",
+					"cyan": "0,255,255",
+					"darkblue": "0,0,139",
+					"darkcyan": "0,139,139",
+					"darkgoldenrod": "184,134,11",
+					"darkgray": "169,169,169",
+					"darkgrey": "169,169,169",
+					"darkgreen": "0,100,0",
+					"darkkhaki": "189,183,107",
+					"darkmagenta": "139,0,139",
+					"darkolivegreen": "85,107,47",
+					"darkorange": "255,140,0",
+					"darkorchid": "153,50,204",
+					"darkred": "139,0,0",
+					"darksalmon": "233,150,122",
+					"darkseagreen": "143,188,143",
+					"darkslateblue": "72,61,139",
+					"darkslategray": "47,79,79",
+					"darkturquoise": "0,206,209",
+					"darkviolet": "148,0,211",
+					"deeppink": "255,20,147",
+					"deepskyblue": "0,191,255",
+					"dimgray": "105,105,105",
+					"dimgrey": "105,105,105",
+					"dodgerblue": "30,144,255",
+					"firebrick": "178,34,34",
+					"floralwhite": "255,250,240",
+					"forestgreen": "34,139,34",
+					"fuchsia": "255,0,255",
+					"gainsboro": "220,220,220",
+					"ghostwhite": "248,248,255",
+					"gold": "255,215,0",
+					"goldenrod": "218,165,32",
+					"gray": "128,128,128",
+					"grey": "128,128,128",
+					"greenyellow": "173,255,47",
+					"green": "0,128,0",
+					"honeydew": "240,255,240",
+					"hotpink": "255,105,180",
+					"indianred": "205,92,92",
+					"indigo": "75,0,130",
+					"ivory": "255,255,240",
+					"khaki": "240,230,140",
+					"lavenderblush": "255,240,245",
+					"lavender": "230,230,250",
+					"lawngreen": "124,252,0",
+					"lemonchiffon": "255,250,205",
+					"lightblue": "173,216,230",
+					"lightcoral": "240,128,128",
+					"lightcyan": "224,255,255",
+					"lightgoldenrodyellow": "250,250,210",
+					"lightgray": "211,211,211",
+					"lightgrey": "211,211,211",
+					"lightgreen": "144,238,144",
+					"lightpink": "255,182,193",
+					"lightsalmon": "255,160,122",
+					"lightseagreen": "32,178,170",
+					"lightskyblue": "135,206,250",
+					"lightslategray": "119,136,153",
+					"lightsteelblue": "176,196,222",
+					"lightyellow": "255,255,224",
+					"limegreen": "50,205,50",
+					"lime": "0,255,0",
+					"linen": "250,240,230",
+					"magenta": "255,0,255",
+					"maroon": "128,0,0",
+					"mediumaquamarine": "102,205,170",
+					"mediumblue": "0,0,205",
+					"mediumorchid": "186,85,211",
+					"mediumpurple": "147,112,219",
+					"mediumseagreen": "60,179,113",
+					"mediumslateblue": "123,104,238",
+					"mediumspringgreen": "0,250,154",
+					"mediumturquoise": "72,209,204",
+					"mediumvioletred": "199,21,133",
+					"midnightblue": "25,25,112",
+					"mintcream": "245,255,250",
+					"mistyrose": "255,228,225",
+					"moccasin": "255,228,181",
+					"navajowhite": "255,222,173",
+					"navy": "0,0,128",
+					"oldlace": "253,245,230",
+					"olivedrab": "107,142,35",
+					"olive": "128,128,0",
+					"orangered": "255,69,0",
+					"orange": "255,165,0",
+					"orchid": "218,112,214",
+					"palegoldenrod": "238,232,170",
+					"palegreen": "152,251,152",
+					"paleturquoise": "175,238,238",
+					"palevioletred": "219,112,147",
+					"papayawhip": "255,239,213",
+					"peachpuff": "255,218,185",
+					"peru": "205,133,63",
+					"pink": "255,192,203",
+					"plum": "221,160,221",
+					"powderblue": "176,224,230",
+					"purple": "128,0,128",
+					"red": "255,0,0",
+					"rosybrown": "188,143,143",
+					"royalblue": "65,105,225",
+					"saddlebrown": "139,69,19",
+					"salmon": "250,128,114",
+					"sandybrown": "244,164,96",
+					"seagreen": "46,139,87",
+					"seashell": "255,245,238",
+					"sienna": "160,82,45",
+					"silver": "192,192,192",
+					"skyblue": "135,206,235",
+					"slateblue": "106,90,205",
+					"slategray": "112,128,144",
+					"snow": "255,250,250",
+					"springgreen": "0,255,127",
+					"steelblue": "70,130,180",
+					"tan": "210,180,140",
+					"teal": "0,128,128",
+					"thistle": "216,191,216",
+					"tomato": "255,99,71",
+					"turquoise": "64,224,208",
+					"violet": "238,130,238",
+					"wheat": "245,222,179",
+					"whitesmoke": "245,245,245",
+					"white": "255,255,255",
+					"yellowgreen": "154,205,50",
+					"yellow": "255,255,0"
+				}
+			},
+			/************
+			 Hooks
+			 ************/
+
+			/* Hooks allow a subproperty (e.g. "boxShadowBlur") of a compound-value CSS property
+			 (e.g. "boxShadow: X Y Blur Spread Color") to be animated as if it were a discrete property. */
+			/* Note: Beyond enabling fine-grained property animation, hooking is necessary since Velocity only
+			 tweens properties with single numeric values; unlike CSS transitions, Velocity does not interpolate compound-values. */
+			Hooks: {
+				/********************
+				 Registration
+				 ********************/
+
+				/* Templates are a concise way of indicating which subproperties must be individually registered for each compound-value CSS property. */
+				/* Each template consists of the compound-value's base name, its constituent subproperty names, and those subproperties' default values. */
+				templates: {
+					"textShadow": ["Color X Y Blur", "black 0px 0px 0px"],
+					"boxShadow": ["Color X Y Blur Spread", "black 0px 0px 0px 0px"],
+					"clip": ["Top Right Bottom Left", "0px 0px 0px 0px"],
+					"backgroundPosition": ["X Y", "0% 0%"],
+					"transformOrigin": ["X Y Z", "50% 50% 0px"],
+					"perspectiveOrigin": ["X Y", "50% 50%"]
+				},
+				/* A "registered" hook is one that has been converted from its template form into a live,
+				 tweenable property. It contains data to associate it with its root property. */
+				registered: {
+					/* Note: A registered hook looks like this ==> textShadowBlur: [ "textShadow", 3 ],
+					 which consists of the subproperty's name, the associated root property's name,
+					 and the subproperty's position in the root's value. */
+				},
+				/* Convert the templates into individual hooks then append them to the registered object above. */
+				register: function() {
+					/* Color hooks registration: Colors are defaulted to white -- as opposed to black -- since colors that are
+					 currently set to "transparent" default to their respective template below when color-animated,
+					 and white is typically a closer match to transparent than black is. An exception is made for text ("color"),
+					 which is almost always set closer to black than white. */
+					for (var i = 0; i < CSS.Lists.colors.length; i++) {
+						var rgbComponents = (CSS.Lists.colors[i] === "color") ? "0 0 0 1" : "255 255 255 1";
+						CSS.Hooks.templates[CSS.Lists.colors[i]] = ["Red Green Blue Alpha", rgbComponents];
+					}
+
+					var rootProperty,
+							hookTemplate,
+							hookNames;
+
+					/* In IE, color values inside compound-value properties are positioned at the end the value instead of at the beginning.
+					 Thus, we re-arrange the templates accordingly. */
+					if (IE) {
+						for (rootProperty in CSS.Hooks.templates) {
+							if (!CSS.Hooks.templates.hasOwnProperty(rootProperty)) {
+								continue;
+							}
+							hookTemplate = CSS.Hooks.templates[rootProperty];
+							hookNames = hookTemplate[0].split(" ");
+
+							var defaultValues = hookTemplate[1].match(CSS.RegEx.valueSplit);
+
+							if (hookNames[0] === "Color") {
+								/* Reposition both the hook's name and its default value to the end of their respective strings. */
+								hookNames.push(hookNames.shift());
+								defaultValues.push(defaultValues.shift());
+
+								/* Replace the existing template for the hook's root property. */
+								CSS.Hooks.templates[rootProperty] = [hookNames.join(" "), defaultValues.join(" ")];
+							}
+						}
+					}
+
+					/* Hook registration. */
+					for (rootProperty in CSS.Hooks.templates) {
+						if (!CSS.Hooks.templates.hasOwnProperty(rootProperty)) {
+							continue;
+						}
+						hookTemplate = CSS.Hooks.templates[rootProperty];
+						hookNames = hookTemplate[0].split(" ");
+
+						for (var j in hookNames) {
+							if (!hookNames.hasOwnProperty(j)) {
+								continue;
+							}
+							var fullHookName = rootProperty + hookNames[j],
+									hookPosition = j;
+
+							/* For each hook, register its full name (e.g. textShadowBlur) with its root property (e.g. textShadow)
+							 and the hook's position in its template's default value string. */
+							CSS.Hooks.registered[fullHookName] = [rootProperty, hookPosition];
+						}
+					}
+				},
+				/*****************************
+				 Injection and Extraction
+				 *****************************/
+
+				/* Look up the root property associated with the hook (e.g. return "textShadow" for "textShadowBlur"). */
+				/* Since a hook cannot be set directly (the browser won't recognize it), style updating for hooks is routed through the hook's root property. */
+				getRoot: function(property) {
+					var hookData = CSS.Hooks.registered[property];
+
+					if (hookData) {
+						return hookData[0];
+					} else {
+						/* If there was no hook match, return the property name untouched. */
+						return property;
+					}
+				},
+				getUnit: function(str, start) {
+					var unit = (str.substr(start || 0, 5).match(/^[a-z%]+/) || [])[0] || "";
+
+					if (unit && CSS.Lists.units.indexOf(unit) >= 0) {
+						return unit;
+					}
+					return "";
+				},
+				fixColors: function(str) {
+					return str.replace(/(rgba?\(\s*)?(\b[a-z]+\b)/g, function($0, $1, $2) {
+						if (CSS.Lists.colorNames.hasOwnProperty($2)) {
+							return ($1 ? $1 : "rgba(") + CSS.Lists.colorNames[$2] + ($1 ? "" : ",1)");
+						}
+						return $1 + $2;
+					});
+				},
+				/* Convert any rootPropertyValue, null or otherwise, into a space-delimited list of hook values so that
+				 the targeted hook can be injected or extracted at its standard position. */
+				cleanRootPropertyValue: function(rootProperty, rootPropertyValue) {
+					/* If the rootPropertyValue is wrapped with "rgb()", "clip()", etc., remove the wrapping to normalize the value before manipulation. */
+					if (CSS.RegEx.valueUnwrap.test(rootPropertyValue)) {
+						rootPropertyValue = rootPropertyValue.match(CSS.RegEx.valueUnwrap)[1];
+					}
+
+					/* If rootPropertyValue is a CSS null-value (from which there's inherently no hook value to extract),
+					 default to the root's default value as defined in CSS.Hooks.templates. */
+					/* Note: CSS null-values include "none", "auto", and "transparent". They must be converted into their
+					 zero-values (e.g. textShadow: "none" ==> textShadow: "0px 0px 0px black") for hook manipulation to proceed. */
+					if (CSS.Values.isCSSNullValue(rootPropertyValue)) {
+						rootPropertyValue = CSS.Hooks.templates[rootProperty][1];
+					}
+
+					return rootPropertyValue;
+				},
+				/* Extracted the hook's value from its root property's value. This is used to get the starting value of an animating hook. */
+				extractValue: function(fullHookName, rootPropertyValue) {
+					var hookData = CSS.Hooks.registered[fullHookName];
+
+					if (hookData) {
+						var hookRoot = hookData[0],
+								hookPosition = hookData[1];
+
+						rootPropertyValue = CSS.Hooks.cleanRootPropertyValue(hookRoot, rootPropertyValue);
+
+						/* Split rootPropertyValue into its constituent hook values then grab the desired hook at its standard position. */
+						return rootPropertyValue.toString().match(CSS.RegEx.valueSplit)[hookPosition];
+					} else {
+						/* If the provided fullHookName isn't a registered hook, return the rootPropertyValue that was passed in. */
+						return rootPropertyValue;
+					}
+				},
+				/* Inject the hook's value into its root property's value. This is used to piece back together the root property
+				 once Velocity has updated one of its individually hooked values through tweening. */
+				injectValue: function(fullHookName, hookValue, rootPropertyValue) {
+					var hookData = CSS.Hooks.registered[fullHookName];
+
+					if (hookData) {
+						var hookRoot = hookData[0],
+								hookPosition = hookData[1],
+								rootPropertyValueParts,
+								rootPropertyValueUpdated;
+
+						rootPropertyValue = CSS.Hooks.cleanRootPropertyValue(hookRoot, rootPropertyValue);
+
+						/* Split rootPropertyValue into its individual hook values, replace the targeted value with hookValue,
+						 then reconstruct the rootPropertyValue string. */
+						rootPropertyValueParts = rootPropertyValue.toString().match(CSS.RegEx.valueSplit);
+						rootPropertyValueParts[hookPosition] = hookValue;
+						rootPropertyValueUpdated = rootPropertyValueParts.join(" ");
+
+						return rootPropertyValueUpdated;
+					} else {
+						/* If the provided fullHookName isn't a registered hook, return the rootPropertyValue that was passed in. */
+						return rootPropertyValue;
+					}
+				}
+			},
+			/*******************
+			 Normalizations
+			 *******************/
+
+			/* Normalizations standardize CSS property manipulation by pollyfilling browser-specific implementations (e.g. opacity)
+			 and reformatting special properties (e.g. clip, rgba) to look like standard ones. */
+			Normalizations: {
+				/* Normalizations are passed a normalization target (either the property's name, its extracted value, or its injected value),
+				 the targeted element (which may need to be queried), and the targeted property value. */
+				registered: {
+					clip: function(type, element, propertyValue) {
+						switch (type) {
+							case "name":
+								return "clip";
+								/* Clip needs to be unwrapped and stripped of its commas during extraction. */
+							case "extract":
+								var extracted;
+
+								/* If Velocity also extracted this value, skip extraction. */
+								if (CSS.RegEx.wrappedValueAlreadyExtracted.test(propertyValue)) {
+									extracted = propertyValue;
+								} else {
+									/* Remove the "rect()" wrapper. */
+									extracted = propertyValue.toString().match(CSS.RegEx.valueUnwrap);
+
+									/* Strip off commas. */
+									extracted = extracted ? extracted[1].replace(/,(\s+)?/g, " ") : propertyValue;
+								}
+
+								return extracted;
+								/* Clip needs to be re-wrapped during injection. */
+							case "inject":
+								return "rect(" + propertyValue + ")";
+						}
+					},
+					blur: function(type, element, propertyValue) {
+						switch (type) {
+							case "name":
+								return Velocity.State.isFirefox ? "filter" : "-webkit-filter";
+							case "extract":
+								var extracted = parseFloat(propertyValue);
+
+								/* If extracted is NaN, meaning the value isn't already extracted. */
+								if (!(extracted || extracted === 0)) {
+									var blurComponent = propertyValue.toString().match(/blur\(([0-9]+[A-z]+)\)/i);
+
+									/* If the filter string had a blur component, return just the blur value and unit type. */
+									if (blurComponent) {
+										extracted = blurComponent[1];
+										/* If the component doesn't exist, default blur to 0. */
+									} else {
+										extracted = 0;
+									}
+								}
+
+								return extracted;
+								/* Blur needs to be re-wrapped during injection. */
+							case "inject":
+								/* For the blur effect to be fully de-applied, it needs to be set to "none" instead of 0. */
+								if (!parseFloat(propertyValue)) {
+									return "none";
+								} else {
+									return "blur(" + propertyValue + ")";
+								}
+						}
+					},
+					/* <=IE8 do not support the standard opacity property. They use filter:alpha(opacity=INT) instead. */
+					opacity: function(type, element, propertyValue) {
+						if (IE <= 8) {
+							switch (type) {
+								case "name":
+									return "filter";
+								case "extract":
+									/* <=IE8 return a "filter" value of "alpha(opacity=\d{1,3})".
+									 Extract the value and convert it to a decimal value to match the standard CSS opacity property's formatting. */
+									var extracted = propertyValue.toString().match(/alpha\(opacity=(.*)\)/i);
+
+									if (extracted) {
+										/* Convert to decimal value. */
+										propertyValue = extracted[1] / 100;
+									} else {
+										/* When extracting opacity, default to 1 since a null value means opacity hasn't been set. */
+										propertyValue = 1;
+									}
+
+									return propertyValue;
+								case "inject":
+									/* Opacified elements are required to have their zoom property set to a non-zero value. */
+									element.style.zoom = 1;
+
+									/* Setting the filter property on elements with certain font property combinations can result in a
+									 highly unappealing ultra-bolding effect. There's no way to remedy this throughout a tween, but dropping the
+									 value altogether (when opacity hits 1) at leasts ensures that the glitch is gone post-tweening. */
+									if (parseFloat(propertyValue) >= 1) {
+										return "";
+									} else {
+										/* As per the filter property's spec, convert the decimal value to a whole number and wrap the value. */
+										return "alpha(opacity=" + parseInt(parseFloat(propertyValue) * 100, 10) + ")";
+									}
+							}
+							/* With all other browsers, normalization is not required; return the same values that were passed in. */
+						} else {
+							switch (type) {
+								case "name":
+									return "opacity";
+								case "extract":
+									return propertyValue;
+								case "inject":
+									return propertyValue;
+							}
+						}
+					}
+				},
+				/*****************************
+				 Batched Registrations
+				 *****************************/
+
+				/* Note: Batched normalizations extend the CSS.Normalizations.registered object. */
+				register: function() {
+
+					/*****************
+					 Transforms
+					 *****************/
+
+					/* Transforms are the subproperties contained by the CSS "transform" property. Transforms must undergo normalization
+					 so that they can be referenced in a properties map by their individual names. */
+					/* Note: When transforms are "set", they are actually assigned to a per-element transformCache. When all transform
+					 setting is complete complete, CSS.flushTransformCache() must be manually called to flush the values to the DOM.
+					 Transform setting is batched in this way to improve performance: the transform style only needs to be updated
+					 once when multiple transform subproperties are being animated simultaneously. */
+					/* Note: IE9 and Android Gingerbread have support for 2D -- but not 3D -- transforms. Since animating unsupported
+					 transform properties results in the browser ignoring the *entire* transform string, we prevent these 3D values
+					 from being normalized for these browsers so that tweening skips these properties altogether
+					 (since it will ignore them as being unsupported by the browser.) */
+					if ((!IE || IE > 9) && !Velocity.State.isGingerbread) {
+						/* Note: Since the standalone CSS "perspective" property and the CSS transform "perspective" subproperty
+						 share the same name, the latter is given a unique token within Velocity: "transformPerspective". */
+						CSS.Lists.transformsBase = CSS.Lists.transformsBase.concat(CSS.Lists.transforms3D);
+					}
+
+					for (var i = 0; i < CSS.Lists.transformsBase.length; i++) {
+						/* Wrap the dynamically generated normalization function in a new scope so that transformName's value is
+						 paired with its respective function. (Otherwise, all functions would take the final for loop's transformName.) */
+						(function() {
+							var transformName = CSS.Lists.transformsBase[i];
+
+							CSS.Normalizations.registered[transformName] = function(type, element, propertyValue) {
+								switch (type) {
+									/* The normalized property name is the parent "transform" property -- the property that is actually set in CSS. */
+									case "name":
+										return "transform";
+										/* Transform values are cached onto a per-element transformCache object. */
+									case "extract":
+										/* If this transform has yet to be assigned a value, return its null value. */
+										if (Data(element) === undefined || Data(element).transformCache[transformName] === undefined) {
+											/* Scale CSS.Lists.transformsBase default to 1 whereas all other transform properties default to 0. */
+											return /^scale/i.test(transformName) ? 1 : 0;
+											/* When transform values are set, they are wrapped in parentheses as per the CSS spec.
+											 Thus, when extracting their values (for tween calculations), we strip off the parentheses. */
+										}
+										return Data(element).transformCache[transformName].replace(/[()]/g, "");
+									case "inject":
+										var invalid = false;
+
+										/* If an individual transform property contains an unsupported unit type, the browser ignores the *entire* transform property.
+										 Thus, protect users from themselves by skipping setting for transform values supplied with invalid unit types. */
+										/* Switch on the base transform type; ignore the axis by removing the last letter from the transform's name. */
+										switch (transformName.substr(0, transformName.length - 1)) {
+											/* Whitelist unit types for each transform. */
+											case "translate":
+												invalid = !/(%|px|em|rem|vw|vh|\d)$/i.test(propertyValue);
+												break;
+												/* Since an axis-free "scale" property is supported as well, a little hack is used here to detect it by chopping off its last letter. */
+											case "scal":
+											case "scale":
+												/* Chrome on Android has a bug in which scaled elements blur if their initial scale
+												 value is below 1 (which can happen with forcefeeding). Thus, we detect a yet-unset scale property
+												 and ensure that its first value is always 1. More info: http://stackoverflow.com/questions/10417890/css3-animations-with-transform-causes-blurred-elements-on-webkit/10417962#10417962 */
+												if (Velocity.State.isAndroid && Data(element).transformCache[transformName] === undefined && propertyValue < 1) {
+													propertyValue = 1;
+												}
+
+												invalid = !/(\d)$/i.test(propertyValue);
+												break;
+											case "skew":
+												invalid = !/(deg|\d)$/i.test(propertyValue);
+												break;
+											case "rotate":
+												invalid = !/(deg|\d)$/i.test(propertyValue);
+												break;
+										}
+
+										if (!invalid) {
+											/* As per the CSS spec, wrap the value in parentheses. */
+											Data(element).transformCache[transformName] = "(" + propertyValue + ")";
+										}
+
+										/* Although the value is set on the transformCache object, return the newly-updated value for the calling code to process as normal. */
+										return Data(element).transformCache[transformName];
+								}
+							};
+						})();
+					}
+
+					/*************
+					 Colors
+					 *************/
+
+					/* Since Velocity only animates a single numeric value per property, color animation is achieved by hooking the individual RGBA components of CSS color properties.
+					 Accordingly, color values must be normalized (e.g. "#ff0000", "red", and "rgb(255, 0, 0)" ==> "255 0 0 1") so that their components can be injected/extracted by CSS.Hooks logic. */
+					for (var j = 0; j < CSS.Lists.colors.length; j++) {
+						/* Wrap the dynamically generated normalization function in a new scope so that colorName's value is paired with its respective function.
+						 (Otherwise, all functions would take the final for loop's colorName.) */
+						(function() {
+							var colorName = CSS.Lists.colors[j];
+
+							/* Note: In IE<=8, which support rgb but not rgba, color properties are reverted to rgb by stripping off the alpha component. */
+							CSS.Normalizations.registered[colorName] = function(type, element, propertyValue) {
+								switch (type) {
+									case "name":
+										return colorName;
+										/* Convert all color values into the rgb format. (Old IE can return hex values and color names instead of rgb/rgba.) */
+									case "extract":
+										var extracted;
+
+										/* If the color is already in its hookable form (e.g. "255 255 255 1") due to having been previously extracted, skip extraction. */
+										if (CSS.RegEx.wrappedValueAlreadyExtracted.test(propertyValue)) {
+											extracted = propertyValue;
+										} else {
+											var converted,
+													colorNames = {
+														black: "rgb(0, 0, 0)",
+														blue: "rgb(0, 0, 255)",
+														gray: "rgb(128, 128, 128)",
+														green: "rgb(0, 128, 0)",
+														red: "rgb(255, 0, 0)",
+														white: "rgb(255, 255, 255)"
+													};
+
+											/* Convert color names to rgb. */
+											if (/^[A-z]+$/i.test(propertyValue)) {
+												if (colorNames[propertyValue] !== undefined) {
+													converted = colorNames[propertyValue];
+												} else {
+													/* If an unmatched color name is provided, default to black. */
+													converted = colorNames.black;
+												}
+												/* Convert hex values to rgb. */
+											} else if (CSS.RegEx.isHex.test(propertyValue)) {
+												converted = "rgb(" + CSS.Values.hexToRgb(propertyValue).join(" ") + ")";
+												/* If the provided color doesn't match any of the accepted color formats, default to black. */
+											} else if (!(/^rgba?\(/i.test(propertyValue))) {
+												converted = colorNames.black;
+											}
+
+											/* Remove the surrounding "rgb/rgba()" string then replace commas with spaces and strip
+											 repeated spaces (in case the value included spaces to begin with). */
+											extracted = (converted || propertyValue).toString().match(CSS.RegEx.valueUnwrap)[1].replace(/,(\s+)?/g, " ");
+										}
+
+										/* So long as this isn't <=IE8, add a fourth (alpha) component if it's missing and default it to 1 (visible). */
+										if ((!IE || IE > 8) && extracted.split(" ").length === 3) {
+											extracted += " 1";
+										}
+
+										return extracted;
+									case "inject":
+										/* If we have a pattern then it might already have the right values */
+										if (/^rgb/.test(propertyValue)) {
+											return propertyValue;
+										}
+
+										/* If this is IE<=8 and an alpha component exists, strip it off. */
+										if (IE <= 8) {
+											if (propertyValue.split(" ").length === 4) {
+												propertyValue = propertyValue.split(/\s+/).slice(0, 3).join(" ");
+											}
+											/* Otherwise, add a fourth (alpha) component if it's missing and default it to 1 (visible). */
+										} else if (propertyValue.split(" ").length === 3) {
+											propertyValue += " 1";
+										}
+
+										/* Re-insert the browser-appropriate wrapper("rgb/rgba()"), insert commas, and strip off decimal units
+										 on all values but the fourth (R, G, and B only accept whole numbers). */
+										return (IE <= 8 ? "rgb" : "rgba") + "(" + propertyValue.replace(/\s+/g, ",").replace(/\.(\d)+(?=,)/g, "") + ")";
+								}
+							};
+						})();
+					}
+
+					/**************
+					 Dimensions
+					 **************/
+					function augmentDimension(name, element, wantInner) {
+						var isBorderBox = CSS.getPropertyValue(element, "boxSizing").toString().toLowerCase() === "border-box";
+
+						if (isBorderBox === (wantInner || false)) {
+							/* in box-sizing mode, the CSS width / height accessors already give the outerWidth / outerHeight. */
+							var i,
+									value,
+									augment = 0,
+									sides = name === "width" ? ["Left", "Right"] : ["Top", "Bottom"],
+									fields = ["padding" + sides[0], "padding" + sides[1], "border" + sides[0] + "Width", "border" + sides[1] + "Width"];
+
+							for (i = 0; i < fields.length; i++) {
+								value = parseFloat(CSS.getPropertyValue(element, fields[i]));
+								if (!isNaN(value)) {
+									augment += value;
+								}
+							}
+							return wantInner ? -augment : augment;
+						}
+						return 0;
+					}
+					function getDimension(name, wantInner) {
+						return function(type, element, propertyValue) {
+							switch (type) {
+								case "name":
+									return name;
+								case "extract":
+									return parseFloat(propertyValue) + augmentDimension(name, element, wantInner);
+								case "inject":
+									return (parseFloat(propertyValue) - augmentDimension(name, element, wantInner)) + "px";
+							}
+						};
+					}
+					CSS.Normalizations.registered.innerWidth = getDimension("width", true);
+					CSS.Normalizations.registered.innerHeight = getDimension("height", true);
+					CSS.Normalizations.registered.outerWidth = getDimension("width");
+					CSS.Normalizations.registered.outerHeight = getDimension("height");
+				}
+			},
+			/************************
+			 CSS Property Names
+			 ************************/
+
+			Names: {
+				/* Camelcase a property name into its JavaScript notation (e.g. "background-color" ==> "backgroundColor").
+				 Camelcasing is used to normalize property names between and across calls. */
+				camelCase: function(property) {
+					return property.replace(/-(\w)/g, function(match, subMatch) {
+						return subMatch.toUpperCase();
+					});
+				},
+				/* For SVG elements, some properties (namely, dimensional ones) are GET/SET via the element's HTML attributes (instead of via CSS styles). */
+				SVGAttribute: function(property) {
+					var SVGAttributes = "width|height|x|y|cx|cy|r|rx|ry|x1|x2|y1|y2";
+
+					/* Certain browsers require an SVG transform to be applied as an attribute. (Otherwise, application via CSS is preferable due to 3D support.) */
+					if (IE || (Velocity.State.isAndroid && !Velocity.State.isChrome)) {
+						SVGAttributes += "|transform";
+					}
+
+					return new RegExp("^(" + SVGAttributes + ")$", "i").test(property);
+				},
+				/* Determine whether a property should be set with a vendor prefix. */
+				/* If a prefixed version of the property exists, return it. Otherwise, return the original property name.
+				 If the property is not at all supported by the browser, return a false flag. */
+				prefixCheck: function(property) {
+					/* If this property has already been checked, return the cached value. */
+					if (Velocity.State.prefixMatches[property]) {
+						return [Velocity.State.prefixMatches[property], true];
+					} else {
+						var vendors = ["", "Webkit", "Moz", "ms", "O"];
+
+						for (var i = 0, vendorsLength = vendors.length; i < vendorsLength; i++) {
+							var propertyPrefixed;
+
+							if (i === 0) {
+								propertyPrefixed = property;
+							} else {
+								/* Capitalize the first letter of the property to conform to JavaScript vendor prefix notation (e.g. webkitFilter). */
+								propertyPrefixed = vendors[i] + property.replace(/^\w/, function(match) {
+									return match.toUpperCase();
+								});
+							}
+
+							/* Check if the browser supports this property as prefixed. */
+							if (Type.isString(Velocity.State.prefixElement.style[propertyPrefixed])) {
+								/* Cache the match. */
+								Velocity.State.prefixMatches[property] = propertyPrefixed;
+
+								return [propertyPrefixed, true];
+							}
+						}
+
+						/* If the browser doesn't support this property in any form, include a false flag so that the caller can decide how to proceed. */
+						return [property, false];
+					}
+				}
+			},
+			/************************
+			 CSS Property Values
+			 ************************/
+
+			Values: {
+				/* Hex to RGB conversion. Copyright Tim Down: http://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb */
+				hexToRgb: function(hex) {
+					var shortformRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i,
+							longformRegex = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i,
+							rgbParts;
+
+					hex = hex.replace(shortformRegex, function(m, r, g, b) {
+						return r + r + g + g + b + b;
+					});
+
+					rgbParts = longformRegex.exec(hex);
+
+					return rgbParts ? [parseInt(rgbParts[1], 16), parseInt(rgbParts[2], 16), parseInt(rgbParts[3], 16)] : [0, 0, 0];
+				},
+				isCSSNullValue: function(value) {
+					/* The browser defaults CSS values that have not been set to either 0 or one of several possible null-value strings.
+					 Thus, we check for both falsiness and these special strings. */
+					/* Null-value checking is performed to default the special strings to 0 (for the sake of tweening) or their hook
+					 templates as defined as CSS.Hooks (for the sake of hook injection/extraction). */
+					/* Note: Chrome returns "rgba(0, 0, 0, 0)" for an undefined color whereas IE returns "transparent". */
+					return (!value || /^(none|auto|transparent|(rgba\(0, ?0, ?0, ?0\)))$/i.test(value));
+				},
+				/* Retrieve a property's default unit type. Used for assigning a unit type when one is not supplied by the user. */
+				getUnitType: function(property) {
+					if (/^(rotate|skew)/i.test(property)) {
+						return "deg";
+					} else if (/(^(scale|scaleX|scaleY|scaleZ|alpha|flexGrow|flexHeight|zIndex|fontWeight)$)|((opacity|red|green|blue|alpha)$)/i.test(property)) {
+						/* The above properties are unitless. */
+						return "";
+					} else {
+						/* Default to px for all other properties. */
+						return "px";
+					}
+				},
+				/* HTML elements default to an associated display type when they're not set to display:none. */
+				/* Note: This function is used for correctly setting the non-"none" display value in certain Velocity redirects, such as fadeIn/Out. */
+				getDisplayType: function(element) {
+					var tagName = element && element.tagName.toString().toLowerCase();
+
+					if (/^(b|big|i|small|tt|abbr|acronym|cite|code|dfn|em|kbd|strong|samp|var|a|bdo|br|img|map|object|q|script|span|sub|sup|button|input|label|select|textarea)$/i.test(tagName)) {
+						return "inline";
+					} else if (/^(li)$/i.test(tagName)) {
+						return "list-item";
+					} else if (/^(tr)$/i.test(tagName)) {
+						return "table-row";
+					} else if (/^(table)$/i.test(tagName)) {
+						return "table";
+					} else if (/^(tbody)$/i.test(tagName)) {
+						return "table-row-group";
+						/* Default to "block" when no match is found. */
+					} else {
+						return "block";
+					}
+				},
+				/* The class add/remove functions are used to temporarily apply a "velocity-animating" class to elements while they're animating. */
+				addClass: function(element, className) {
+					if (element) {
+						if (element.classList) {
+							element.classList.add(className);
+						} else if (Type.isString(element.className)) {
+							// Element.className is around 15% faster then set/getAttribute
+							element.className += (element.className.length ? " " : "") + className;
+						} else {
+							// Work around for IE strict mode animating SVG - and anything else that doesn't behave correctly - the same way jQuery does it
+							var currentClass = element.getAttribute(IE <= 7 ? "className" : "class") || "";
+
+							element.setAttribute("class", currentClass + (currentClass ? " " : "") + className);
+						}
+					}
+				},
+				removeClass: function(element, className) {
+					if (element) {
+						if (element.classList) {
+							element.classList.remove(className);
+						} else if (Type.isString(element.className)) {
+							// Element.className is around 15% faster then set/getAttribute
+							// TODO: Need some jsperf tests on performance - can we get rid of the regex and maybe use split / array manipulation?
+							element.className = element.className.toString().replace(new RegExp("(^|\\s)" + className.split(" ").join("|") + "(\\s|$)", "gi"), " ");
+						} else {
+							// Work around for IE strict mode animating SVG - and anything else that doesn't behave correctly - the same way jQuery does it
+							var currentClass = element.getAttribute(IE <= 7 ? "className" : "class") || "";
+
+							element.setAttribute("class", currentClass.replace(new RegExp("(^|\s)" + className.split(" ").join("|") + "(\s|$)", "gi"), " "));
+						}
+					}
+				}
+			},
+			/****************************
+			 Style Getting & Setting
+			 ****************************/
+
+			/* The singular getPropertyValue, which routes the logic for all normalizations, hooks, and standard CSS properties. */
+			getPropertyValue: function(element, property, rootPropertyValue, forceStyleLookup) {
+				/* Get an element's computed property value. */
+				/* Note: Retrieving the value of a CSS property cannot simply be performed by checking an element's
+				 style attribute (which only reflects user-defined values). Instead, the browser must be queried for a property's
+				 *computed* value. You can read more about getComputedStyle here: https://developer.mozilla.org/en/docs/Web/API/window.getComputedStyle */
+				function computePropertyValue(element, property) {
+					/* When box-sizing isn't set to border-box, height and width style values are incorrectly computed when an
+					 element's scrollbars are visible (which expands the element's dimensions). Thus, we defer to the more accurate
+					 offsetHeight/Width property, which includes the total dimensions for interior, border, padding, and scrollbar.
+					 We subtract border and padding to get the sum of interior + scrollbar. */
+					var computedValue = 0;
+
+					/* IE<=8 doesn't support window.getComputedStyle, thus we defer to jQuery, which has an extensive array
+					 of hacks to accurately retrieve IE8 property values. Re-implementing that logic here is not worth bloating the
+					 codebase for a dying browser. The performance repercussions of using jQuery here are minimal since
+					 Velocity is optimized to rarely (and sometimes never) query the DOM. Further, the $.css() codepath isn't that slow. */
+					if (IE <= 8) {
+						computedValue = $.css(element, property); /* GET */
+						/* All other browsers support getComputedStyle. The returned live object reference is cached onto its
+						 associated element so that it does not need to be refetched upon every GET. */
+					} else {
+						/* Browsers do not return height and width values for elements that are set to display:"none". Thus, we temporarily
+						 toggle display to the element type's default value. */
+						var toggleDisplay = false;
+
+						if (/^(width|height)$/.test(property) && CSS.getPropertyValue(element, "display") === 0) {
+							toggleDisplay = true;
+							CSS.setPropertyValue(element, "display", CSS.Values.getDisplayType(element));
+						}
+
+						var revertDisplay = function() {
+							if (toggleDisplay) {
+								CSS.setPropertyValue(element, "display", "none");
+							}
+						};
+
+						if (!forceStyleLookup) {
+							if (property === "height" && CSS.getPropertyValue(element, "boxSizing").toString().toLowerCase() !== "border-box") {
+								var contentBoxHeight = element.offsetHeight - (parseFloat(CSS.getPropertyValue(element, "borderTopWidth")) || 0) - (parseFloat(CSS.getPropertyValue(element, "borderBottomWidth")) || 0) - (parseFloat(CSS.getPropertyValue(element, "paddingTop")) || 0) - (parseFloat(CSS.getPropertyValue(element, "paddingBottom")) || 0);
+								revertDisplay();
+
+								return contentBoxHeight;
+							} else if (property === "width" && CSS.getPropertyValue(element, "boxSizing").toString().toLowerCase() !== "border-box") {
+								var contentBoxWidth = element.offsetWidth - (parseFloat(CSS.getPropertyValue(element, "borderLeftWidth")) || 0) - (parseFloat(CSS.getPropertyValue(element, "borderRightWidth")) || 0) - (parseFloat(CSS.getPropertyValue(element, "paddingLeft")) || 0) - (parseFloat(CSS.getPropertyValue(element, "paddingRight")) || 0);
+								revertDisplay();
+
+								return contentBoxWidth;
+							}
+						}
+
+						var computedStyle;
+
+						/* For elements that Velocity hasn't been called on directly (e.g. when Velocity queries the DOM on behalf
+						 of a parent of an element its animating), perform a direct getComputedStyle lookup since the object isn't cached. */
+						if (Data(element) === undefined) {
+							computedStyle = window.getComputedStyle(element, null); /* GET */
+							/* If the computedStyle object has yet to be cached, do so now. */
+						} else if (!Data(element).computedStyle) {
+							computedStyle = Data(element).computedStyle = window.getComputedStyle(element, null); /* GET */
+							/* If computedStyle is cached, use it. */
+						} else {
+							computedStyle = Data(element).computedStyle;
+						}
+
+						/* IE and Firefox do not return a value for the generic borderColor -- they only return individual values for each border side's color.
+						 Also, in all browsers, when border colors aren't all the same, a compound value is returned that Velocity isn't setup to parse.
+						 So, as a polyfill for querying individual border side colors, we just return the top border's color and animate all borders from that value. */
+						if (property === "borderColor") {
+							property = "borderTopColor";
+						}
+
+						/* IE9 has a bug in which the "filter" property must be accessed from computedStyle using the getPropertyValue method
+						 instead of a direct property lookup. The getPropertyValue method is slower than a direct lookup, which is why we avoid it by default. */
+						if (IE === 9 && property === "filter") {
+							computedValue = computedStyle.getPropertyValue(property); /* GET */
+						} else {
+							computedValue = computedStyle[property];
+						}
+
+						/* Fall back to the property's style value (if defined) when computedValue returns nothing,
+						 which can happen when the element hasn't been painted. */
+						if (computedValue === "" || computedValue === null) {
+							computedValue = element.style[property];
+						}
+
+						revertDisplay();
+					}
+
+					/* For top, right, bottom, and left (TRBL) values that are set to "auto" on elements of "fixed" or "absolute" position,
+					 defer to jQuery for converting "auto" to a numeric value. (For elements with a "static" or "relative" position, "auto" has the same
+					 effect as being set to 0, so no conversion is necessary.) */
+					/* An example of why numeric conversion is necessary: When an element with "position:absolute" has an untouched "left"
+					 property, which reverts to "auto", left's value is 0 relative to its parent element, but is often non-zero relative
+					 to its *containing* (not parent) element, which is the nearest "position:relative" ancestor or the viewport (and always the viewport in the case of "position:fixed"). */
+					if (computedValue === "auto" && /^(top|right|bottom|left)$/i.test(property)) {
+						var position = computePropertyValue(element, "position"); /* GET */
+
+						/* For absolute positioning, jQuery's $.position() only returns values for top and left;
+						 right and bottom will have their "auto" value reverted to 0. */
+						/* Note: A jQuery object must be created here since jQuery doesn't have a low-level alias for $.position().
+						 Not a big deal since we're currently in a GET batch anyway. */
+						if (position === "fixed" || (position === "absolute" && /top|left/i.test(property))) {
+							/* Note: jQuery strips the pixel unit from its returned values; we re-add it here to conform with computePropertyValue's behavior. */
+							computedValue = $(element).position()[property] + "px"; /* GET */
+						}
+					}
+
+					return computedValue;
+				}
+
+				var propertyValue;
+
+				/* If this is a hooked property (e.g. "clipLeft" instead of the root property of "clip"),
+				 extract the hook's value from a normalized rootPropertyValue using CSS.Hooks.extractValue(). */
+				if (CSS.Hooks.registered[property]) {
+					var hook = property,
+							hookRoot = CSS.Hooks.getRoot(hook);
+
+					/* If a cached rootPropertyValue wasn't passed in (which Velocity always attempts to do in order to avoid requerying the DOM),
+					 query the DOM for the root property's value. */
+					if (rootPropertyValue === undefined) {
+						/* Since the browser is now being directly queried, use the official post-prefixing property name for this lookup. */
+						rootPropertyValue = CSS.getPropertyValue(element, CSS.Names.prefixCheck(hookRoot)[0]); /* GET */
+					}
+
+					/* If this root has a normalization registered, peform the associated normalization extraction. */
+					if (CSS.Normalizations.registered[hookRoot]) {
+						rootPropertyValue = CSS.Normalizations.registered[hookRoot]("extract", element, rootPropertyValue);
+					}
+
+					/* Extract the hook's value. */
+					propertyValue = CSS.Hooks.extractValue(hook, rootPropertyValue);
+
+					/* If this is a normalized property (e.g. "opacity" becomes "filter" in <=IE8) or "translateX" becomes "transform"),
+					 normalize the property's name and value, and handle the special case of transforms. */
+					/* Note: Normalizing a property is mutually exclusive from hooking a property since hook-extracted values are strictly
+					 numerical and therefore do not require normalization extraction. */
+				} else if (CSS.Normalizations.registered[property]) {
+					var normalizedPropertyName,
+							normalizedPropertyValue;
+
+					normalizedPropertyName = CSS.Normalizations.registered[property]("name", element);
+
+					/* Transform values are calculated via normalization extraction (see below), which checks against the element's transformCache.
+					 At no point do transform GETs ever actually query the DOM; initial stylesheet values are never processed.
+					 This is because parsing 3D transform matrices is not always accurate and would bloat our codebase;
+					 thus, normalization extraction defaults initial transform values to their zero-values (e.g. 1 for scaleX and 0 for translateX). */
+					if (normalizedPropertyName !== "transform") {
+						normalizedPropertyValue = computePropertyValue(element, CSS.Names.prefixCheck(normalizedPropertyName)[0]); /* GET */
+
+						/* If the value is a CSS null-value and this property has a hook template, use that zero-value template so that hooks can be extracted from it. */
+						if (CSS.Values.isCSSNullValue(normalizedPropertyValue) && CSS.Hooks.templates[property]) {
+							normalizedPropertyValue = CSS.Hooks.templates[property][1];
+						}
+					}
+
+					propertyValue = CSS.Normalizations.registered[property]("extract", element, normalizedPropertyValue);
+				}
+
+				/* If a (numeric) value wasn't produced via hook extraction or normalization, query the DOM. */
+				if (!/^[\d-]/.test(propertyValue)) {
+					/* For SVG elements, dimensional properties (which SVGAttribute() detects) are tweened via
+					 their HTML attribute values instead of their CSS style values. */
+					var data = Data(element);
+
+					if (data && data.isSVG && CSS.Names.SVGAttribute(property)) {
+						/* Since the height/width attribute values must be set manually, they don't reflect computed values.
+						 Thus, we use use getBBox() to ensure we always get values for elements with undefined height/width attributes. */
+						if (/^(height|width)$/i.test(property)) {
+							/* Firefox throws an error if .getBBox() is called on an SVG that isn't attached to the DOM. */
+							try {
+								propertyValue = element.getBBox()[property];
+							} catch (error) {
+								propertyValue = 0;
+							}
+							/* Otherwise, access the attribute value directly. */
+						} else {
+							propertyValue = element.getAttribute(property);
+						}
+					} else {
+						propertyValue = computePropertyValue(element, CSS.Names.prefixCheck(property)[0]); /* GET */
+					}
+				}
+
+				/* Since property lookups are for animation purposes (which entails computing the numeric delta between start and end values),
+				 convert CSS null-values to an integer of value 0. */
+				if (CSS.Values.isCSSNullValue(propertyValue)) {
+					propertyValue = 0;
+				}
+
+				if (Velocity.debug >= 2) {
+					console.log("Get " + property + ": " + propertyValue);
+				}
+
+				return propertyValue;
+			},
+			/* The singular setPropertyValue, which routes the logic for all normalizations, hooks, and standard CSS properties. */
+			setPropertyValue: function(element, property, propertyValue, rootPropertyValue, scrollData) {
+				var propertyName = property;
+
+				/* In order to be subjected to call options and element queueing, scroll animation is routed through Velocity as if it were a standard CSS property. */
+				if (property === "scroll") {
+					/* If a container option is present, scroll the container instead of the browser window. */
+					if (scrollData.container) {
+						scrollData.container["scroll" + scrollData.direction] = propertyValue;
+						/* Otherwise, Velocity defaults to scrolling the browser window. */
+					} else {
+						if (scrollData.direction === "Left") {
+							window.scrollTo(propertyValue, scrollData.alternateValue);
+						} else {
+							window.scrollTo(scrollData.alternateValue, propertyValue);
+						}
+					}
+				} else {
+					/* Transforms (translateX, rotateZ, etc.) are applied to a per-element transformCache object, which is manually flushed via flushTransformCache().
+					 Thus, for now, we merely cache transforms being SET. */
+					if (CSS.Normalizations.registered[property] && CSS.Normalizations.registered[property]("name", element) === "transform") {
+						/* Perform a normalization injection. */
+						/* Note: The normalization logic handles the transformCache updating. */
+						CSS.Normalizations.registered[property]("inject", element, propertyValue);
+
+						propertyName = "transform";
+						propertyValue = Data(element).transformCache[property];
+					} else {
+						/* Inject hooks. */
+						if (CSS.Hooks.registered[property]) {
+							var hookName = property,
+									hookRoot = CSS.Hooks.getRoot(property);
+
+							/* If a cached rootPropertyValue was not provided, query the DOM for the hookRoot's current value. */
+							rootPropertyValue = rootPropertyValue || CSS.getPropertyValue(element, hookRoot); /* GET */
+
+							propertyValue = CSS.Hooks.injectValue(hookName, propertyValue, rootPropertyValue);
+							property = hookRoot;
+						}
+
+						/* Normalize names and values. */
+						if (CSS.Normalizations.registered[property]) {
+							propertyValue = CSS.Normalizations.registered[property]("inject", element, propertyValue);
+							property = CSS.Normalizations.registered[property]("name", element);
+						}
+
+						/* Assign the appropriate vendor prefix before performing an official style update. */
+						propertyName = CSS.Names.prefixCheck(property)[0];
+
+						/* A try/catch is used for IE<=8, which throws an error when "invalid" CSS values are set, e.g. a negative width.
+						 Try/catch is avoided for other browsers since it incurs a performance overhead. */
+						if (IE <= 8) {
+							try {
+								element.style[propertyName] = propertyValue;
+							} catch (error) {
+								if (Velocity.debug) {
+									console.log("Browser does not support [" + propertyValue + "] for [" + propertyName + "]");
+								}
+							}
+							/* SVG elements have their dimensional properties (width, height, x, y, cx, etc.) applied directly as attributes instead of as styles. */
+							/* Note: IE8 does not support SVG elements, so it's okay that we skip it for SVG animation. */
+						} else {
+							var data = Data(element);
+
+							if (data && data.isSVG && CSS.Names.SVGAttribute(property)) {
+								/* Note: For SVG attributes, vendor-prefixed property names are never used. */
+								/* Note: Not all CSS properties can be animated via attributes, but the browser won't throw an error for unsupported properties. */
+								element.setAttribute(property, propertyValue);
+							} else {
+								element.style[propertyName] = propertyValue;
+							}
+						}
+
+						if (Velocity.debug >= 2) {
+							console.log("Set " + property + " (" + propertyName + "): " + propertyValue);
+						}
+					}
+				}
+
+				/* Return the normalized property name and value in case the caller wants to know how these values were modified before being applied to the DOM. */
+				return [propertyName, propertyValue];
+			},
+			/* To increase performance by batching transform updates into a single SET, transforms are not directly applied to an element until flushTransformCache() is called. */
+			/* Note: Velocity applies transform properties in the same order that they are chronogically introduced to the element's CSS styles. */
+			flushTransformCache: function(element) {
+				var transformString = "",
+						data = Data(element);
+
+				/* Certain browsers require that SVG transforms be applied as an attribute. However, the SVG transform attribute takes a modified version of CSS's transform string
+				 (units are dropped and, except for skewX/Y, subproperties are merged into their master property -- e.g. scaleX and scaleY are merged into scale(X Y). */
+				if ((IE || (Velocity.State.isAndroid && !Velocity.State.isChrome)) && data && data.isSVG) {
+					/* Since transform values are stored in their parentheses-wrapped form, we use a helper function to strip out their numeric values.
+					 Further, SVG transform properties only take unitless (representing pixels) values, so it's okay that parseFloat() strips the unit suffixed to the float value. */
+					var getTransformFloat = function(transformProperty) {
+						return parseFloat(CSS.getPropertyValue(element, transformProperty));
+					};
+
+					/* Create an object to organize all the transforms that we'll apply to the SVG element. To keep the logic simple,
+					 we process *all* transform properties -- even those that may not be explicitly applied (since they default to their zero-values anyway). */
+					var SVGTransforms = {
+						translate: [getTransformFloat("translateX"), getTransformFloat("translateY")],
+						skewX: [getTransformFloat("skewX")], skewY: [getTransformFloat("skewY")],
+						/* If the scale property is set (non-1), use that value for the scaleX and scaleY values
+						 (this behavior mimics the result of animating all these properties at once on HTML elements). */
+						scale: getTransformFloat("scale") !== 1 ? [getTransformFloat("scale"), getTransformFloat("scale")] : [getTransformFloat("scaleX"), getTransformFloat("scaleY")],
+						/* Note: SVG's rotate transform takes three values: rotation degrees followed by the X and Y values
+						 defining the rotation's origin point. We ignore the origin values (default them to 0). */
+						rotate: [getTransformFloat("rotateZ"), 0, 0]
+					};
+
+					/* Iterate through the transform properties in the user-defined property map order.
+					 (This mimics the behavior of non-SVG transform animation.) */
+					$.each(Data(element).transformCache, function(transformName) {
+						/* Except for with skewX/Y, revert the axis-specific transform subproperties to their axis-free master
+						 properties so that they match up with SVG's accepted transform properties. */
+						if (/^translate/i.test(transformName)) {
+							transformName = "translate";
+						} else if (/^scale/i.test(transformName)) {
+							transformName = "scale";
+						} else if (/^rotate/i.test(transformName)) {
+							transformName = "rotate";
+						}
+
+						/* Check that we haven't yet deleted the property from the SVGTransforms container. */
+						if (SVGTransforms[transformName]) {
+							/* Append the transform property in the SVG-supported transform format. As per the spec, surround the space-delimited values in parentheses. */
+							transformString += transformName + "(" + SVGTransforms[transformName].join(" ") + ")" + " ";
+
+							/* After processing an SVG transform property, delete it from the SVGTransforms container so we don't
+							 re-insert the same master property if we encounter another one of its axis-specific properties. */
+							delete SVGTransforms[transformName];
+						}
+					});
+				} else {
+					var transformValue,
+							perspective;
+
+					/* Transform properties are stored as members of the transformCache object. Concatenate all the members into a string. */
+					$.each(Data(element).transformCache, function(transformName) {
+						transformValue = Data(element).transformCache[transformName];
+
+						/* Transform's perspective subproperty must be set first in order to take effect. Store it temporarily. */
+						if (transformName === "transformPerspective") {
+							perspective = transformValue;
+							return true;
+						}
+
+						/* IE9 only supports one rotation type, rotateZ, which it refers to as "rotate". */
+						if (IE === 9 && transformName === "rotateZ") {
+							transformName = "rotate";
+						}
+
+						transformString += transformName + transformValue + " ";
+					});
+
+					/* If present, set the perspective subproperty first. */
+					if (perspective) {
+						transformString = "perspective" + perspective + " " + transformString;
+					}
+				}
+
+				CSS.setPropertyValue(element, "transform", transformString);
+			}
+		};
+
+		/* Register hooks and normalizations. */
+		CSS.Hooks.register();
+		CSS.Normalizations.register();
+
+		/* Allow hook setting in the same fashion as jQuery's $.css(). */
+		Velocity.hook = function(elements, arg2, arg3) {
+			var value;
+
+			elements = sanitizeElements(elements);
+
+			$.each(elements, function(i, element) {
+				/* Initialize Velocity's per-element data cache if this element hasn't previously been animated. */
+				if (Data(element) === undefined) {
+					Velocity.init(element);
+				}
+
+				/* Get property value. If an element set was passed in, only return the value for the first element. */
+				if (arg3 === undefined) {
+					if (value === undefined) {
+						value = CSS.getPropertyValue(element, arg2);
+					}
+					/* Set property value. */
+				} else {
+					/* sPV returns an array of the normalized propertyName/propertyValue pair used to update the DOM. */
+					var adjustedSet = CSS.setPropertyValue(element, arg2, arg3);
+
+					/* Transform properties don't automatically set. They have to be flushed to the DOM. */
+					if (adjustedSet[0] === "transform") {
+						Velocity.CSS.flushTransformCache(element);
+					}
+
+					value = adjustedSet;
+				}
+			});
+
+			return value;
+		};
+
+		/*****************
+		 Animation
+		 *****************/
+
+		var animate = function() {
+			var opts;
+
+			/******************
+			 Call Chain
+			 ******************/
+
+			/* Logic for determining what to return to the call stack when exiting out of Velocity. */
+			function getChain() {
+				/* If we are using the utility function, attempt to return this call's promise. If no promise library was detected,
+				 default to null instead of returning the targeted elements so that utility function's return value is standardized. */
+				if (isUtility) {
+					return promiseData.promise || null;
+					/* Otherwise, if we're using $.fn, return the jQuery-/Zepto-wrapped element set. */
+				} else {
+					return elementsWrapped;
+				}
+			}
+
+			/*************************
+			 Arguments Assignment
+			 *************************/
+
+			/* To allow for expressive CoffeeScript code, Velocity supports an alternative syntax in which "elements" (or "e"), "properties" (or "p"), and "options" (or "o")
+			 objects are defined on a container object that's passed in as Velocity's sole argument. */
+			/* Note: Some browsers automatically populate arguments with a "properties" object. We detect it by checking for its default "names" property. */
+			var syntacticSugar = (arguments[0] && (arguments[0].p || (($.isPlainObject(arguments[0].properties) && !arguments[0].properties.names) || Type.isString(arguments[0].properties)))),
+					/* Whether Velocity was called via the utility function (as opposed to on a jQuery/Zepto object). */
+					isUtility,
+					/* When Velocity is called via the utility function ($.Velocity()/Velocity()), elements are explicitly
+					 passed in as the first parameter. Thus, argument positioning varies. We normalize them here. */
+					elementsWrapped,
+					argumentIndex;
+
+			var elements,
+					propertiesMap,
+					options;
+
+			/* Detect jQuery/Zepto elements being animated via the $.fn method. */
+			if (Type.isWrapped(this)) {
+				isUtility = false;
+
+				argumentIndex = 0;
+				elements = this;
+				elementsWrapped = this;
+				/* Otherwise, raw elements are being animated via the utility function. */
+			} else {
+				isUtility = true;
+
+				argumentIndex = 1;
+				elements = syntacticSugar ? (arguments[0].elements || arguments[0].e) : arguments[0];
+			}
+
+			/***************
+			 Promises
+			 ***************/
+
+			var promiseData = {
+				promise: null,
+				resolver: null,
+				rejecter: null
+			};
+
+			/* If this call was made via the utility function (which is the default method of invocation when jQuery/Zepto are not being used), and if
+			 promise support was detected, create a promise object for this call and store references to its resolver and rejecter methods. The resolve
+			 method is used when a call completes naturally or is prematurely stopped by the user. In both cases, completeCall() handles the associated
+			 call cleanup and promise resolving logic. The reject method is used when an invalid set of arguments is passed into a Velocity call. */
+			/* Note: Velocity employs a call-based queueing architecture, which means that stopping an animating element actually stops the full call that
+			 triggered it -- not that one element exclusively. Similarly, there is one promise per call, and all elements targeted by a Velocity call are
+			 grouped together for the purposes of resolving and rejecting a promise. */
+			if (isUtility && Velocity.Promise) {
+				promiseData.promise = new Velocity.Promise(function(resolve, reject) {
+					promiseData.resolver = resolve;
+					promiseData.rejecter = reject;
+				});
+			}
+
+			if (syntacticSugar) {
+				propertiesMap = arguments[0].properties || arguments[0].p;
+				options = arguments[0].options || arguments[0].o;
+			} else {
+				propertiesMap = arguments[argumentIndex];
+				options = arguments[argumentIndex + 1];
+			}
+
+			elements = sanitizeElements(elements);
+
+			if (!elements) {
+				if (promiseData.promise) {
+					if (!propertiesMap || !options || options.promiseRejectEmpty !== false) {
+						promiseData.rejecter();
+					} else {
+						promiseData.resolver();
+					}
+				}
+				return;
+			}
+
+			/* The length of the element set (in the form of a nodeList or an array of elements) is defaulted to 1 in case a
+			 single raw DOM element is passed in (which doesn't contain a length property). */
+			var elementsLength = elements.length,
+					elementsIndex = 0;
+
+			/***************************
+			 Argument Overloading
+			 ***************************/
+
+			/* Support is included for jQuery's argument overloading: $.animate(propertyMap [, duration] [, easing] [, complete]).
+			 Overloading is detected by checking for the absence of an object being passed into options. */
+			/* Note: The stop/finish/pause/resume actions do not accept animation options, and are therefore excluded from this check. */
+			if (!/^(stop|finish|finishAll|pause|resume)$/i.test(propertiesMap) && !$.isPlainObject(options)) {
+				/* The utility function shifts all arguments one position to the right, so we adjust for that offset. */
+				var startingArgumentPosition = argumentIndex + 1;
+
+				options = {};
+
+				/* Iterate through all options arguments */
+				for (var i = startingArgumentPosition; i < arguments.length; i++) {
+					/* Treat a number as a duration. Parse it out. */
+					/* Note: The following RegEx will return true if passed an array with a number as its first item.
+					 Thus, arrays are skipped from this check. */
+					if (!Type.isArray(arguments[i]) && (/^(fast|normal|slow)$/i.test(arguments[i]) || /^\d/.test(arguments[i]))) {
+						options.duration = arguments[i];
+						/* Treat strings and arrays as easings. */
+					} else if (Type.isString(arguments[i]) || Type.isArray(arguments[i])) {
+						options.easing = arguments[i];
+						/* Treat a function as a complete callback. */
+					} else if (Type.isFunction(arguments[i])) {
+						options.complete = arguments[i];
+					}
+				}
+			}
+
+			/*********************
+			 Action Detection
+			 *********************/
+
+			/* Velocity's behavior is categorized into "actions": Elements can either be specially scrolled into view,
+			 or they can be started, stopped, paused, resumed, or reversed . If a literal or referenced properties map is passed in as Velocity's
+			 first argument, the associated action is "start". Alternatively, "scroll", "reverse", "pause", "resume" or "stop" can be passed in 
+			 instead of a properties map. */
+			var action;
+
+			switch (propertiesMap) {
+				case "scroll":
+					action = "scroll";
+					break;
+
+				case "reverse":
+					action = "reverse";
+					break;
+
+				case "pause":
+
+					/*******************
+					 Action: Pause
+					 *******************/
+
+					var currentTime = (new Date()).getTime();
+
+					/* Handle delay timers */
+					$.each(elements, function(i, element) {
+						pauseDelayOnElement(element, currentTime);
+					});
+
+					/* Pause and Resume are call-wide (not on a per element basis). Thus, calling pause or resume on a 
+					 single element will cause any calls that containt tweens for that element to be paused/resumed
+					 as well. */
+
+					/* Iterate through all calls and pause any that contain any of our elements */
+					$.each(Velocity.State.calls, function(i, activeCall) {
+
+						var found = false;
+						/* Inactive calls are set to false by the logic inside completeCall(). Skip them. */
+						if (activeCall) {
+							/* Iterate through the active call's targeted elements. */
+							$.each(activeCall[1], function(k, activeElement) {
+								var queueName = (options === undefined) ? "" : options;
+
+								if (queueName !== true && (activeCall[2].queue !== queueName) && !(options === undefined && activeCall[2].queue === false)) {
+									return true;
+								}
+
+								/* Iterate through the calls targeted by the stop command. */
+								$.each(elements, function(l, element) {
+									/* Check that this call was applied to the target element. */
+									if (element === activeElement) {
+
+										/* Set call to paused */
+										activeCall[5] = {
+											resume: false
+										};
+
+										/* Once we match an element, we can bounce out to the next call entirely */
+										found = true;
+										return false;
+									}
+								});
+
+								/* Proceed to check next call if we have already matched */
+								if (found) {
+									return false;
+								}
+							});
+						}
+
+					});
+
+					/* Since pause creates no new tweens, exit out of Velocity. */
+					return getChain();
+
+				case "resume":
+
+					/*******************
+					 Action: Resume
+					 *******************/
+
+					/* Handle delay timers */
+					$.each(elements, function(i, element) {
+						resumeDelayOnElement(element, currentTime);
+					});
+
+					/* Pause and Resume are call-wide (not on a per elemnt basis). Thus, calling pause or resume on a 
+					 single element will cause any calls that containt tweens for that element to be paused/resumed
+					 as well. */
+
+					/* Iterate through all calls and pause any that contain any of our elements */
+					$.each(Velocity.State.calls, function(i, activeCall) {
+						var found = false;
+						/* Inactive calls are set to false by the logic inside completeCall(). Skip them. */
+						if (activeCall) {
+							/* Iterate through the active call's targeted elements. */
+							$.each(activeCall[1], function(k, activeElement) {
+								var queueName = (options === undefined) ? "" : options;
+
+								if (queueName !== true && (activeCall[2].queue !== queueName) && !(options === undefined && activeCall[2].queue === false)) {
+									return true;
+								}
+
+								/* Skip any calls that have never been paused */
+								if (!activeCall[5]) {
+									return true;
+								}
+
+								/* Iterate through the calls targeted by the stop command. */
+								$.each(elements, function(l, element) {
+									/* Check that this call was applied to the target element. */
+									if (element === activeElement) {
+
+										/* Flag a pause object to be resumed, which will occur during the next tick. In
+										 addition, the pause object will at that time be deleted */
+										activeCall[5].resume = true;
+
+										/* Once we match an element, we can bounce out to the next call entirely */
+										found = true;
+										return false;
+									}
+								});
+
+								/* Proceed to check next call if we have already matched */
+								if (found) {
+									return false;
+								}
+							});
+						}
+
+					});
+
+					/* Since resume creates no new tweens, exit out of Velocity. */
+					return getChain();
+
+				case "finish":
+				case "finishAll":
+				case "stop":
+					/*******************
+					 Action: Stop
+					 *******************/
+
+					/* Clear the currently-active delay on each targeted element. */
+					$.each(elements, function(i, element) {
+						if (Data(element) && Data(element).delayTimer) {
+							/* Stop the timer from triggering its cached next() function. */
+							clearTimeout(Data(element).delayTimer.setTimeout);
+
+							/* Manually call the next() function so that the subsequent queue items can progress. */
+							if (Data(element).delayTimer.next) {
+								Data(element).delayTimer.next();
+							}
+
+							delete Data(element).delayTimer;
+						}
+
+						/* If we want to finish everything in the queue, we have to iterate through it
+						 and call each function. This will make them active calls below, which will
+						 cause them to be applied via the duration setting. */
+						if (propertiesMap === "finishAll" && (options === true || Type.isString(options))) {
+							/* Iterate through the items in the element's queue. */
+							$.each($.queue(element, Type.isString(options) ? options : ""), function(_, item) {
+								/* The queue array can contain an "inprogress" string, which we skip. */
+								if (Type.isFunction(item)) {
+									item();
+								}
+							});
+
+							/* Clearing the $.queue() array is achieved by resetting it to []. */
+							$.queue(element, Type.isString(options) ? options : "", []);
+						}
+					});
+
+					var callsToStop = [];
+
+					/* When the stop action is triggered, the elements' currently active call is immediately stopped. The active call might have
+					 been applied to multiple elements, in which case all of the call's elements will be stopped. When an element
+					 is stopped, the next item in its animation queue is immediately triggered. */
+					/* An additional argument may be passed in to clear an element's remaining queued calls. Either true (which defaults to the "fx" queue)
+					 or a custom queue string can be passed in. */
+					/* Note: The stop command runs prior to Velocity's Queueing phase since its behavior is intended to take effect *immediately*,
+					 regardless of the element's current queue state. */
+
+					/* Iterate through every active call. */
+					$.each(Velocity.State.calls, function(i, activeCall) {
+						/* Inactive calls are set to false by the logic inside completeCall(). Skip them. */
+						if (activeCall) {
+							/* Iterate through the active call's targeted elements. */
+							$.each(activeCall[1], function(k, activeElement) {
+								/* If true was passed in as a secondary argument, clear absolutely all calls on this element. Otherwise, only
+								 clear calls associated with the relevant queue. */
+								/* Call stopping logic works as follows:
+								 - options === true --> stop current default queue calls (and queue:false calls), including remaining queued ones.
+								 - options === undefined --> stop current queue:"" call and all queue:false calls.
+								 - options === false --> stop only queue:false calls.
+								 - options === "custom" --> stop current queue:"custom" call, including remaining queued ones (there is no functionality to only clear the currently-running queue:"custom" call). */
+								var queueName = (options === undefined) ? "" : options;
+
+								if (queueName !== true && (activeCall[2].queue !== queueName) && !(options === undefined && activeCall[2].queue === false)) {
+									return true;
+								}
+
+								/* Iterate through the calls targeted by the stop command. */
+								$.each(elements, function(l, element) {
+									/* Check that this call was applied to the target element. */
+									if (element === activeElement) {
+										/* Optionally clear the remaining queued calls. If we're doing "finishAll" this won't find anything,
+										 due to the queue-clearing above. */
+										if (options === true || Type.isString(options)) {
+											/* Iterate through the items in the element's queue. */
+											$.each($.queue(element, Type.isString(options) ? options : ""), function(_, item) {
+												/* The queue array can contain an "inprogress" string, which we skip. */
+												if (Type.isFunction(item)) {
+													/* Pass the item's callback a flag indicating that we want to abort from the queue call.
+													 (Specifically, the queue will resolve the call's associated promise then abort.)  */
+													item(null, true);
+												}
+											});
+
+											/* Clearing the $.queue() array is achieved by resetting it to []. */
+											$.queue(element, Type.isString(options) ? options : "", []);
+										}
+
+										if (propertiesMap === "stop") {
+											/* Since "reverse" uses cached start values (the previous call's endValues), these values must be
+											 changed to reflect the final value that the elements were actually tweened to. */
+											/* Note: If only queue:false animations are currently running on an element, it won't have a tweensContainer
+											 object. Also, queue:false animations can't be reversed. */
+											var data = Data(element);
+											if (data && data.tweensContainer && queueName !== false) {
+												$.each(data.tweensContainer, function(m, activeTween) {
+													activeTween.endValue = activeTween.currentValue;
+												});
+											}
+
+											callsToStop.push(i);
+										} else if (propertiesMap === "finish" || propertiesMap === "finishAll") {
+											/* To get active tweens to finish immediately, we forcefully shorten their durations to 1ms so that
+											 they finish upon the next rAf tick then proceed with normal call completion logic. */
+											activeCall[2].duration = 1;
+										}
+									}
+								});
+							});
+						}
+					});
+
+					/* Prematurely call completeCall() on each matched active call. Pass an additional flag for "stop" to indicate
+					 that the complete callback and display:none setting should be skipped since we're completing prematurely. */
+					if (propertiesMap === "stop") {
+						$.each(callsToStop, function(i, j) {
+							completeCall(j, true);
+						});
+
+						if (promiseData.promise) {
+							/* Immediately resolve the promise associated with this stop call since stop runs synchronously. */
+							promiseData.resolver(elements);
+						}
+					}
+
+					/* Since we're stopping, and not proceeding with queueing, exit out of Velocity. */
+					return getChain();
+
+				default:
+					/* Treat a non-empty plain object as a literal properties map. */
+					if ($.isPlainObject(propertiesMap) && !Type.isEmptyObject(propertiesMap)) {
+						action = "start";
+
+						/****************
+						 Redirects
+						 ****************/
+
+						/* Check if a string matches a registered redirect (see Redirects above). */
+					} else if (Type.isString(propertiesMap) && Velocity.Redirects[propertiesMap]) {
+						opts = $.extend({}, options);
+
+						var durationOriginal = opts.duration,
+								delayOriginal = opts.delay || 0;
+
+						/* If the backwards option was passed in, reverse the element set so that elements animate from the last to the first. */
+						if (opts.backwards === true) {
+							elements = $.extend(true, [], elements).reverse();
+						}
+
+						/* Individually trigger the redirect for each element in the set to prevent users from having to handle iteration logic in their redirect. */
+						$.each(elements, function(elementIndex, element) {
+							/* If the stagger option was passed in, successively delay each element by the stagger value (in ms). Retain the original delay value. */
+							if (parseFloat(opts.stagger)) {
+								opts.delay = delayOriginal + (parseFloat(opts.stagger) * elementIndex);
+							} else if (Type.isFunction(opts.stagger)) {
+								opts.delay = delayOriginal + opts.stagger.call(element, elementIndex, elementsLength);
+							}
+
+							/* If the drag option was passed in, successively increase/decrease (depending on the presense of opts.backwards)
+							 the duration of each element's animation, using floors to prevent producing very short durations. */
+							if (opts.drag) {
+								/* Default the duration of UI pack effects (callouts and transitions) to 1000ms instead of the usual default duration of 400ms. */
+								opts.duration = parseFloat(durationOriginal) || (/^(callout|transition)/.test(propertiesMap) ? 1000 : DURATION_DEFAULT);
+
+								/* For each element, take the greater duration of: A) animation completion percentage relative to the original duration,
+								 B) 75% of the original duration, or C) a 200ms fallback (in case duration is already set to a low value).
+								 The end result is a baseline of 75% of the redirect's duration that increases/decreases as the end of the element set is approached. */
+								opts.duration = Math.max(opts.duration * (opts.backwards ? 1 - elementIndex / elementsLength : (elementIndex + 1) / elementsLength), opts.duration * 0.75, 200);
+							}
+
+							/* Pass in the call's opts object so that the redirect can optionally extend it. It defaults to an empty object instead of null to
+							 reduce the opts checking logic required inside the redirect. */
+							Velocity.Redirects[propertiesMap].call(element, element, opts || {}, elementIndex, elementsLength, elements, promiseData.promise ? promiseData : undefined);
+						});
+
+						/* Since the animation logic resides within the redirect's own code, abort the remainder of this call.
+						 (The performance overhead up to this point is virtually non-existant.) */
+						/* Note: The jQuery call chain is kept intact by returning the complete element set. */
+						return getChain();
+					} else {
+						var abortError = "Velocity: First argument (" + propertiesMap + ") was not a property map, a known action, or a registered redirect. Aborting.";
+
+						if (promiseData.promise) {
+							promiseData.rejecter(new Error(abortError));
+						} else {
+							console.log(abortError);
+						}
+
+						return getChain();
+					}
+			}
+
+			/**************************
+			 Call-Wide Variables
+			 **************************/
+
+			/* A container for CSS unit conversion ratios (e.g. %, rem, and em ==> px) that is used to cache ratios across all elements
+			 being animated in a single Velocity call. Calculating unit ratios necessitates DOM querying and updating, and is therefore
+			 avoided (via caching) wherever possible. This container is call-wide instead of page-wide to avoid the risk of using stale
+			 conversion metrics across Velocity animations that are not immediately consecutively chained. */
+			var callUnitConversionData = {
+				lastParent: null,
+				lastPosition: null,
+				lastFontSize: null,
+				lastPercentToPxWidth: null,
+				lastPercentToPxHeight: null,
+				lastEmToPx: null,
+				remToPx: null,
+				vwToPx: null,
+				vhToPx: null
+			};
+
+			/* A container for all the ensuing tween data and metadata associated with this call. This container gets pushed to the page-wide
+			 Velocity.State.calls array that is processed during animation ticking. */
+			var call = [];
+
+			/************************
+			 Element Processing
+			 ************************/
+
+			/* Element processing consists of three parts -- data processing that cannot go stale and data processing that *can* go stale (i.e. third-party style modifications):
+			 1) Pre-Queueing: Element-wide variables, including the element's data storage, are instantiated. Call options are prepared. If triggered, the Stop action is executed.
+			 2) Queueing: The logic that runs once this call has reached its point of execution in the element's $.queue() stack. Most logic is placed here to avoid risking it becoming stale.
+			 3) Pushing: Consolidation of the tween data followed by its push onto the global in-progress calls container.
+			 `elementArrayIndex` allows passing index of the element in the original array to value functions.
+			 If `elementsIndex` were used instead the index would be determined by the elements' per-element queue.
+			 */
+			function processElement(element, elementArrayIndex) {
+
+				/*************************
+				 Part I: Pre-Queueing
+				 *************************/
+
+				/***************************
+				 Element-Wide Variables
+				 ***************************/
+
+				var /* The runtime opts object is the extension of the current call's options and Velocity's page-wide option defaults. */
+						opts = $.extend({}, Velocity.defaults, options),
+						/* A container for the processed data associated with each property in the propertyMap.
+						 (Each property in the map produces its own "tween".) */
+						tweensContainer = {},
+						elementUnitConversionData;
+
+				/******************
+				 Element Init
+				 ******************/
+
+				if (Data(element) === undefined) {
+					Velocity.init(element);
+				}
+
+				/******************
+				 Option: Delay
+				 ******************/
+
+				/* Since queue:false doesn't respect the item's existing queue, we avoid injecting its delay here (it's set later on). */
+				/* Note: Velocity rolls its own delay function since jQuery doesn't have a utility alias for $.fn.delay()
+				 (and thus requires jQuery element creation, which we avoid since its overhead includes DOM querying). */
+				if (parseFloat(opts.delay) && opts.queue !== false) {
+					$.queue(element, opts.queue, function(next) {
+						/* This is a flag used to indicate to the upcoming completeCall() function that this queue entry was initiated by Velocity. See completeCall() for further details. */
+						Velocity.velocityQueueEntryFlag = true;
+
+						/* The ensuing queue item (which is assigned to the "next" argument that $.queue() automatically passes in) will be triggered after a setTimeout delay.
+						 The setTimeout is stored so that it can be subjected to clearTimeout() if this animation is prematurely stopped via Velocity's "stop" command, and
+						 delayBegin/delayTime is used to ensure we can "pause" and "resume" a tween that is still mid-delay. */
+
+						/* Temporarily store delayed elements to facilite access for global pause/resume */
+						var callIndex = Velocity.State.delayedElements.count++;
+						Velocity.State.delayedElements[callIndex] = element;
+
+						var delayComplete = (function(index) {
+							return function() {
+								/* Clear the temporary element */
+								Velocity.State.delayedElements[index] = false;
+
+								/* Finally, issue the call */
+								next();
+							};
+						})(callIndex);
+
+
+						Data(element).delayBegin = (new Date()).getTime();
+						Data(element).delay = parseFloat(opts.delay);
+						Data(element).delayTimer = {
+							setTimeout: setTimeout(next, parseFloat(opts.delay)),
+							next: delayComplete
+						};
+					});
+				}
+
+				/*********************
+				 Option: Duration
+				 *********************/
+
+				/* Support for jQuery's named durations. */
+				switch (opts.duration.toString().toLowerCase()) {
+					case "fast":
+						opts.duration = 200;
+						break;
+
+					case "normal":
+						opts.duration = DURATION_DEFAULT;
+						break;
+
+					case "slow":
+						opts.duration = 600;
+						break;
+
+					default:
+						/* Remove the potential "ms" suffix and default to 1 if the user is attempting to set a duration of 0 (in order to produce an immediate style change). */
+						opts.duration = parseFloat(opts.duration) || 1;
+				}
+
+				/************************
+				 Global Option: Mock
+				 ************************/
+
+				if (Velocity.mock !== false) {
+					/* In mock mode, all animations are forced to 1ms so that they occur immediately upon the next rAF tick.
+					 Alternatively, a multiplier can be passed in to time remap all delays and durations. */
+					if (Velocity.mock === true) {
+						opts.duration = opts.delay = 1;
+					} else {
+						opts.duration *= parseFloat(Velocity.mock) || 1;
+						opts.delay *= parseFloat(Velocity.mock) || 1;
+					}
+				}
+
+				/*******************
+				 Option: Easing
+				 *******************/
+
+				opts.easing = getEasing(opts.easing, opts.duration);
+
+				/**********************
+				 Option: Callbacks
+				 **********************/
+
+				/* Callbacks must functions. Otherwise, default to null. */
+				if (opts.begin && !Type.isFunction(opts.begin)) {
+					opts.begin = null;
+				}
+
+				if (opts.progress && !Type.isFunction(opts.progress)) {
+					opts.progress = null;
+				}
+
+				if (opts.complete && !Type.isFunction(opts.complete)) {
+					opts.complete = null;
+				}
+
+				/*********************************
+				 Option: Display & Visibility
+				 *********************************/
+
+				/* Refer to Velocity's documentation (VelocityJS.org/#displayAndVisibility) for a description of the display and visibility options' behavior. */
+				/* Note: We strictly check for undefined instead of falsiness because display accepts an empty string value. */
+				if (opts.display !== undefined && opts.display !== null) {
+					opts.display = opts.display.toString().toLowerCase();
+
+					/* Users can pass in a special "auto" value to instruct Velocity to set the element to its default display value. */
+					if (opts.display === "auto") {
+						opts.display = Velocity.CSS.Values.getDisplayType(element);
+					}
+				}
+
+				if (opts.visibility !== undefined && opts.visibility !== null) {
+					opts.visibility = opts.visibility.toString().toLowerCase();
+				}
+
+				/**********************
+				 Option: mobileHA
+				 **********************/
+
+				/* When set to true, and if this is a mobile device, mobileHA automatically enables hardware acceleration (via a null transform hack)
+				 on animating elements. HA is removed from the element at the completion of its animation. */
+				/* Note: Android Gingerbread doesn't support HA. If a null transform hack (mobileHA) is in fact set, it will prevent other tranform subproperties from taking effect. */
+				/* Note: You can read more about the use of mobileHA in Velocity's documentation: VelocityJS.org/#mobileHA. */
+				opts.mobileHA = (opts.mobileHA && Velocity.State.isMobile && !Velocity.State.isGingerbread);
+
+				/***********************
+				 Part II: Queueing
+				 ***********************/
+
+				/* When a set of elements is targeted by a Velocity call, the set is broken up and each element has the current Velocity call individually queued onto it.
+				 In this way, each element's existing queue is respected; some elements may already be animating and accordingly should not have this current Velocity call triggered immediately. */
+				/* In each queue, tween data is processed for each animating property then pushed onto the call-wide calls array. When the last element in the set has had its tweens processed,
+				 the call array is pushed to Velocity.State.calls for live processing by the requestAnimationFrame tick. */
+				function buildQueue(next) {
+					var data, lastTweensContainer;
+
+					/*******************
+					 Option: Begin
+					 *******************/
+
+					/* The begin callback is fired once per call -- not once per elemenet -- and is passed the full raw DOM element set as both its context and its first argument. */
+					if (opts.begin && elementsIndex === 0) {
+						/* We throw callbacks in a setTimeout so that thrown errors don't halt the execution of Velocity itself. */
+						try {
+							opts.begin.call(elements, elements);
+						} catch (error) {
+							setTimeout(function() {
+								throw error;
+							}, 1);
+						}
+					}
+
+					/*****************************************
+					 Tween Data Construction (for Scroll)
+					 *****************************************/
+
+					/* Note: In order to be subjected to chaining and animation options, scroll's tweening is routed through Velocity as if it were a standard CSS property animation. */
+					if (action === "scroll") {
+						/* The scroll action uniquely takes an optional "offset" option -- specified in pixels -- that offsets the targeted scroll position. */
+						var scrollDirection = (/^x$/i.test(opts.axis) ? "Left" : "Top"),
+								scrollOffset = parseFloat(opts.offset) || 0,
+								scrollPositionCurrent,
+								scrollPositionCurrentAlternate,
+								scrollPositionEnd;
+
+						/* Scroll also uniquely takes an optional "container" option, which indicates the parent element that should be scrolled --
+						 as opposed to the browser window itself. This is useful for scrolling toward an element that's inside an overflowing parent element. */
+						if (opts.container) {
+							/* Ensure that either a jQuery object or a raw DOM element was passed in. */
+							if (Type.isWrapped(opts.container) || Type.isNode(opts.container)) {
+								/* Extract the raw DOM element from the jQuery wrapper. */
+								opts.container = opts.container[0] || opts.container;
+								/* Note: Unlike other properties in Velocity, the browser's scroll position is never cached since it so frequently changes
+								 (due to the user's natural interaction with the page). */
+								scrollPositionCurrent = opts.container["scroll" + scrollDirection]; /* GET */
+
+								/* $.position() values are relative to the container's currently viewable area (without taking into account the container's true dimensions
+								 -- say, for example, if the container was not overflowing). Thus, the scroll end value is the sum of the child element's position *and*
+								 the scroll container's current scroll position. */
+								scrollPositionEnd = (scrollPositionCurrent + $(element).position()[scrollDirection.toLowerCase()]) + scrollOffset; /* GET */
+								/* If a value other than a jQuery object or a raw DOM element was passed in, default to null so that this option is ignored. */
+							} else {
+								opts.container = null;
+							}
+						} else {
+							/* If the window itself is being scrolled -- not a containing element -- perform a live scroll position lookup using
+							 the appropriate cached property names (which differ based on browser type). */
+							scrollPositionCurrent = Velocity.State.scrollAnchor[Velocity.State["scrollProperty" + scrollDirection]]; /* GET */
+							/* When scrolling the browser window, cache the alternate axis's current value since window.scrollTo() doesn't let us change only one value at a time. */
+							scrollPositionCurrentAlternate = Velocity.State.scrollAnchor[Velocity.State["scrollProperty" + (scrollDirection === "Left" ? "Top" : "Left")]]; /* GET */
+
+							/* Unlike $.position(), $.offset() values are relative to the browser window's true dimensions -- not merely its currently viewable area --
+							 and therefore end values do not need to be compounded onto current values. */
+							scrollPositionEnd = $(element).offset()[scrollDirection.toLowerCase()] + scrollOffset; /* GET */
+						}
+
+						/* Since there's only one format that scroll's associated tweensContainer can take, we create it manually. */
+						tweensContainer = {
+							scroll: {
+								rootPropertyValue: false,
+								startValue: scrollPositionCurrent,
+								currentValue: scrollPositionCurrent,
+								endValue: scrollPositionEnd,
+								unitType: "",
+								easing: opts.easing,
+								scrollData: {
+									container: opts.container,
+									direction: scrollDirection,
+									alternateValue: scrollPositionCurrentAlternate
+								}
+							},
+							element: element
+						};
+
+						if (Velocity.debug) {
+							console.log("tweensContainer (scroll): ", tweensContainer.scroll, element);
+						}
+
+						/******************************************
+						 Tween Data Construction (for Reverse)
+						 ******************************************/
+
+						/* Reverse acts like a "start" action in that a property map is animated toward. The only difference is
+						 that the property map used for reverse is the inverse of the map used in the previous call. Thus, we manipulate
+						 the previous call to construct our new map: use the previous map's end values as our new map's start values. Copy over all other data. */
+						/* Note: Reverse can be directly called via the "reverse" parameter, or it can be indirectly triggered via the loop option. (Loops are composed of multiple reverses.) */
+						/* Note: Reverse calls do not need to be consecutively chained onto a currently-animating element in order to operate on cached values;
+						 there is no harm to reverse being called on a potentially stale data cache since reverse's behavior is simply defined
+						 as reverting to the element's values as they were prior to the previous *Velocity* call. */
+					} else if (action === "reverse") {
+						data = Data(element);
+
+						/* Abort if there is no prior animation data to reverse to. */
+						if (!data) {
+							return;
+						}
+
+						if (!data.tweensContainer) {
+							/* Dequeue the element so that this queue entry releases itself immediately, allowing subsequent queue entries to run. */
+							$.dequeue(element, opts.queue);
+
+							return;
+						} else {
+							/*********************
+							 Options Parsing
+							 *********************/
+
+							/* If the element was hidden via the display option in the previous call,
+							 revert display to "auto" prior to reversal so that the element is visible again. */
+							if (data.opts.display === "none") {
+								data.opts.display = "auto";
+							}
+
+							if (data.opts.visibility === "hidden") {
+								data.opts.visibility = "visible";
+							}
+
+							/* If the loop option was set in the previous call, disable it so that "reverse" calls aren't recursively generated.
+							 Further, remove the previous call's callback options; typically, users do not want these to be refired. */
+							data.opts.loop = false;
+							data.opts.begin = null;
+							data.opts.complete = null;
+
+							/* Since we're extending an opts object that has already been extended with the defaults options object,
+							 we remove non-explicitly-defined properties that are auto-assigned values. */
+							if (!options.easing) {
+								delete opts.easing;
+							}
+
+							if (!options.duration) {
+								delete opts.duration;
+							}
+
+							/* The opts object used for reversal is an extension of the options object optionally passed into this
+							 reverse call plus the options used in the previous Velocity call. */
+							opts = $.extend({}, data.opts, opts);
+
+							/*************************************
+							 Tweens Container Reconstruction
+							 *************************************/
+
+							/* Create a deepy copy (indicated via the true flag) of the previous call's tweensContainer. */
+							lastTweensContainer = $.extend(true, {}, data ? data.tweensContainer : null);
+
+							/* Manipulate the previous tweensContainer by replacing its end values and currentValues with its start values. */
+							for (var lastTween in lastTweensContainer) {
+								/* In addition to tween data, tweensContainers contain an element property that we ignore here. */
+								if (lastTweensContainer.hasOwnProperty(lastTween) && lastTween !== "element") {
+									var lastStartValue = lastTweensContainer[lastTween].startValue;
+
+									lastTweensContainer[lastTween].startValue = lastTweensContainer[lastTween].currentValue = lastTweensContainer[lastTween].endValue;
+									lastTweensContainer[lastTween].endValue = lastStartValue;
+
+									/* Easing is the only option that embeds into the individual tween data (since it can be defined on a per-property basis).
+									 Accordingly, every property's easing value must be updated when an options object is passed in with a reverse call.
+									 The side effect of this extensibility is that all per-property easing values are forcefully reset to the new value. */
+									if (!Type.isEmptyObject(options)) {
+										lastTweensContainer[lastTween].easing = opts.easing;
+									}
+
+									if (Velocity.debug) {
+										console.log("reverse tweensContainer (" + lastTween + "): " + JSON.stringify(lastTweensContainer[lastTween]), element);
+									}
+								}
+							}
+
+							tweensContainer = lastTweensContainer;
+						}
+
+						/*****************************************
+						 Tween Data Construction (for Start)
+						 *****************************************/
+
+					} else if (action === "start") {
+
+						/*************************
+						 Value Transferring
+						 *************************/
+
+						/* If this queue entry follows a previous Velocity-initiated queue entry *and* if this entry was created
+						 while the element was in the process of being animated by Velocity, then this current call is safe to use
+						 the end values from the prior call as its start values. Velocity attempts to perform this value transfer
+						 process whenever possible in order to avoid requerying the DOM. */
+						/* If values aren't transferred from a prior call and start values were not forcefed by the user (more on this below),
+						 then the DOM is queried for the element's current values as a last resort. */
+						/* Note: Conversely, animation reversal (and looping) *always* perform inter-call value transfers; they never requery the DOM. */
+
+						data = Data(element);
+
+						/* The per-element isAnimating flag is used to indicate whether it's safe (i.e. the data isn't stale)
+						 to transfer over end values to use as start values. If it's set to true and there is a previous
+						 Velocity call to pull values from, do so. */
+						if (data && data.tweensContainer && data.isAnimating === true) {
+							lastTweensContainer = data.tweensContainer;
+						}
+
+						/***************************
+						 Tween Data Calculation
+						 ***************************/
+
+						/* This function parses property data and defaults endValue, easing, and startValue as appropriate. */
+						/* Property map values can either take the form of 1) a single value representing the end value,
+						 or 2) an array in the form of [ endValue, [, easing] [, startValue] ].
+						 The optional third parameter is a forcefed startValue to be used instead of querying the DOM for
+						 the element's current value. Read Velocity's docmentation to learn more about forcefeeding: VelocityJS.org/#forcefeeding */
+						var parsePropertyValue = function(valueData, skipResolvingEasing) {
+							var endValue, easing, startValue;
+
+							/* If we have a function as the main argument then resolve it first, in case it returns an array that needs to be split */
+							if (Type.isFunction(valueData)) {
+								valueData = valueData.call(element, elementArrayIndex, elementsLength);
+							}
+
+							/* Handle the array format, which can be structured as one of three potential overloads:
+							 A) [ endValue, easing, startValue ], B) [ endValue, easing ], or C) [ endValue, startValue ] */
+							if (Type.isArray(valueData)) {
+								/* endValue is always the first item in the array. Don't bother validating endValue's value now
+								 since the ensuing property cycling logic does that. */
+								endValue = valueData[0];
+
+								/* Two-item array format: If the second item is a number, function, or hex string, treat it as a
+								 start value since easings can only be non-hex strings or arrays. */
+								if ((!Type.isArray(valueData[1]) && /^[\d-]/.test(valueData[1])) || Type.isFunction(valueData[1]) || CSS.RegEx.isHex.test(valueData[1])) {
+									startValue = valueData[1];
+									/* Two or three-item array: If the second item is a non-hex string easing name or an array, treat it as an easing. */
+								} else if ((Type.isString(valueData[1]) && !CSS.RegEx.isHex.test(valueData[1]) && Velocity.Easings[valueData[1]]) || Type.isArray(valueData[1])) {
+									easing = skipResolvingEasing ? valueData[1] : getEasing(valueData[1], opts.duration);
+
+									/* Don't bother validating startValue's value now since the ensuing property cycling logic inherently does that. */
+									startValue = valueData[2];
+								} else {
+									startValue = valueData[1] || valueData[2];
+								}
+								/* Handle the single-value format. */
+							} else {
+								endValue = valueData;
+							}
+
+							/* Default to the call's easing if a per-property easing type was not defined. */
+							if (!skipResolvingEasing) {
+								easing = easing || opts.easing;
+							}
+
+							/* If functions were passed in as values, pass the function the current element as its context,
+							 plus the element's index and the element set's size as arguments. Then, assign the returned value. */
+							if (Type.isFunction(endValue)) {
+								endValue = endValue.call(element, elementArrayIndex, elementsLength);
+							}
+
+							if (Type.isFunction(startValue)) {
+								startValue = startValue.call(element, elementArrayIndex, elementsLength);
+							}
+
+							/* Allow startValue to be left as undefined to indicate to the ensuing code that its value was not forcefed. */
+							return [endValue || 0, easing, startValue];
+						};
+
+						var fixPropertyValue = function(property, valueData) {
+							/* In case this property is a hook, there are circumstances where we will intend to work on the hook's root property and not the hooked subproperty. */
+							var rootProperty = CSS.Hooks.getRoot(property),
+									rootPropertyValue = false,
+									/* Parse out endValue, easing, and startValue from the property's data. */
+									endValue = valueData[0],
+									easing = valueData[1],
+									startValue = valueData[2],
+									pattern;
+
+							/**************************
+							 Start Value Sourcing
+							 **************************/
+
+							/* Other than for the dummy tween property, properties that are not supported by the browser (and do not have an associated normalization) will
+							 inherently produce no style changes when set, so they are skipped in order to decrease animation tick overhead.
+							 Property support is determined via prefixCheck(), which returns a false flag when no supported is detected. */
+							/* Note: Since SVG elements have some of their properties directly applied as HTML attributes,
+							 there is no way to check for their explicit browser support, and so we skip skip this check for them. */
+							if ((!data || !data.isSVG) && rootProperty !== "tween" && CSS.Names.prefixCheck(rootProperty)[1] === false && CSS.Normalizations.registered[rootProperty] === undefined) {
+								if (Velocity.debug) {
+									console.log("Skipping [" + rootProperty + "] due to a lack of browser support.");
+								}
+								return;
+							}
+
+							/* If the display option is being set to a non-"none" (e.g. "block") and opacity (filter on IE<=8) is being
+							 animated to an endValue of non-zero, the user's intention is to fade in from invisible, thus we forcefeed opacity
+							 a startValue of 0 if its startValue hasn't already been sourced by value transferring or prior forcefeeding. */
+							if (((opts.display !== undefined && opts.display !== null && opts.display !== "none") || (opts.visibility !== undefined && opts.visibility !== "hidden")) && /opacity|filter/.test(property) && !startValue && endValue !== 0) {
+								startValue = 0;
+							}
+
+							/* If values have been transferred from the previous Velocity call, extract the endValue and rootPropertyValue
+							 for all of the current call's properties that were *also* animated in the previous call. */
+							/* Note: Value transferring can optionally be disabled by the user via the _cacheValues option. */
+							if (opts._cacheValues && lastTweensContainer && lastTweensContainer[property]) {
+								if (startValue === undefined) {
+									startValue = lastTweensContainer[property].endValue + lastTweensContainer[property].unitType;
+								}
+
+								/* The previous call's rootPropertyValue is extracted from the element's data cache since that's the
+								 instance of rootPropertyValue that gets freshly updated by the tweening process, whereas the rootPropertyValue
+								 attached to the incoming lastTweensContainer is equal to the root property's value prior to any tweening. */
+								rootPropertyValue = data.rootPropertyValueCache[rootProperty];
+								/* If values were not transferred from a previous Velocity call, query the DOM as needed. */
+							} else {
+								/* Handle hooked properties. */
+								if (CSS.Hooks.registered[property]) {
+									if (startValue === undefined) {
+										rootPropertyValue = CSS.getPropertyValue(element, rootProperty); /* GET */
+										/* Note: The following getPropertyValue() call does not actually trigger a DOM query;
+										 getPropertyValue() will extract the hook from rootPropertyValue. */
+										startValue = CSS.getPropertyValue(element, property, rootPropertyValue);
+										/* If startValue is already defined via forcefeeding, do not query the DOM for the root property's value;
+										 just grab rootProperty's zero-value template from CSS.Hooks. This overwrites the element's actual
+										 root property value (if one is set), but this is acceptable since the primary reason users forcefeed is
+										 to avoid DOM queries, and thus we likewise avoid querying the DOM for the root property's value. */
+									} else {
+										/* Grab this hook's zero-value template, e.g. "0px 0px 0px black". */
+										rootPropertyValue = CSS.Hooks.templates[rootProperty][1];
+									}
+									/* Handle non-hooked properties that haven't already been defined via forcefeeding. */
+								} else if (startValue === undefined) {
+									startValue = CSS.getPropertyValue(element, property); /* GET */
+								}
+							}
+
+							/**************************
+							 Value Data Extraction
+							 **************************/
+
+							var separatedValue,
+									endValueUnitType,
+									startValueUnitType,
+									operator = false;
+
+							/* Separates a property value into its numeric value and its unit type. */
+							var separateValue = function(property, value) {
+								var unitType,
+										numericValue;
+
+								numericValue = (value || "0")
+										.toString()
+										.toLowerCase()
+										/* Match the unit type at the end of the value. */
+										.replace(/[%A-z]+$/, function(match) {
+											/* Grab the unit type. */
+											unitType = match;
+
+											/* Strip the unit type off of value. */
+											return "";
+										});
+
+								/* If no unit type was supplied, assign one that is appropriate for this property (e.g. "deg" for rotateZ or "px" for width). */
+								if (!unitType) {
+									unitType = CSS.Values.getUnitType(property);
+								}
+
+								return [numericValue, unitType];
+							};
+
+							if (startValue !== endValue && Type.isString(startValue) && Type.isString(endValue)) {
+								pattern = "";
+								var iStart = 0, // index in startValue
+										iEnd = 0, // index in endValue
+										aStart = [], // array of startValue numbers
+										aEnd = [], // array of endValue numbers
+										inCalc = 0, // Keep track of being inside a "calc()" so we don't duplicate it
+										inRGB = 0, // Keep track of being inside an RGB as we can't use fractional values
+										inRGBA = 0; // Keep track of being inside an RGBA as we must pass fractional for the alpha channel
+
+								startValue = CSS.Hooks.fixColors(startValue);
+								endValue = CSS.Hooks.fixColors(endValue);
+								while (iStart < startValue.length && iEnd < endValue.length) {
+									var cStart = startValue[iStart],
+											cEnd = endValue[iEnd];
+
+									if (/[\d\.]/.test(cStart) && /[\d\.]/.test(cEnd)) {
+										var tStart = cStart, // temporary character buffer
+												tEnd = cEnd, // temporary character buffer
+												dotStart = ".", // Make sure we can only ever match a single dot in a decimal
+												dotEnd = "."; // Make sure we can only ever match a single dot in a decimal
+
+										while (++iStart < startValue.length) {
+											cStart = startValue[iStart];
+											if (cStart === dotStart) {
+												dotStart = ".."; // Can never match two characters
+											} else if (!/\d/.test(cStart)) {
+												break;
+											}
+											tStart += cStart;
+										}
+										while (++iEnd < endValue.length) {
+											cEnd = endValue[iEnd];
+											if (cEnd === dotEnd) {
+												dotEnd = ".."; // Can never match two characters
+											} else if (!/\d/.test(cEnd)) {
+												break;
+											}
+											tEnd += cEnd;
+										}
+										var uStart = CSS.Hooks.getUnit(startValue, iStart), // temporary unit type
+												uEnd = CSS.Hooks.getUnit(endValue, iEnd); // temporary unit type
+
+										iStart += uStart.length;
+										iEnd += uEnd.length;
+										if (uStart === uEnd) {
+											// Same units
+											if (tStart === tEnd) {
+												// Same numbers, so just copy over
+												pattern += tStart + uStart;
+											} else {
+												// Different numbers, so store them
+												pattern += "{" + aStart.length + (inRGB ? "!" : "") + "}" + uStart;
+												aStart.push(parseFloat(tStart));
+												aEnd.push(parseFloat(tEnd));
+											}
+										} else {
+											// Different units, so put into a "calc(from + to)" and animate each side to/from zero
+											var nStart = parseFloat(tStart),
+													nEnd = parseFloat(tEnd);
+
+											pattern += (inCalc < 5 ? "calc" : "") + "("
+													+ (nStart ? "{" + aStart.length + (inRGB ? "!" : "") + "}" : "0") + uStart
+													+ " + "
+													+ (nEnd ? "{" + (aStart.length + 1) + (inRGB ? "!" : "") + "}" : "0") + uEnd
+													+ ")";
+											if (nStart) {
+												aStart.push(parseFloat(tStart));
+												aStart.push(parseFloat(0));
+											}
+											if (nEnd) {
+												aEnd.push(parseFloat(0));
+												aEnd.push(parseFloat(tEnd));
+											}
+										}
+									} else if (cStart === cEnd) {
+										pattern += cStart;
+										iStart++;
+										iEnd++;
+										// Keep track of being inside a calc()
+										if (inCalc === 0 && cStart === "c"
+												|| inCalc === 1 && cStart === "a"
+												|| inCalc === 2 && cStart === "l"
+												|| inCalc === 3 && cStart === "c"
+												|| inCalc >= 4 && cStart === "("
+												) {
+											inCalc++;
+										} else if ((inCalc && inCalc < 5)
+												|| inCalc >= 4 && cStart === ")" && --inCalc < 5) {
+											inCalc = 0;
+										}
+										// Keep track of being inside an rgb() / rgba()
+										if (inRGB === 0 && cStart === "r"
+												|| inRGB === 1 && cStart === "g"
+												|| inRGB === 2 && cStart === "b"
+												|| inRGB === 3 && cStart === "a"
+												|| inRGB >= 3 && cStart === "("
+												) {
+											if (inRGB === 3 && cStart === "a") {
+												inRGBA = 1;
+											}
+											inRGB++;
+										} else if (inRGBA && cStart === ",") {
+											if (++inRGBA > 3) {
+												inRGB = inRGBA = 0;
+											}
+										} else if ((inRGBA && inRGB < (inRGBA ? 5 : 4))
+												|| inRGB >= (inRGBA ? 4 : 3) && cStart === ")" && --inRGB < (inRGBA ? 5 : 4)) {
+											inRGB = inRGBA = 0;
+										}
+									} else {
+										inCalc = 0;
+										// TODO: changing units, fixing colours
+										break;
+									}
+								}
+								if (iStart !== startValue.length || iEnd !== endValue.length) {
+									if (Velocity.debug) {
+										console.error("Trying to pattern match mis-matched strings [\"" + endValue + "\", \"" + startValue + "\"]");
+									}
+									pattern = undefined;
+								}
+								if (pattern) {
+									if (aStart.length) {
+										if (Velocity.debug) {
+											console.log("Pattern found \"" + pattern + "\" -> ", aStart, aEnd, "[" + startValue + "," + endValue + "]");
+										}
+										startValue = aStart;
+										endValue = aEnd;
+										endValueUnitType = startValueUnitType = "";
+									} else {
+										pattern = undefined;
+									}
+								}
+							}
+
+							if (!pattern) {
+								/* Separate startValue. */
+								separatedValue = separateValue(property, startValue);
+								startValue = separatedValue[0];
+								startValueUnitType = separatedValue[1];
+
+								/* Separate endValue, and extract a value operator (e.g. "+=", "-=") if one exists. */
+								separatedValue = separateValue(property, endValue);
+								endValue = separatedValue[0].replace(/^([+-\/*])=/, function(match, subMatch) {
+									operator = subMatch;
+
+									/* Strip the operator off of the value. */
+									return "";
+								});
+								endValueUnitType = separatedValue[1];
+
+								/* Parse float values from endValue and startValue. Default to 0 if NaN is returned. */
+								startValue = parseFloat(startValue) || 0;
+								endValue = parseFloat(endValue) || 0;
+
+								/***************************************
+								 Property-Specific Value Conversion
+								 ***************************************/
+
+								/* Custom support for properties that don't actually accept the % unit type, but where pollyfilling is trivial and relatively foolproof. */
+								if (endValueUnitType === "%") {
+									/* A %-value fontSize/lineHeight is relative to the parent's fontSize (as opposed to the parent's dimensions),
+									 which is identical to the em unit's behavior, so we piggyback off of that. */
+									if (/^(fontSize|lineHeight)$/.test(property)) {
+										/* Convert % into an em decimal value. */
+										endValue = endValue / 100;
+										endValueUnitType = "em";
+										/* For scaleX and scaleY, convert the value into its decimal format and strip off the unit type. */
+									} else if (/^scale/.test(property)) {
+										endValue = endValue / 100;
+										endValueUnitType = "";
+										/* For RGB components, take the defined percentage of 255 and strip off the unit type. */
+									} else if (/(Red|Green|Blue)$/i.test(property)) {
+										endValue = (endValue / 100) * 255;
+										endValueUnitType = "";
+									}
+								}
+							}
+
+							/***************************
+							 Unit Ratio Calculation
+							 ***************************/
+
+							/* When queried, the browser returns (most) CSS property values in pixels. Therefore, if an endValue with a unit type of
+							 %, em, or rem is animated toward, startValue must be converted from pixels into the same unit type as endValue in order
+							 for value manipulation logic (increment/decrement) to proceed. Further, if the startValue was forcefed or transferred
+							 from a previous call, startValue may also not be in pixels. Unit conversion logic therefore consists of two steps:
+							 1) Calculating the ratio of %/em/rem/vh/vw relative to pixels
+							 2) Converting startValue into the same unit of measurement as endValue based on these ratios. */
+							/* Unit conversion ratios are calculated by inserting a sibling node next to the target node, copying over its position property,
+							 setting values with the target unit type then comparing the returned pixel value. */
+							/* Note: Even if only one of these unit types is being animated, all unit ratios are calculated at once since the overhead
+							 of batching the SETs and GETs together upfront outweights the potential overhead
+							 of layout thrashing caused by re-querying for uncalculated ratios for subsequently-processed properties. */
+							/* Todo: Shift this logic into the calls' first tick instance so that it's synced with RAF. */
+							var calculateUnitRatios = function() {
+
+								/************************
+								 Same Ratio Checks
+								 ************************/
+
+								/* The properties below are used to determine whether the element differs sufficiently from this call's
+								 previously iterated element to also differ in its unit conversion ratios. If the properties match up with those
+								 of the prior element, the prior element's conversion ratios are used. Like most optimizations in Velocity,
+								 this is done to minimize DOM querying. */
+								var sameRatioIndicators = {
+									myParent: element.parentNode || document.body, /* GET */
+									position: CSS.getPropertyValue(element, "position"), /* GET */
+									fontSize: CSS.getPropertyValue(element, "fontSize") /* GET */
+								},
+										/* Determine if the same % ratio can be used. % is based on the element's position value and its parent's width and height dimensions. */
+										samePercentRatio = ((sameRatioIndicators.position === callUnitConversionData.lastPosition) && (sameRatioIndicators.myParent === callUnitConversionData.lastParent)),
+										/* Determine if the same em ratio can be used. em is relative to the element's fontSize. */
+										sameEmRatio = (sameRatioIndicators.fontSize === callUnitConversionData.lastFontSize);
+
+								/* Store these ratio indicators call-wide for the next element to compare against. */
+								callUnitConversionData.lastParent = sameRatioIndicators.myParent;
+								callUnitConversionData.lastPosition = sameRatioIndicators.position;
+								callUnitConversionData.lastFontSize = sameRatioIndicators.fontSize;
+
+								/***************************
+								 Element-Specific Units
+								 ***************************/
+
+								/* Note: IE8 rounds to the nearest pixel when returning CSS values, thus we perform conversions using a measurement
+								 of 100 (instead of 1) to give our ratios a precision of at least 2 decimal values. */
+								var measurement = 100,
+										unitRatios = {};
+
+								if (!sameEmRatio || !samePercentRatio) {
+									var dummy = data && data.isSVG ? document.createElementNS("http://www.w3.org/2000/svg", "rect") : document.createElement("div");
+
+									Velocity.init(dummy);
+									sameRatioIndicators.myParent.appendChild(dummy);
+
+									/* To accurately and consistently calculate conversion ratios, the element's cascaded overflow and box-sizing are stripped.
+									 Similarly, since width/height can be artificially constrained by their min-/max- equivalents, these are controlled for as well. */
+									/* Note: Overflow must be also be controlled for per-axis since the overflow property overwrites its per-axis values. */
+									$.each(["overflow", "overflowX", "overflowY"], function(i, property) {
+										Velocity.CSS.setPropertyValue(dummy, property, "hidden");
+									});
+									Velocity.CSS.setPropertyValue(dummy, "position", sameRatioIndicators.position);
+									Velocity.CSS.setPropertyValue(dummy, "fontSize", sameRatioIndicators.fontSize);
+									Velocity.CSS.setPropertyValue(dummy, "boxSizing", "content-box");
+
+									/* width and height act as our proxy properties for measuring the horizontal and vertical % ratios. */
+									$.each(["minWidth", "maxWidth", "width", "minHeight", "maxHeight", "height"], function(i, property) {
+										Velocity.CSS.setPropertyValue(dummy, property, measurement + "%");
+									});
+									/* paddingLeft arbitrarily acts as our proxy property for the em ratio. */
+									Velocity.CSS.setPropertyValue(dummy, "paddingLeft", measurement + "em");
+
+									/* Divide the returned value by the measurement to get the ratio between 1% and 1px. Default to 1 since working with 0 can produce Infinite. */
+									unitRatios.percentToPxWidth = callUnitConversionData.lastPercentToPxWidth = (parseFloat(CSS.getPropertyValue(dummy, "width", null, true)) || 1) / measurement; /* GET */
+									unitRatios.percentToPxHeight = callUnitConversionData.lastPercentToPxHeight = (parseFloat(CSS.getPropertyValue(dummy, "height", null, true)) || 1) / measurement; /* GET */
+									unitRatios.emToPx = callUnitConversionData.lastEmToPx = (parseFloat(CSS.getPropertyValue(dummy, "paddingLeft")) || 1) / measurement; /* GET */
+
+									sameRatioIndicators.myParent.removeChild(dummy);
+								} else {
+									unitRatios.emToPx = callUnitConversionData.lastEmToPx;
+									unitRatios.percentToPxWidth = callUnitConversionData.lastPercentToPxWidth;
+									unitRatios.percentToPxHeight = callUnitConversionData.lastPercentToPxHeight;
+								}
+
+								/***************************
+								 Element-Agnostic Units
+								 ***************************/
+
+								/* Whereas % and em ratios are determined on a per-element basis, the rem unit only needs to be checked
+								 once per call since it's exclusively dependant upon document.body's fontSize. If this is the first time
+								 that calculateUnitRatios() is being run during this call, remToPx will still be set to its default value of null,
+								 so we calculate it now. */
+								if (callUnitConversionData.remToPx === null) {
+									/* Default to browsers' default fontSize of 16px in the case of 0. */
+									callUnitConversionData.remToPx = parseFloat(CSS.getPropertyValue(document.body, "fontSize")) || 16; /* GET */
+								}
+
+								/* Similarly, viewport units are %-relative to the window's inner dimensions. */
+								if (callUnitConversionData.vwToPx === null) {
+									callUnitConversionData.vwToPx = parseFloat(window.innerWidth) / 100; /* GET */
+									callUnitConversionData.vhToPx = parseFloat(window.innerHeight) / 100; /* GET */
+								}
+
+								unitRatios.remToPx = callUnitConversionData.remToPx;
+								unitRatios.vwToPx = callUnitConversionData.vwToPx;
+								unitRatios.vhToPx = callUnitConversionData.vhToPx;
+
+								if (Velocity.debug >= 1) {
+									console.log("Unit ratios: " + JSON.stringify(unitRatios), element);
+								}
+								return unitRatios;
+							};
+
+							/********************
+							 Unit Conversion
+							 ********************/
+
+							/* The * and / operators, which are not passed in with an associated unit, inherently use startValue's unit. Skip value and unit conversion. */
+							if (/[\/*]/.test(operator)) {
+								endValueUnitType = startValueUnitType;
+								/* If startValue and endValue differ in unit type, convert startValue into the same unit type as endValue so that if endValueUnitType
+								 is a relative unit (%, em, rem), the values set during tweening will continue to be accurately relative even if the metrics they depend
+								 on are dynamically changing during the course of the animation. Conversely, if we always normalized into px and used px for setting values, the px ratio
+								 would become stale if the original unit being animated toward was relative and the underlying metrics change during the animation. */
+								/* Since 0 is 0 in any unit type, no conversion is necessary when startValue is 0 -- we just start at 0 with endValueUnitType. */
+							} else if ((startValueUnitType !== endValueUnitType) && startValue !== 0) {
+								/* Unit conversion is also skipped when endValue is 0, but *startValueUnitType* must be used for tween values to remain accurate. */
+								/* Note: Skipping unit conversion here means that if endValueUnitType was originally a relative unit, the animation won't relatively
+								 match the underlying metrics if they change, but this is acceptable since we're animating toward invisibility instead of toward visibility,
+								 which remains past the point of the animation's completion. */
+								if (endValue === 0) {
+									endValueUnitType = startValueUnitType;
+								} else {
+									/* By this point, we cannot avoid unit conversion (it's undesirable since it causes layout thrashing).
+									 If we haven't already, we trigger calculateUnitRatios(), which runs once per element per call. */
+									elementUnitConversionData = elementUnitConversionData || calculateUnitRatios();
+
+									/* The following RegEx matches CSS properties that have their % values measured relative to the x-axis. */
+									/* Note: W3C spec mandates that all of margin and padding's properties (even top and bottom) are %-relative to the *width* of the parent element. */
+									var axis = (/margin|padding|left|right|width|text|word|letter/i.test(property) || /X$/.test(property) || property === "x") ? "x" : "y";
+
+									/* In order to avoid generating n^2 bespoke conversion functions, unit conversion is a two-step process:
+									 1) Convert startValue into pixels. 2) Convert this new pixel value into endValue's unit type. */
+									switch (startValueUnitType) {
+										case "%":
+											/* Note: translateX and translateY are the only properties that are %-relative to an element's own dimensions -- not its parent's dimensions.
+											 Velocity does not include a special conversion process to account for this behavior. Therefore, animating translateX/Y from a % value
+											 to a non-% value will produce an incorrect start value. Fortunately, this sort of cross-unit conversion is rarely done by users in practice. */
+											startValue *= (axis === "x" ? elementUnitConversionData.percentToPxWidth : elementUnitConversionData.percentToPxHeight);
+											break;
+
+										case "px":
+											/* px acts as our midpoint in the unit conversion process; do nothing. */
+											break;
+
+										default:
+											startValue *= elementUnitConversionData[startValueUnitType + "ToPx"];
+									}
+
+									/* Invert the px ratios to convert into to the target unit. */
+									switch (endValueUnitType) {
+										case "%":
+											startValue *= 1 / (axis === "x" ? elementUnitConversionData.percentToPxWidth : elementUnitConversionData.percentToPxHeight);
+											break;
+
+										case "px":
+											/* startValue is already in px, do nothing; we're done. */
+											break;
+
+										default:
+											startValue *= 1 / elementUnitConversionData[endValueUnitType + "ToPx"];
+									}
+								}
+							}
+
+							/*********************
+							 Relative Values
+							 *********************/
+
+							/* Operator logic must be performed last since it requires unit-normalized start and end values. */
+							/* Note: Relative *percent values* do not behave how most people think; while one would expect "+=50%"
+							 to increase the property 1.5x its current value, it in fact increases the percent units in absolute terms:
+							 50 points is added on top of the current % value. */
+							switch (operator) {
+								case "+":
+									endValue = startValue + endValue;
+									break;
+
+								case "-":
+									endValue = startValue - endValue;
+									break;
+
+								case "*":
+									endValue = startValue * endValue;
+									break;
+
+								case "/":
+									endValue = startValue / endValue;
+									break;
+							}
+
+							/**************************
+							 tweensContainer Push
+							 **************************/
+
+							/* Construct the per-property tween object, and push it to the element's tweensContainer. */
+							tweensContainer[property] = {
+								rootPropertyValue: rootPropertyValue,
+								startValue: startValue,
+								currentValue: startValue,
+								endValue: endValue,
+								unitType: endValueUnitType,
+								easing: easing
+							};
+							if (pattern) {
+								tweensContainer[property].pattern = pattern;
+							}
+
+							if (Velocity.debug) {
+								console.log("tweensContainer (" + property + "): " + JSON.stringify(tweensContainer[property]), element);
+							}
+						};
+
+						/* Create a tween out of each property, and append its associated data to tweensContainer. */
+						for (var property in propertiesMap) {
+
+							if (!propertiesMap.hasOwnProperty(property)) {
+								continue;
+							}
+							/* The original property name's format must be used for the parsePropertyValue() lookup,
+							 but we then use its camelCase styling to normalize it for manipulation. */
+							var propertyName = CSS.Names.camelCase(property),
+									valueData = parsePropertyValue(propertiesMap[property]);
+
+							/* Find shorthand color properties that have been passed a hex string. */
+							/* Would be quicker to use CSS.Lists.colors.includes() if possible */
+							if (CSS.Lists.colors.indexOf(propertyName) >= 0) {
+								/* Parse the value data for each shorthand. */
+								var endValue = valueData[0],
+										easing = valueData[1],
+										startValue = valueData[2];
+
+								if (CSS.RegEx.isHex.test(endValue)) {
+									/* Convert the hex strings into their RGB component arrays. */
+									var colorComponents = ["Red", "Green", "Blue"],
+											endValueRGB = CSS.Values.hexToRgb(endValue),
+											startValueRGB = startValue ? CSS.Values.hexToRgb(startValue) : undefined;
+
+									/* Inject the RGB component tweens into propertiesMap. */
+									for (var i = 0; i < colorComponents.length; i++) {
+										var dataArray = [endValueRGB[i]];
+
+										if (easing) {
+											dataArray.push(easing);
+										}
+
+										if (startValueRGB !== undefined) {
+											dataArray.push(startValueRGB[i]);
+										}
+
+										fixPropertyValue(propertyName + colorComponents[i], dataArray);
+									}
+									/* If we have replaced a shortcut color value then don't update the standard property name */
+									continue;
+								}
+							}
+							fixPropertyValue(propertyName, valueData);
+						}
+
+						/* Along with its property data, store a reference to the element itself onto tweensContainer. */
+						tweensContainer.element = element;
+					}
+
+					/*****************
+					 Call Push
+					 *****************/
+
+					/* Note: tweensContainer can be empty if all of the properties in this call's property map were skipped due to not
+					 being supported by the browser. The element property is used for checking that the tweensContainer has been appended to. */
+					if (tweensContainer.element) {
+						/* Apply the "velocity-animating" indicator class. */
+						CSS.Values.addClass(element, "velocity-animating");
+
+						/* The call array houses the tweensContainers for each element being animated in the current call. */
+						call.push(tweensContainer);
+
+						data = Data(element);
+
+						if (data) {
+							/* Store the tweensContainer and options if we're working on the default effects queue, so that they can be used by the reverse command. */
+							if (opts.queue === "") {
+
+								data.tweensContainer = tweensContainer;
+								data.opts = opts;
+							}
+
+							/* Switch on the element's animating flag. */
+							data.isAnimating = true;
+						}
+
+						/* Once the final element in this call's element set has been processed, push the call array onto
+						 Velocity.State.calls for the animation tick to immediately begin processing. */
+						if (elementsIndex === elementsLength - 1) {
+							/* Add the current call plus its associated metadata (the element set and the call's options) onto the global call container.
+							 Anything on this call container is subjected to tick() processing. */
+							Velocity.State.calls.push([call, elements, opts, null, promiseData.resolver, null, 0]);
+
+							/* If the animation tick isn't running, start it. (Velocity shuts it off when there are no active calls to process.) */
+							if (Velocity.State.isTicking === false) {
+								Velocity.State.isTicking = true;
+
+								/* Start the tick loop. */
+								tick();
+							}
+						} else {
+							elementsIndex++;
+						}
+					}
+				}
+
+				/* When the queue option is set to false, the call skips the element's queue and fires immediately. */
+				if (opts.queue === false) {
+					/* Since this buildQueue call doesn't respect the element's existing queue (which is where a delay option would have been appended),
+					 we manually inject the delay property here with an explicit setTimeout. */
+					if (opts.delay) {
+
+						/* Temporarily store delayed elements to facilitate access for global pause/resume */
+						var callIndex = Velocity.State.delayedElements.count++;
+						Velocity.State.delayedElements[callIndex] = element;
+
+						var delayComplete = (function(index) {
+							return function() {
+								/* Clear the temporary element */
+								Velocity.State.delayedElements[index] = false;
+
+								/* Finally, issue the call */
+								buildQueue();
+							};
+						})(callIndex);
+
+						Data(element).delayBegin = (new Date()).getTime();
+						Data(element).delay = parseFloat(opts.delay);
+						Data(element).delayTimer = {
+							setTimeout: setTimeout(buildQueue, parseFloat(opts.delay)),
+							next: delayComplete
+						};
+					} else {
+						buildQueue();
+					}
+					/* Otherwise, the call undergoes element queueing as normal. */
+					/* Note: To interoperate with jQuery, Velocity uses jQuery's own $.queue() stack for queuing logic. */
+				} else {
+					$.queue(element, opts.queue, function(next, clearQueue) {
+						/* If the clearQueue flag was passed in by the stop command, resolve this call's promise. (Promises can only be resolved once,
+						 so it's fine if this is repeatedly triggered for each element in the associated call.) */
+						if (clearQueue === true) {
+							if (promiseData.promise) {
+								promiseData.resolver(elements);
+							}
+
+							/* Do not continue with animation queueing. */
+							return true;
+						}
+
+						/* This flag indicates to the upcoming completeCall() function that this queue entry was initiated by Velocity.
+						 See completeCall() for further details. */
+						Velocity.velocityQueueEntryFlag = true;
+
+						buildQueue(next);
+					});
+				}
+
+				/*********************
+				 Auto-Dequeuing
+				 *********************/
+
+				/* As per jQuery's $.queue() behavior, to fire the first non-custom-queue entry on an element, the element
+				 must be dequeued if its queue stack consists *solely* of the current call. (This can be determined by checking
+				 for the "inprogress" item that jQuery prepends to active queue stack arrays.) Regardless, whenever the element's
+				 queue is further appended with additional items -- including $.delay()'s or even $.animate() calls, the queue's
+				 first entry is automatically fired. This behavior contrasts that of custom queues, which never auto-fire. */
+				/* Note: When an element set is being subjected to a non-parallel Velocity call, the animation will not begin until
+				 each one of the elements in the set has reached the end of its individually pre-existing queue chain. */
+				/* Note: Unfortunately, most people don't fully grasp jQuery's powerful, yet quirky, $.queue() function.
+				 Lean more here: http://stackoverflow.com/questions/1058158/can-somebody-explain-jquery-queue-to-me */
+				if ((opts.queue === "" || opts.queue === "fx") && $.queue(element)[0] !== "inprogress") {
+					$.dequeue(element);
+				}
+			}
+
+			/**************************
+			 Element Set Iteration
+			 **************************/
+
+			/* If the "nodeType" property exists on the elements variable, we're animating a single element.
+			 Place it in an array so that $.each() can iterate over it. */
+			$.each(elements, function(i, element) {
+				/* Ensure each element in a set has a nodeType (is a real element) to avoid throwing errors. */
+				if (Type.isNode(element)) {
+					processElement(element, i);
+				}
+			});
+
+			/******************
+			 Option: Loop
+			 ******************/
+
+			/* The loop option accepts an integer indicating how many times the element should loop between the values in the
+			 current call's properties map and the element's property values prior to this call. */
+			/* Note: The loop option's logic is performed here -- after element processing -- because the current call needs
+			 to undergo its queue insertion prior to the loop option generating its series of constituent "reverse" calls,
+			 which chain after the current call. Two reverse calls (two "alternations") constitute one loop. */
+			opts = $.extend({}, Velocity.defaults, options);
+			opts.loop = parseInt(opts.loop, 10);
+			var reverseCallsCount = (opts.loop * 2) - 1;
+
+			if (opts.loop) {
+				/* Double the loop count to convert it into its appropriate number of "reverse" calls.
+				 Subtract 1 from the resulting value since the current call is included in the total alternation count. */
+				for (var x = 0; x < reverseCallsCount; x++) {
+					/* Since the logic for the reverse action occurs inside Queueing and therefore this call's options object
+					 isn't parsed until then as well, the current call's delay option must be explicitly passed into the reverse
+					 call so that the delay logic that occurs inside *Pre-Queueing* can process it. */
+					var reverseOptions = {
+						delay: opts.delay,
+						progress: opts.progress
+					};
+
+					/* If a complete callback was passed into this call, transfer it to the loop redirect's final "reverse" call
+					 so that it's triggered when the entire redirect is complete (and not when the very first animation is complete). */
+					if (x === reverseCallsCount - 1) {
+						reverseOptions.display = opts.display;
+						reverseOptions.visibility = opts.visibility;
+						reverseOptions.complete = opts.complete;
+					}
+
+					animate(elements, "reverse", reverseOptions);
+				}
+			}
+
+			/***************
+			 Chaining
+			 ***************/
+
+			/* Return the elements back to the call chain, with wrapped elements taking precedence in case Velocity was called via the $.fn. extension. */
+			return getChain();
+		};
+
+		/* Turn Velocity into the animation function, extended with the pre-existing Velocity object. */
+		Velocity = $.extend(animate, Velocity);
+		/* For legacy support, also expose the literal animate method. */
+		Velocity.animate = animate;
+
+		/**************
+		 Timing
+		 **************/
+
+		/* Ticker function. */
+		var ticker = window.requestAnimationFrame || rAFShim;
+
+		/* Inactive browser tabs pause rAF, which results in all active animations immediately sprinting to their completion states when the tab refocuses.
+		 To get around this, we dynamically switch rAF to setTimeout (which the browser *doesn't* pause) when the tab loses focus. We skip this for mobile
+		 devices to avoid wasting battery power on inactive tabs. */
+		/* Note: Tab focus detection doesn't work on older versions of IE, but that's okay since they don't support rAF to begin with. */
+		if (!Velocity.State.isMobile && document.hidden !== undefined) {
+			var updateTicker = function() {
+				/* Reassign the rAF function (which the global tick() function uses) based on the tab's focus state. */
+				if (document.hidden) {
+					ticker = function(callback) {
+						/* The tick function needs a truthy first argument in order to pass its internal timestamp check. */
+						return setTimeout(function() {
+							callback(true);
+						}, 16);
+					};
+
+					/* The rAF loop has been paused by the browser, so we manually restart the tick. */
+					tick();
+				} else {
+					ticker = window.requestAnimationFrame || rAFShim;
+				}
+			};
+
+			/* Page could be sitting in the background at this time (i.e. opened as new tab) so making sure we use correct ticker from the start */
+			updateTicker();
+
+			/* And then run check again every time visibility changes */
+			document.addEventListener("visibilitychange", updateTicker);
+		}
+
+		/************
+		 Tick
+		 ************/
+
+		/* Note: All calls to Velocity are pushed to the Velocity.State.calls array, which is fully iterated through upon each tick. */
+		function tick(timestamp) {
+			/* An empty timestamp argument indicates that this is the first tick occurence since ticking was turned on.
+			 We leverage this metadata to fully ignore the first tick pass since RAF's initial pass is fired whenever
+			 the browser's next tick sync time occurs, which results in the first elements subjected to Velocity
+			 calls being animated out of sync with any elements animated immediately thereafter. In short, we ignore
+			 the first RAF tick pass so that elements being immediately consecutively animated -- instead of simultaneously animated
+			 by the same Velocity call -- are properly batched into the same initial RAF tick and consequently remain in sync thereafter. */
+			if (timestamp) {
+				/* We normally use RAF's high resolution timestamp but as it can be significantly offset when the browser is
+				 under high stress we give the option for choppiness over allowing the browser to drop huge chunks of frames.
+				 We use performance.now() and shim it if it doesn't exist for when the tab is hidden. */
+				var timeCurrent = Velocity.timestamp && timestamp !== true ? timestamp : performance.now();
+
+				/********************
+				 Call Iteration
+				 ********************/
+
+				var callsLength = Velocity.State.calls.length;
+
+				/* To speed up iterating over this array, it is compacted (falsey items -- calls that have completed -- are removed)
+				 when its length has ballooned to a point that can impact tick performance. This only becomes necessary when animation
+				 has been continuous with many elements over a long period of time; whenever all active calls are completed, completeCall() clears Velocity.State.calls. */
+				if (callsLength > 10000) {
+					Velocity.State.calls = compactSparseArray(Velocity.State.calls);
+					callsLength = Velocity.State.calls.length;
+				}
+
+				/* Iterate through each active call. */
+				for (var i = 0; i < callsLength; i++) {
+					/* When a Velocity call is completed, its Velocity.State.calls entry is set to false. Continue on to the next call. */
+					if (!Velocity.State.calls[i]) {
+						continue;
+					}
+
+					/************************
+					 Call-Wide Variables
+					 ************************/
+
+					var callContainer = Velocity.State.calls[i],
+							call = callContainer[0],
+							opts = callContainer[2],
+							timeStart = callContainer[3],
+							firstTick = !!timeStart,
+							tweenDummyValue = null,
+							pauseObject = callContainer[5],
+							millisecondsEllapsed = callContainer[6];
+
+
+
+					/* If timeStart is undefined, then this is the first time that this call has been processed by tick().
+					 We assign timeStart now so that its value is as close to the real animation start time as possible.
+					 (Conversely, had timeStart been defined when this call was added to Velocity.State.calls, the delay
+					 between that time and now would cause the first few frames of the tween to be skipped since
+					 percentComplete is calculated relative to timeStart.) */
+					/* Further, subtract 16ms (the approximate resolution of RAF) from the current time value so that the
+					 first tick iteration isn't wasted by animating at 0% tween completion, which would produce the
+					 same style value as the element's current value. */
+					if (!timeStart) {
+						timeStart = Velocity.State.calls[i][3] = timeCurrent - 16;
+					}
+
+					/* If a pause object is present, skip processing unless it has been set to resume */
+					if (pauseObject) {
+						if (pauseObject.resume === true) {
+							/* Update the time start to accomodate the paused completion amount */
+							timeStart = callContainer[3] = Math.round(timeCurrent - millisecondsEllapsed - 16);
+
+							/* Remove pause object after processing */
+							callContainer[5] = null;
+						} else {
+							continue;
+						}
+					}
+
+					millisecondsEllapsed = callContainer[6] = timeCurrent - timeStart;
+
+					/* The tween's completion percentage is relative to the tween's start time, not the tween's start value
+					 (which would result in unpredictable tween durations since JavaScript's timers are not particularly accurate).
+					 Accordingly, we ensure that percentComplete does not exceed 1. */
+					var percentComplete = Math.min((millisecondsEllapsed) / opts.duration, 1);
+
+					/**********************
+					 Element Iteration
+					 **********************/
+
+					/* For every call, iterate through each of the elements in its set. */
+					for (var j = 0, callLength = call.length; j < callLength; j++) {
+						var tweensContainer = call[j],
+								element = tweensContainer.element;
+
+						/* Check to see if this element has been deleted midway through the animation by checking for the
+						 continued existence of its data cache. If it's gone, or the element is currently paused, skip animating this element. */
+						if (!Data(element)) {
+							continue;
+						}
+
+						var transformPropertyExists = false;
+
+						/**********************************
+						 Display & Visibility Toggling
+						 **********************************/
+
+						/* If the display option is set to non-"none", set it upfront so that the element can become visible before tweening begins.
+						 (Otherwise, display's "none" value is set in completeCall() once the animation has completed.) */
+						if (opts.display !== undefined && opts.display !== null && opts.display !== "none") {
+							if (opts.display === "flex") {
+								var flexValues = ["-webkit-box", "-moz-box", "-ms-flexbox", "-webkit-flex"];
+
+								$.each(flexValues, function(i, flexValue) {
+									CSS.setPropertyValue(element, "display", flexValue);
+								});
+							}
+
+							CSS.setPropertyValue(element, "display", opts.display);
+						}
+
+						/* Same goes with the visibility option, but its "none" equivalent is "hidden". */
+						if (opts.visibility !== undefined && opts.visibility !== "hidden") {
+							CSS.setPropertyValue(element, "visibility", opts.visibility);
+						}
+
+						/************************
+						 Property Iteration
+						 ************************/
+
+						/* For every element, iterate through each property. */
+						for (var property in tweensContainer) {
+							/* Note: In addition to property tween data, tweensContainer contains a reference to its associated element. */
+							if (tweensContainer.hasOwnProperty(property) && property !== "element") {
+								var tween = tweensContainer[property],
+										currentValue,
+										/* Easing can either be a pre-genereated function or a string that references a pre-registered easing
+										 on the Velocity.Easings object. In either case, return the appropriate easing *function*. */
+										easing = Type.isString(tween.easing) ? Velocity.Easings[tween.easing] : tween.easing;
+
+								/******************************
+								 Current Value Calculation
+								 ******************************/
+
+								if (Type.isString(tween.pattern)) {
+									var patternReplace = percentComplete === 1 ?
+											function($0, index, round) {
+												var result = tween.endValue[index];
+
+												return round ? Math.round(result) : result;
+											} :
+											function($0, index, round) {
+												var startValue = tween.startValue[index],
+														tweenDelta = tween.endValue[index] - startValue,
+														result = startValue + (tweenDelta * easing(percentComplete, opts, tweenDelta));
+
+												return round ? Math.round(result) : result;
+											};
+
+									currentValue = tween.pattern.replace(/{(\d+)(!)?}/g, patternReplace);
+								} else if (percentComplete === 1) {
+									/* If this is the last tick pass (if we've reached 100% completion for this tween),
+									 ensure that currentValue is explicitly set to its target endValue so that it's not subjected to any rounding. */
+									currentValue = tween.endValue;
+								} else {
+									/* Otherwise, calculate currentValue based on the current delta from startValue. */
+									var tweenDelta = tween.endValue - tween.startValue;
+
+									currentValue = tween.startValue + (tweenDelta * easing(percentComplete, opts, tweenDelta));
+									/* If no value change is occurring, don't proceed with DOM updating. */
+								}
+								if (!firstTick && (currentValue === tween.currentValue)) {
+									continue;
+								}
+
+								tween.currentValue = currentValue;
+
+								/* If we're tweening a fake 'tween' property in order to log transition values, update the one-per-call variable so that
+								 it can be passed into the progress callback. */
+								if (property === "tween") {
+									tweenDummyValue = currentValue;
+								} else {
+									/******************
+									 Hooks: Part I
+									 ******************/
+									var hookRoot;
+
+									/* For hooked properties, the newly-updated rootPropertyValueCache is cached onto the element so that it can be used
+									 for subsequent hooks in this call that are associated with the same root property. If we didn't cache the updated
+									 rootPropertyValue, each subsequent update to the root property in this tick pass would reset the previous hook's
+									 updates to rootPropertyValue prior to injection. A nice performance byproduct of rootPropertyValue caching is that
+									 subsequently chained animations using the same hookRoot but a different hook can use this cached rootPropertyValue. */
+									if (CSS.Hooks.registered[property]) {
+										hookRoot = CSS.Hooks.getRoot(property);
+
+										var rootPropertyValueCache = Data(element).rootPropertyValueCache[hookRoot];
+
+										if (rootPropertyValueCache) {
+											tween.rootPropertyValue = rootPropertyValueCache;
+										}
+									}
+
+									/*****************
+									 DOM Update
+									 *****************/
+
+									/* setPropertyValue() returns an array of the property name and property value post any normalization that may have been performed. */
+									/* Note: To solve an IE<=8 positioning bug, the unit type is dropped when setting a property value of 0. */
+									var adjustedSetData = CSS.setPropertyValue(element, /* SET */
+											property,
+											tween.currentValue + (IE < 9 && parseFloat(currentValue) === 0 ? "" : tween.unitType),
+											tween.rootPropertyValue,
+											tween.scrollData);
+
+									/*******************
+									 Hooks: Part II
+									 *******************/
+
+									/* Now that we have the hook's updated rootPropertyValue (the post-processed value provided by adjustedSetData), cache it onto the element. */
+									if (CSS.Hooks.registered[property]) {
+										/* Since adjustedSetData contains normalized data ready for DOM updating, the rootPropertyValue needs to be re-extracted from its normalized form. ?? */
+										if (CSS.Normalizations.registered[hookRoot]) {
+											Data(element).rootPropertyValueCache[hookRoot] = CSS.Normalizations.registered[hookRoot]("extract", null, adjustedSetData[1]);
+										} else {
+											Data(element).rootPropertyValueCache[hookRoot] = adjustedSetData[1];
+										}
+									}
+
+									/***************
+									 Transforms
+									 ***************/
+
+									/* Flag whether a transform property is being animated so that flushTransformCache() can be triggered once this tick pass is complete. */
+									if (adjustedSetData[0] === "transform") {
+										transformPropertyExists = true;
+									}
+
+								}
+							}
+						}
+
+						/****************
+						 mobileHA
+						 ****************/
+
+						/* If mobileHA is enabled, set the translate3d transform to null to force hardware acceleration.
+						 It's safe to override this property since Velocity doesn't actually support its animation (hooks are used in its place). */
+						if (opts.mobileHA) {
+							/* Don't set the null transform hack if we've already done so. */
+							if (Data(element).transformCache.translate3d === undefined) {
+								/* All entries on the transformCache object are later concatenated into a single transform string via flushTransformCache(). */
+								Data(element).transformCache.translate3d = "(0px, 0px, 0px)";
+
+								transformPropertyExists = true;
+							}
+						}
+
+						if (transformPropertyExists) {
+							CSS.flushTransformCache(element);
+						}
+					}
+
+					/* The non-"none" display value is only applied to an element once -- when its associated call is first ticked through.
+					 Accordingly, it's set to false so that it isn't re-processed by this call in the next tick. */
+					if (opts.display !== undefined && opts.display !== "none") {
+						Velocity.State.calls[i][2].display = false;
+					}
+					if (opts.visibility !== undefined && opts.visibility !== "hidden") {
+						Velocity.State.calls[i][2].visibility = false;
+					}
+
+					/* Pass the elements and the timing data (percentComplete, msRemaining, timeStart, tweenDummyValue) into the progress callback. */
+					if (opts.progress) {
+						opts.progress.call(callContainer[1],
+								callContainer[1],
+								percentComplete,
+								Math.max(0, (timeStart + opts.duration) - timeCurrent),
+								timeStart,
+								tweenDummyValue);
+					}
+
+					/* If this call has finished tweening, pass its index to completeCall() to handle call cleanup. */
+					if (percentComplete === 1) {
+						completeCall(i);
+					}
+				}
+			}
+
+			/* Note: completeCall() sets the isTicking flag to false when the last call on Velocity.State.calls has completed. */
+			if (Velocity.State.isTicking) {
+				ticker(tick);
+			}
+		}
+
+		/**********************
+		 Call Completion
+		 **********************/
+
+		/* Note: Unlike tick(), which processes all active calls at once, call completion is handled on a per-call basis. */
+		function completeCall(callIndex, isStopped) {
+			/* Ensure the call exists. */
+			if (!Velocity.State.calls[callIndex]) {
+				return false;
+			}
+
+			/* Pull the metadata from the call. */
+			var call = Velocity.State.calls[callIndex][0],
+					elements = Velocity.State.calls[callIndex][1],
+					opts = Velocity.State.calls[callIndex][2],
+					resolver = Velocity.State.calls[callIndex][4];
+
+			var remainingCallsExist = false;
+
+			/*************************
+			 Element Finalization
+			 *************************/
+
+			for (var i = 0, callLength = call.length; i < callLength; i++) {
+				var element = call[i].element;
+
+				/* If the user set display to "none" (intending to hide the element), set it now that the animation has completed. */
+				/* Note: display:none isn't set when calls are manually stopped (via Velocity("stop"). */
+				/* Note: Display gets ignored with "reverse" calls and infinite loops, since this behavior would be undesirable. */
+				if (!isStopped && !opts.loop) {
+					if (opts.display === "none") {
+						CSS.setPropertyValue(element, "display", opts.display);
+					}
+
+					if (opts.visibility === "hidden") {
+						CSS.setPropertyValue(element, "visibility", opts.visibility);
+					}
+				}
+
+				/* If the element's queue is empty (if only the "inprogress" item is left at position 0) or if its queue is about to run
+				 a non-Velocity-initiated entry, turn off the isAnimating flag. A non-Velocity-initiatied queue entry's logic might alter
+				 an element's CSS values and thereby cause Velocity's cached value data to go stale. To detect if a queue entry was initiated by Velocity,
+				 we check for the existence of our special Velocity.queueEntryFlag declaration, which minifiers won't rename since the flag
+				 is assigned to jQuery's global $ object and thus exists out of Velocity's own scope. */
+				var data = Data(element);
+
+				if (opts.loop !== true && ($.queue(element)[1] === undefined || !/\.velocityQueueEntryFlag/i.test($.queue(element)[1]))) {
+					/* The element may have been deleted. Ensure that its data cache still exists before acting on it. */
+					if (data) {
+						data.isAnimating = false;
+						/* Clear the element's rootPropertyValueCache, which will become stale. */
+						data.rootPropertyValueCache = {};
+
+						var transformHAPropertyExists = false;
+						/* If any 3D transform subproperty is at its default value (regardless of unit type), remove it. */
+						$.each(CSS.Lists.transforms3D, function(i, transformName) {
+							var defaultValue = /^scale/.test(transformName) ? 1 : 0,
+									currentValue = data.transformCache[transformName];
+
+							if (data.transformCache[transformName] !== undefined && new RegExp("^\\(" + defaultValue + "[^.]").test(currentValue)) {
+								transformHAPropertyExists = true;
+
+								delete data.transformCache[transformName];
+							}
+						});
+
+						/* Mobile devices have hardware acceleration removed at the end of the animation in order to avoid hogging the GPU's memory. */
+						if (opts.mobileHA) {
+							transformHAPropertyExists = true;
+							delete data.transformCache.translate3d;
+						}
+
+						/* Flush the subproperty removals to the DOM. */
+						if (transformHAPropertyExists) {
+							CSS.flushTransformCache(element);
+						}
+
+						/* Remove the "velocity-animating" indicator class. */
+						CSS.Values.removeClass(element, "velocity-animating");
+					}
+				}
+
+				/*********************
+				 Option: Complete
+				 *********************/
+
+				/* Complete is fired once per call (not once per element) and is passed the full raw DOM element set as both its context and its first argument. */
+				/* Note: Callbacks aren't fired when calls are manually stopped (via Velocity("stop"). */
+				if (!isStopped && opts.complete && !opts.loop && (i === callLength - 1)) {
+					/* We throw callbacks in a setTimeout so that thrown errors don't halt the execution of Velocity itself. */
+					try {
+						opts.complete.call(elements, elements);
+					} catch (error) {
+						setTimeout(function() {
+							throw error;
+						}, 1);
+					}
+				}
+
+				/**********************
+				 Promise Resolving
+				 **********************/
+
+				/* Note: Infinite loops don't return promises. */
+				if (resolver && opts.loop !== true) {
+					resolver(elements);
+				}
+
+				/****************************
+				 Option: Loop (Infinite)
+				 ****************************/
+
+				if (data && opts.loop === true && !isStopped) {
+					/* If a rotateX/Y/Z property is being animated by 360 deg with loop:true, swap tween start/end values to enable
+					 continuous iterative rotation looping. (Otherise, the element would just rotate back and forth.) */
+					$.each(data.tweensContainer, function(propertyName, tweenContainer) {
+						if (/^rotate/.test(propertyName) && ((parseFloat(tweenContainer.startValue) - parseFloat(tweenContainer.endValue)) % 360 === 0)) {
+							var oldStartValue = tweenContainer.startValue;
+
+							tweenContainer.startValue = tweenContainer.endValue;
+							tweenContainer.endValue = oldStartValue;
+						}
+
+						if (/^backgroundPosition/.test(propertyName) && parseFloat(tweenContainer.endValue) === 100 && tweenContainer.unitType === "%") {
+							tweenContainer.endValue = 0;
+							tweenContainer.startValue = 100;
+						}
+					});
+
+					Velocity(element, "reverse", {loop: true, delay: opts.delay});
+				}
+
+				/***************
+				 Dequeueing
+				 ***************/
+
+				/* Fire the next call in the queue so long as this call's queue wasn't set to false (to trigger a parallel animation),
+				 which would have already caused the next call to fire. Note: Even if the end of the animation queue has been reached,
+				 $.dequeue() must still be called in order to completely clear jQuery's animation queue. */
+				if (opts.queue !== false) {
+					$.dequeue(element, opts.queue);
+				}
+			}
+
+			/************************
+			 Calls Array Cleanup
+			 ************************/
+
+			/* Since this call is complete, set it to false so that the rAF tick skips it. This array is later compacted via compactSparseArray().
+			 (For performance reasons, the call is set to false instead of being deleted from the array: http://www.html5rocks.com/en/tutorials/speed/v8/) */
+			Velocity.State.calls[callIndex] = false;
+
+			/* Iterate through the calls array to determine if this was the final in-progress animation.
+			 If so, set a flag to end ticking and clear the calls array. */
+			for (var j = 0, callsLength = Velocity.State.calls.length; j < callsLength; j++) {
+				if (Velocity.State.calls[j] !== false) {
+					remainingCallsExist = true;
+
+					break;
+				}
+			}
+
+			if (remainingCallsExist === false) {
+				/* tick() will detect this flag upon its next iteration and subsequently turn itself off. */
+				Velocity.State.isTicking = false;
+
+				/* Clear the calls array so that its length is reset. */
+				delete Velocity.State.calls;
+				Velocity.State.calls = [];
+			}
+		}
+
+		/******************
+		 Frameworks
+		 ******************/
+
+		/* Both jQuery and Zepto allow their $.fn object to be extended to allow wrapped elements to be subjected to plugin calls.
+		 If either framework is loaded, register a "velocity" extension pointing to Velocity's core animate() method.  Velocity
+		 also registers itself onto a global container (window.jQuery || window.Zepto || window) so that certain features are
+		 accessible beyond just a per-element scope. This master object contains an .animate() method, which is later assigned to $.fn
+		 (if jQuery or Zepto are present). Accordingly, Velocity can both act on wrapped DOM elements and stand alone for targeting raw DOM elements. */
+		global.Velocity = Velocity;
+
+		if (global !== window) {
+			/* Assign the element function to Velocity's core animate() method. */
+			global.fn.velocity = animate;
+			/* Assign the object function's defaults to Velocity's global defaults object. */
+			global.fn.velocity.defaults = Velocity.defaults;
+		}
+
+		/***********************
+		 Packaged Redirects
+		 ***********************/
+
+		/* slideUp, slideDown */
+		$.each(["Down", "Up"], function(i, direction) {
+			Velocity.Redirects["slide" + direction] = function(element, options, elementsIndex, elementsSize, elements, promiseData) {
+				var opts = $.extend({}, options),
+						begin = opts.begin,
+						complete = opts.complete,
+						inlineValues = {},
+						computedValues = {height: "", marginTop: "", marginBottom: "", paddingTop: "", paddingBottom: ""};
+
+				if (opts.display === undefined) {
+					/* Show the element before slideDown begins and hide the element after slideUp completes. */
+					/* Note: Inline elements cannot have dimensions animated, so they're reverted to inline-block. */
+					opts.display = (direction === "Down" ? (Velocity.CSS.Values.getDisplayType(element) === "inline" ? "inline-block" : "block") : "none");
+				}
+
+				opts.begin = function() {
+					/* If the user passed in a begin callback, fire it now. */
+					if (elementsIndex === 0 && begin) {
+						begin.call(elements, elements);
+					}
+
+					/* Cache the elements' original vertical dimensional property values so that we can animate back to them. */
+					for (var property in computedValues) {
+						if (!computedValues.hasOwnProperty(property)) {
+							continue;
+						}
+						inlineValues[property] = element.style[property];
+
+						/* For slideDown, use forcefeeding to animate all vertical properties from 0. For slideUp,
+						 use forcefeeding to start from computed values and animate down to 0. */
+						var propertyValue = CSS.getPropertyValue(element, property);
+						computedValues[property] = (direction === "Down") ? [propertyValue, 0] : [0, propertyValue];
+					}
+
+					/* Force vertical overflow content to clip so that sliding works as expected. */
+					inlineValues.overflow = element.style.overflow;
+					element.style.overflow = "hidden";
+				};
+
+				opts.complete = function() {
+					/* Reset element to its pre-slide inline values once its slide animation is complete. */
+					for (var property in inlineValues) {
+						if (inlineValues.hasOwnProperty(property)) {
+							element.style[property] = inlineValues[property];
+						}
+					}
+
+					/* If the user passed in a complete callback, fire it now. */
+					if (elementsIndex === elementsSize - 1) {
+						if (complete) {
+							complete.call(elements, elements);
+						}
+						if (promiseData) {
+							promiseData.resolver(elements);
+						}
+					}
+				};
+
+				Velocity(element, computedValues, opts);
+			};
+		});
+
+		/* fadeIn, fadeOut */
+		$.each(["In", "Out"], function(i, direction) {
+			Velocity.Redirects["fade" + direction] = function(element, options, elementsIndex, elementsSize, elements, promiseData) {
+				var opts = $.extend({}, options),
+						complete = opts.complete,
+						propertiesMap = {opacity: (direction === "In") ? 1 : 0};
+
+				/* Since redirects are triggered individually for each element in the animated set, avoid repeatedly triggering
+				 callbacks by firing them only when the final element has been reached. */
+				if (elementsIndex !== 0) {
+					opts.begin = null;
+				}
+				if (elementsIndex !== elementsSize - 1) {
+					opts.complete = null;
+				} else {
+					opts.complete = function() {
+						if (complete) {
+							complete.call(elements, elements);
+						}
+						if (promiseData) {
+							promiseData.resolver(elements);
+						}
+					};
+				}
+
+				/* If a display was passed in, use it. Otherwise, default to "none" for fadeOut or the element-specific default for fadeIn. */
+				/* Note: We allow users to pass in "null" to skip display setting altogether. */
+				if (opts.display === undefined) {
+					opts.display = (direction === "In" ? "auto" : "none");
+				}
+
+				Velocity(this, propertiesMap, opts);
+			};
+		});
+
+		return Velocity;
+	}((window.jQuery || window.Zepto || window), window, (window ? window.document : undefined));
+}));
+
+/******************
+ Known Issues
+ ******************/
+
+/* The CSS spec mandates that the translateX/Y/Z transforms are %-relative to the element itself -- not its parent.
+ Velocity, however, doesn't make this distinction. Thus, converting to or from the % unit with these subproperties
+ will produce an inaccurate conversion value. The same issue exists with the cx/cy attributes of SVG circles and ellipses. */
+;define('velocity-animate', ['velocity-animate/velocity'], function (main) { return main; });
+
+/**********************
+ Velocity UI Pack
+ **********************/
+
+/* VelocityJS.org UI Pack (5.1.2). (C) 2014 Julian Shapiro. MIT @license: en.wikipedia.org/wiki/MIT_License. Portions copyright Daniel Eden, Christian Pucci. */
+
+(function(factory) {
+	"use strict";
+	/* CommonJS module. */
+	if (typeof require === "function" && typeof exports === "object") {
+		module.exports = factory();
+		/* AMD module. */
+	} else if (typeof define === "function" && define.amd) {
+		define('velocity-animate/velocity.ui',["velocity"], factory);
+		/* Browser globals. */
+	} else {
+		factory();
+	}
+}(function() {
+	"use strict";
+	return function(global, window, document, undefined) {
+
+		/*************
+		 Checks
+		 *************/
+		var Velocity = global.Velocity;
+
+		if (!Velocity || !Velocity.Utilities) {
+			if (window.console) {
+				console.log("Velocity UI Pack: Velocity must be loaded first. Aborting.");
+			}
+			return;
+		}
+		var $ = Velocity.Utilities;
+
+		var velocityVersion = Velocity.version,
+				requiredVersion = {major: 1, minor: 1, patch: 0};
+
+		function greaterSemver(primary, secondary) {
+			var versionInts = [];
+
+			if (!primary || !secondary) {
+				return false;
+			}
+
+			$.each([primary, secondary], function(i, versionObject) {
+				var versionIntsComponents = [];
+
+				$.each(versionObject, function(component, value) {
+					while (value.toString().length < 5) {
+						value = "0" + value;
+					}
+					versionIntsComponents.push(value);
+				});
+
+				versionInts.push(versionIntsComponents.join(""));
+			});
+
+			return (parseFloat(versionInts[0]) > parseFloat(versionInts[1]));
+		}
+
+		if (greaterSemver(requiredVersion, velocityVersion)) {
+			var abortError = "Velocity UI Pack: You need to update Velocity (velocity.js) to a newer version. Visit http://github.com/julianshapiro/velocity.";
+			alert(abortError);
+			throw new Error(abortError);
+		}
+
+		/************************
+		 Effect Registration
+		 ************************/
+
+		/* Note: RegisterUI is a legacy name. */
+		Velocity.RegisterEffect = Velocity.RegisterUI = function(effectName, properties) {
+			/* Animate the expansion/contraction of the elements' parent's height for In/Out effects. */
+			function animateParentHeight(elements, direction, totalDuration, stagger) {
+				var totalHeightDelta = 0,
+						parentNode;
+
+				/* Sum the total height (including padding and margin) of all targeted elements. */
+				$.each(elements.nodeType ? [elements] : elements, function(i, element) {
+					if (stagger) {
+						/* Increase the totalDuration by the successive delay amounts produced by the stagger option. */
+						totalDuration += i * stagger;
+					}
+
+					parentNode = element.parentNode;
+
+					var propertiesToSum = ["height", "paddingTop", "paddingBottom", "marginTop", "marginBottom"];
+
+					/* If box-sizing is border-box, the height already includes padding and margin */
+					if (Velocity.CSS.getPropertyValue(element, "boxSizing").toString().toLowerCase() === "border-box") {
+						propertiesToSum = ["height"];
+					}
+
+					$.each(propertiesToSum, function(i, property) {
+						totalHeightDelta += parseFloat(Velocity.CSS.getPropertyValue(element, property));
+					});
+				});
+
+				/* Animate the parent element's height adjustment (with a varying duration multiplier for aesthetic benefits). */
+				Velocity.animate(
+						parentNode,
+						{height: (direction === "In" ? "+" : "-") + "=" + totalHeightDelta},
+						{queue: false, easing: "ease-in-out", duration: totalDuration * (direction === "In" ? 0.6 : 1)}
+				);
+			}
+
+			/* Register a custom redirect for each effect. */
+			Velocity.Redirects[effectName] = function(element, redirectOptions, elementsIndex, elementsSize, elements, promiseData, loop) {
+				var finalElement = (elementsIndex === elementsSize - 1);
+
+				loop = loop || properties.loop;
+				if (typeof properties.defaultDuration === "function") {
+					properties.defaultDuration = properties.defaultDuration.call(elements, elements);
+				} else {
+					properties.defaultDuration = parseFloat(properties.defaultDuration);
+				}
+
+				/* Iterate through each effect's call array. */
+				for (var callIndex = 0; callIndex < properties.calls.length; callIndex++) {
+					var call = properties.calls[callIndex],
+							propertyMap = call[0],
+							redirectDuration = 1000,
+							durationPercentage = call[1],
+							callOptions = call[2] || {},
+							opts = {};
+
+					if (redirectOptions.duration !== undefined) {
+						redirectDuration = redirectOptions.duration;
+					} else if (properties.defaultDuration !== undefined) {
+						redirectDuration = properties.defaultDuration;
+					}
+
+					/* Assign the whitelisted per-call options. */
+					opts.duration = redirectDuration * (durationPercentage || 1);
+					opts.queue = redirectOptions.queue || "";
+					opts.easing = callOptions.easing || "ease";
+					opts.delay = parseFloat(callOptions.delay) || 0;
+					opts.loop = !properties.loop && callOptions.loop;
+					opts._cacheValues = callOptions._cacheValues || true;
+
+					/* Special processing for the first effect call. */
+					if (callIndex === 0) {
+						/* If a delay was passed into the redirect, combine it with the first call's delay. */
+						opts.delay += (parseFloat(redirectOptions.delay) || 0);
+
+						if (elementsIndex === 0) {
+							opts.begin = function() {
+								/* Only trigger a begin callback on the first effect call with the first element in the set. */
+								if (redirectOptions.begin) {
+									redirectOptions.begin.call(elements, elements);
+								}
+
+								var direction = effectName.match(/(In|Out)$/);
+
+								/* Make "in" transitioning elements invisible immediately so that there's no FOUC between now
+								 and the first RAF tick. */
+								if ((direction && direction[0] === "In") && propertyMap.opacity !== undefined) {
+									$.each(elements.nodeType ? [elements] : elements, function(i, element) {
+										Velocity.CSS.setPropertyValue(element, "opacity", 0);
+									});
+								}
+
+								/* Only trigger animateParentHeight() if we're using an In/Out transition. */
+								if (redirectOptions.animateParentHeight && direction) {
+									animateParentHeight(elements, direction[0], redirectDuration + opts.delay, redirectOptions.stagger);
+								}
+							};
+						}
+
+						/* If the user isn't overriding the display option, default to "auto" for "In"-suffixed transitions. */
+						if (redirectOptions.display !== null) {
+							if (redirectOptions.display !== undefined && redirectOptions.display !== "none") {
+								opts.display = redirectOptions.display;
+							} else if (/In$/.test(effectName)) {
+								/* Inline elements cannot be subjected to transforms, so we switch them to inline-block. */
+								var defaultDisplay = Velocity.CSS.Values.getDisplayType(element);
+								opts.display = (defaultDisplay === "inline") ? "inline-block" : defaultDisplay;
+							}
+						}
+
+						if (redirectOptions.visibility && redirectOptions.visibility !== "hidden") {
+							opts.visibility = redirectOptions.visibility;
+						}
+					}
+
+					/* Special processing for the last effect call. */
+					if (callIndex === properties.calls.length - 1) {
+						/* Append promise resolving onto the user's redirect callback. */
+						var injectFinalCallbacks = function() {
+							if ((redirectOptions.display === undefined || redirectOptions.display === "none") && /Out$/.test(effectName)) {
+								$.each(elements.nodeType ? [elements] : elements, function(i, element) {
+									Velocity.CSS.setPropertyValue(element, "display", "none");
+								});
+							}
+							if (redirectOptions.complete) {
+								redirectOptions.complete.call(elements, elements);
+							}
+							if (promiseData) {
+								promiseData.resolver(elements || element);
+							}
+						};
+
+						opts.complete = function() {
+							if (loop) {
+								Velocity.Redirects[effectName](element, redirectOptions, elementsIndex, elementsSize, elements, promiseData, loop === true ? true : Math.max(0, loop - 1));
+							}
+							if (properties.reset) {
+								for (var resetProperty in properties.reset) {
+									if (!properties.reset.hasOwnProperty(resetProperty)) {
+										continue;
+									}
+									var resetValue = properties.reset[resetProperty];
+
+									/* Format each non-array value in the reset property map to [ value, value ] so that changes apply
+									 immediately and DOM querying is avoided (via forcefeeding). */
+									/* Note: Don't forcefeed hooks, otherwise their hook roots will be defaulted to their null values. */
+									if (Velocity.CSS.Hooks.registered[resetProperty] === undefined && (typeof resetValue === "string" || typeof resetValue === "number")) {
+										properties.reset[resetProperty] = [properties.reset[resetProperty], properties.reset[resetProperty]];
+									}
+								}
+
+								/* So that the reset values are applied instantly upon the next rAF tick, use a zero duration and parallel queueing. */
+								var resetOptions = {duration: 0, queue: false};
+
+								/* Since the reset option uses up the complete callback, we trigger the user's complete callback at the end of ours. */
+								if (finalElement) {
+									resetOptions.complete = injectFinalCallbacks;
+								}
+
+								Velocity.animate(element, properties.reset, resetOptions);
+								/* Only trigger the user's complete callback on the last effect call with the last element in the set. */
+							} else if (finalElement) {
+								injectFinalCallbacks();
+							}
+						};
+
+						if (redirectOptions.visibility === "hidden") {
+							opts.visibility = redirectOptions.visibility;
+						}
+					}
+
+					Velocity.animate(element, propertyMap, opts);
+				}
+			};
+
+			/* Return the Velocity object so that RegisterUI calls can be chained. */
+			return Velocity;
+		};
+
+		/*********************
+		 Packaged Effects
+		 *********************/
+
+		/* Externalize the packagedEffects data so that they can optionally be modified and re-registered. */
+		/* Support: <=IE8: Callouts will have no effect, and transitions will simply fade in/out. IE9/Android 2.3: Most effects are fully supported, the rest fade in/out. All other browsers: full support. */
+		Velocity.RegisterEffect.packagedEffects =
+				{
+					/* Animate.css */
+					"callout.bounce": {
+						defaultDuration: 550,
+						calls: [
+							[{translateY: -30}, 0.25],
+							[{translateY: 0}, 0.125],
+							[{translateY: -15}, 0.125],
+							[{translateY: 0}, 0.25]
+						]
+					},
+					/* Animate.css */
+					"callout.shake": {
+						defaultDuration: 800,
+						calls: [
+							[{translateX: -11}, 0.125],
+							[{translateX: 11}, 0.125],
+							[{translateX: -11}, 0.125],
+							[{translateX: 11}, 0.125],
+							[{translateX: -11}, 0.125],
+							[{translateX: 11}, 0.125],
+							[{translateX: -11}, 0.125],
+							[{translateX: 0}, 0.125]
+						]
+					},
+					/* Animate.css */
+					"callout.flash": {
+						defaultDuration: 1100,
+						calls: [
+							[{opacity: [0, "easeInOutQuad", 1]}, 0.25],
+							[{opacity: [1, "easeInOutQuad"]}, 0.25],
+							[{opacity: [0, "easeInOutQuad"]}, 0.25],
+							[{opacity: [1, "easeInOutQuad"]}, 0.25]
+						]
+					},
+					/* Animate.css */
+					"callout.pulse": {
+						defaultDuration: 825,
+						calls: [
+							[{scaleX: 1.1, scaleY: 1.1}, 0.50, {easing: "easeInExpo"}],
+							[{scaleX: 1, scaleY: 1}, 0.50]
+						]
+					},
+					/* Animate.css */
+					"callout.swing": {
+						defaultDuration: 950,
+						calls: [
+							[{rotateZ: 15}, 0.20],
+							[{rotateZ: -10}, 0.20],
+							[{rotateZ: 5}, 0.20],
+							[{rotateZ: -5}, 0.20],
+							[{rotateZ: 0}, 0.20]
+						]
+					},
+					/* Animate.css */
+					"callout.tada": {
+						defaultDuration: 1000,
+						calls: [
+							[{scaleX: 0.9, scaleY: 0.9, rotateZ: -3}, 0.10],
+							[{scaleX: 1.1, scaleY: 1.1, rotateZ: 3}, 0.10],
+							[{scaleX: 1.1, scaleY: 1.1, rotateZ: -3}, 0.10],
+							["reverse", 0.125],
+							["reverse", 0.125],
+							["reverse", 0.125],
+							["reverse", 0.125],
+							["reverse", 0.125],
+							[{scaleX: 1, scaleY: 1, rotateZ: 0}, 0.20]
+						]
+					},
+					"transition.fadeIn": {
+						defaultDuration: 500,
+						calls: [
+							[{opacity: [1, 0]}]
+						]
+					},
+					"transition.fadeOut": {
+						defaultDuration: 500,
+						calls: [
+							[{opacity: [0, 1]}]
+						]
+					},
+					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
+					"transition.flipXIn": {
+						defaultDuration: 700,
+						calls: [
+							[{opacity: [1, 0], transformPerspective: [800, 800], rotateY: [0, -55]}]
+						],
+						reset: {transformPerspective: 0}
+					},
+					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
+					"transition.flipXOut": {
+						defaultDuration: 700,
+						calls: [
+							[{opacity: [0, 1], transformPerspective: [800, 800], rotateY: 55}]
+						],
+						reset: {transformPerspective: 0, rotateY: 0}
+					},
+					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
+					"transition.flipYIn": {
+						defaultDuration: 800,
+						calls: [
+							[{opacity: [1, 0], transformPerspective: [800, 800], rotateX: [0, -45]}]
+						],
+						reset: {transformPerspective: 0}
+					},
+					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
+					"transition.flipYOut": {
+						defaultDuration: 800,
+						calls: [
+							[{opacity: [0, 1], transformPerspective: [800, 800], rotateX: 25}]
+						],
+						reset: {transformPerspective: 0, rotateX: 0}
+					},
+					/* Animate.css */
+					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
+					"transition.flipBounceXIn": {
+						defaultDuration: 900,
+						calls: [
+							[{opacity: [0.725, 0], transformPerspective: [400, 400], rotateY: [-10, 90]}, 0.50],
+							[{opacity: 0.80, rotateY: 10}, 0.25],
+							[{opacity: 1, rotateY: 0}, 0.25]
+						],
+						reset: {transformPerspective: 0}
+					},
+					/* Animate.css */
+					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
+					"transition.flipBounceXOut": {
+						defaultDuration: 800,
+						calls: [
+							[{opacity: [0.9, 1], transformPerspective: [400, 400], rotateY: -10}, 0.50],
+							[{opacity: 0, rotateY: 90}, 0.50]
+						],
+						reset: {transformPerspective: 0, rotateY: 0}
+					},
+					/* Animate.css */
+					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
+					"transition.flipBounceYIn": {
+						defaultDuration: 850,
+						calls: [
+							[{opacity: [0.725, 0], transformPerspective: [400, 400], rotateX: [-10, 90]}, 0.50],
+							[{opacity: 0.80, rotateX: 10}, 0.25],
+							[{opacity: 1, rotateX: 0}, 0.25]
+						],
+						reset: {transformPerspective: 0}
+					},
+					/* Animate.css */
+					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
+					"transition.flipBounceYOut": {
+						defaultDuration: 800,
+						calls: [
+							[{opacity: [0.9, 1], transformPerspective: [400, 400], rotateX: -15}, 0.50],
+							[{opacity: 0, rotateX: 90}, 0.50]
+						],
+						reset: {transformPerspective: 0, rotateX: 0}
+					},
+					/* Magic.css */
+					"transition.swoopIn": {
+						defaultDuration: 850,
+						calls: [
+							[{opacity: [1, 0], transformOriginX: ["100%", "50%"], transformOriginY: ["100%", "100%"], scaleX: [1, 0], scaleY: [1, 0], translateX: [0, -700], translateZ: 0}]
+						],
+						reset: {transformOriginX: "50%", transformOriginY: "50%"}
+					},
+					/* Magic.css */
+					"transition.swoopOut": {
+						defaultDuration: 850,
+						calls: [
+							[{opacity: [0, 1], transformOriginX: ["50%", "100%"], transformOriginY: ["100%", "100%"], scaleX: 0, scaleY: 0, translateX: -700, translateZ: 0}]
+						],
+						reset: {transformOriginX: "50%", transformOriginY: "50%", scaleX: 1, scaleY: 1, translateX: 0}
+					},
+					/* Magic.css */
+					/* Support: Loses rotation in IE9/Android 2.3. (Fades and scales only.) */
+					"transition.whirlIn": {
+						defaultDuration: 850,
+						calls: [
+							[{opacity: [1, 0], transformOriginX: ["50%", "50%"], transformOriginY: ["50%", "50%"], scaleX: [1, 0], scaleY: [1, 0], rotateY: [0, 160]}, 1, {easing: "easeInOutSine"}]
+						]
+					},
+					/* Magic.css */
+					/* Support: Loses rotation in IE9/Android 2.3. (Fades and scales only.) */
+					"transition.whirlOut": {
+						defaultDuration: 750,
+						calls: [
+							[{opacity: [0, "easeInOutQuint", 1], transformOriginX: ["50%", "50%"], transformOriginY: ["50%", "50%"], scaleX: 0, scaleY: 0, rotateY: 160}, 1, {easing: "swing"}]
+						],
+						reset: {scaleX: 1, scaleY: 1, rotateY: 0}
+					},
+					"transition.shrinkIn": {
+						defaultDuration: 750,
+						calls: [
+							[{opacity: [1, 0], transformOriginX: ["50%", "50%"], transformOriginY: ["50%", "50%"], scaleX: [1, 1.5], scaleY: [1, 1.5], translateZ: 0}]
+						]
+					},
+					"transition.shrinkOut": {
+						defaultDuration: 600,
+						calls: [
+							[{opacity: [0, 1], transformOriginX: ["50%", "50%"], transformOriginY: ["50%", "50%"], scaleX: 1.3, scaleY: 1.3, translateZ: 0}]
+						],
+						reset: {scaleX: 1, scaleY: 1}
+					},
+					"transition.expandIn": {
+						defaultDuration: 700,
+						calls: [
+							[{opacity: [1, 0], transformOriginX: ["50%", "50%"], transformOriginY: ["50%", "50%"], scaleX: [1, 0.625], scaleY: [1, 0.625], translateZ: 0}]
+						]
+					},
+					"transition.expandOut": {
+						defaultDuration: 700,
+						calls: [
+							[{opacity: [0, 1], transformOriginX: ["50%", "50%"], transformOriginY: ["50%", "50%"], scaleX: 0.5, scaleY: 0.5, translateZ: 0}]
+						],
+						reset: {scaleX: 1, scaleY: 1}
+					},
+					/* Animate.css */
+					"transition.bounceIn": {
+						defaultDuration: 800,
+						calls: [
+							[{opacity: [1, 0], scaleX: [1.05, 0.3], scaleY: [1.05, 0.3]}, 0.40],
+							[{scaleX: 0.9, scaleY: 0.9, translateZ: 0}, 0.20],
+							[{scaleX: 1, scaleY: 1}, 0.50]
+						]
+					},
+					/* Animate.css */
+					"transition.bounceOut": {
+						defaultDuration: 800,
+						calls: [
+							[{scaleX: 0.95, scaleY: 0.95}, 0.35],
+							[{scaleX: 1.1, scaleY: 1.1, translateZ: 0}, 0.35],
+							[{opacity: [0, 1], scaleX: 0.3, scaleY: 0.3}, 0.30]
+						],
+						reset: {scaleX: 1, scaleY: 1}
+					},
+					/* Animate.css */
+					"transition.bounceUpIn": {
+						defaultDuration: 800,
+						calls: [
+							[{opacity: [1, 0], translateY: [-30, 1000]}, 0.60, {easing: "easeOutCirc"}],
+							[{translateY: 10}, 0.20],
+							[{translateY: 0}, 0.20]
+						]
+					},
+					/* Animate.css */
+					"transition.bounceUpOut": {
+						defaultDuration: 1000,
+						calls: [
+							[{translateY: 20}, 0.20],
+							[{opacity: [0, "easeInCirc", 1], translateY: -1000}, 0.80]
+						],
+						reset: {translateY: 0}
+					},
+					/* Animate.css */
+					"transition.bounceDownIn": {
+						defaultDuration: 800,
+						calls: [
+							[{opacity: [1, 0], translateY: [30, -1000]}, 0.60, {easing: "easeOutCirc"}],
+							[{translateY: -10}, 0.20],
+							[{translateY: 0}, 0.20]
+						]
+					},
+					/* Animate.css */
+					"transition.bounceDownOut": {
+						defaultDuration: 1000,
+						calls: [
+							[{translateY: -20}, 0.20],
+							[{opacity: [0, "easeInCirc", 1], translateY: 1000}, 0.80]
+						],
+						reset: {translateY: 0}
+					},
+					/* Animate.css */
+					"transition.bounceLeftIn": {
+						defaultDuration: 750,
+						calls: [
+							[{opacity: [1, 0], translateX: [30, -1250]}, 0.60, {easing: "easeOutCirc"}],
+							[{translateX: -10}, 0.20],
+							[{translateX: 0}, 0.20]
+						]
+					},
+					/* Animate.css */
+					"transition.bounceLeftOut": {
+						defaultDuration: 750,
+						calls: [
+							[{translateX: 30}, 0.20],
+							[{opacity: [0, "easeInCirc", 1], translateX: -1250}, 0.80]
+						],
+						reset: {translateX: 0}
+					},
+					/* Animate.css */
+					"transition.bounceRightIn": {
+						defaultDuration: 750,
+						calls: [
+							[{opacity: [1, 0], translateX: [-30, 1250]}, 0.60, {easing: "easeOutCirc"}],
+							[{translateX: 10}, 0.20],
+							[{translateX: 0}, 0.20]
+						]
+					},
+					/* Animate.css */
+					"transition.bounceRightOut": {
+						defaultDuration: 750,
+						calls: [
+							[{translateX: -30}, 0.20],
+							[{opacity: [0, "easeInCirc", 1], translateX: 1250}, 0.80]
+						],
+						reset: {translateX: 0}
+					},
+					"transition.slideUpIn": {
+						defaultDuration: 900,
+						calls: [
+							[{opacity: [1, 0], translateY: [0, 20], translateZ: 0}]
+						]
+					},
+					"transition.slideUpOut": {
+						defaultDuration: 900,
+						calls: [
+							[{opacity: [0, 1], translateY: -20, translateZ: 0}]
+						],
+						reset: {translateY: 0}
+					},
+					"transition.slideDownIn": {
+						defaultDuration: 900,
+						calls: [
+							[{opacity: [1, 0], translateY: [0, -20], translateZ: 0}]
+						]
+					},
+					"transition.slideDownOut": {
+						defaultDuration: 900,
+						calls: [
+							[{opacity: [0, 1], translateY: 20, translateZ: 0}]
+						],
+						reset: {translateY: 0}
+					},
+					"transition.slideLeftIn": {
+						defaultDuration: 1000,
+						calls: [
+							[{opacity: [1, 0], translateX: [0, -20], translateZ: 0}]
+						]
+					},
+					"transition.slideLeftOut": {
+						defaultDuration: 1050,
+						calls: [
+							[{opacity: [0, 1], translateX: -20, translateZ: 0}]
+						],
+						reset: {translateX: 0}
+					},
+					"transition.slideRightIn": {
+						defaultDuration: 1000,
+						calls: [
+							[{opacity: [1, 0], translateX: [0, 20], translateZ: 0}]
+						]
+					},
+					"transition.slideRightOut": {
+						defaultDuration: 1050,
+						calls: [
+							[{opacity: [0, 1], translateX: 20, translateZ: 0}]
+						],
+						reset: {translateX: 0}
+					},
+					"transition.slideUpBigIn": {
+						defaultDuration: 850,
+						calls: [
+							[{opacity: [1, 0], translateY: [0, 75], translateZ: 0}]
+						]
+					},
+					"transition.slideUpBigOut": {
+						defaultDuration: 800,
+						calls: [
+							[{opacity: [0, 1], translateY: -75, translateZ: 0}]
+						],
+						reset: {translateY: 0}
+					},
+					"transition.slideDownBigIn": {
+						defaultDuration: 850,
+						calls: [
+							[{opacity: [1, 0], translateY: [0, -75], translateZ: 0}]
+						]
+					},
+					"transition.slideDownBigOut": {
+						defaultDuration: 800,
+						calls: [
+							[{opacity: [0, 1], translateY: 75, translateZ: 0}]
+						],
+						reset: {translateY: 0}
+					},
+					"transition.slideLeftBigIn": {
+						defaultDuration: 800,
+						calls: [
+							[{opacity: [1, 0], translateX: [0, -75], translateZ: 0}]
+						]
+					},
+					"transition.slideLeftBigOut": {
+						defaultDuration: 750,
+						calls: [
+							[{opacity: [0, 1], translateX: -75, translateZ: 0}]
+						],
+						reset: {translateX: 0}
+					},
+					"transition.slideRightBigIn": {
+						defaultDuration: 800,
+						calls: [
+							[{opacity: [1, 0], translateX: [0, 75], translateZ: 0}]
+						]
+					},
+					"transition.slideRightBigOut": {
+						defaultDuration: 750,
+						calls: [
+							[{opacity: [0, 1], translateX: 75, translateZ: 0}]
+						],
+						reset: {translateX: 0}
+					},
+					/* Magic.css */
+					"transition.perspectiveUpIn": {
+						defaultDuration: 800,
+						calls: [
+							[{opacity: [1, 0], transformPerspective: [800, 800], transformOriginX: [0, 0], transformOriginY: ["100%", "100%"], rotateX: [0, -180]}]
+						],
+						reset: {transformPerspective: 0, transformOriginX: "50%", transformOriginY: "50%"}
+					},
+					/* Magic.css */
+					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
+					"transition.perspectiveUpOut": {
+						defaultDuration: 850,
+						calls: [
+							[{opacity: [0, 1], transformPerspective: [800, 800], transformOriginX: [0, 0], transformOriginY: ["100%", "100%"], rotateX: -180}]
+						],
+						reset: {transformPerspective: 0, transformOriginX: "50%", transformOriginY: "50%", rotateX: 0}
+					},
+					/* Magic.css */
+					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
+					"transition.perspectiveDownIn": {
+						defaultDuration: 800,
+						calls: [
+							[{opacity: [1, 0], transformPerspective: [800, 800], transformOriginX: [0, 0], transformOriginY: [0, 0], rotateX: [0, 180]}]
+						],
+						reset: {transformPerspective: 0, transformOriginX: "50%", transformOriginY: "50%"}
+					},
+					/* Magic.css */
+					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
+					"transition.perspectiveDownOut": {
+						defaultDuration: 850,
+						calls: [
+							[{opacity: [0, 1], transformPerspective: [800, 800], transformOriginX: [0, 0], transformOriginY: [0, 0], rotateX: 180}]
+						],
+						reset: {transformPerspective: 0, transformOriginX: "50%", transformOriginY: "50%", rotateX: 0}
+					},
+					/* Magic.css */
+					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
+					"transition.perspectiveLeftIn": {
+						defaultDuration: 950,
+						calls: [
+							[{opacity: [1, 0], transformPerspective: [2000, 2000], transformOriginX: [0, 0], transformOriginY: [0, 0], rotateY: [0, -180]}]
+						],
+						reset: {transformPerspective: 0, transformOriginX: "50%", transformOriginY: "50%"}
+					},
+					/* Magic.css */
+					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
+					"transition.perspectiveLeftOut": {
+						defaultDuration: 950,
+						calls: [
+							[{opacity: [0, 1], transformPerspective: [2000, 2000], transformOriginX: [0, 0], transformOriginY: [0, 0], rotateY: -180}]
+						],
+						reset: {transformPerspective: 0, transformOriginX: "50%", transformOriginY: "50%", rotateY: 0}
+					},
+					/* Magic.css */
+					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
+					"transition.perspectiveRightIn": {
+						defaultDuration: 950,
+						calls: [
+							[{opacity: [1, 0], transformPerspective: [2000, 2000], transformOriginX: ["100%", "100%"], transformOriginY: [0, 0], rotateY: [0, 180]}]
+						],
+						reset: {transformPerspective: 0, transformOriginX: "50%", transformOriginY: "50%"}
+					},
+					/* Magic.css */
+					/* Support: Loses rotation in IE9/Android 2.3 (fades only). */
+					"transition.perspectiveRightOut": {
+						defaultDuration: 950,
+						calls: [
+							[{opacity: [0, 1], transformPerspective: [2000, 2000], transformOriginX: ["100%", "100%"], transformOriginY: [0, 0], rotateY: 180}]
+						],
+						reset: {transformPerspective: 0, transformOriginX: "50%", transformOriginY: "50%", rotateY: 0}
+					}
+				};
+
+		/* Register the packaged effects. */
+		for (var effectName in Velocity.RegisterEffect.packagedEffects) {
+			if (Velocity.RegisterEffect.packagedEffects.hasOwnProperty(effectName)) {
+				Velocity.RegisterEffect(effectName, Velocity.RegisterEffect.packagedEffects[effectName]);
+			}
+		}
+
+		/*********************
+		 Sequence Running
+		 **********************/
+
+		/* Note: Sequence calls must use Velocity's single-object arguments syntax. */
+		Velocity.RunSequence = function(originalSequence) {
+			var sequence = $.extend(true, [], originalSequence);
+
+			if (sequence.length > 1) {
+				$.each(sequence.reverse(), function(i, currentCall) {
+					var nextCall = sequence[i + 1];
+
+					if (nextCall) {
+						/* Parallel sequence calls (indicated via sequenceQueue:false) are triggered
+						 in the previous call's begin callback. Otherwise, chained calls are normally triggered
+						 in the previous call's complete callback. */
+						var currentCallOptions = currentCall.o || currentCall.options,
+								nextCallOptions = nextCall.o || nextCall.options;
+
+						var timing = (currentCallOptions && currentCallOptions.sequenceQueue === false) ? "begin" : "complete",
+								callbackOriginal = nextCallOptions && nextCallOptions[timing],
+								options = {};
+
+						options[timing] = function() {
+							var nextCallElements = nextCall.e || nextCall.elements;
+							var elements = nextCallElements.nodeType ? [nextCallElements] : nextCallElements;
+
+							if (callbackOriginal) {
+								callbackOriginal.call(elements, elements);
+							}
+							Velocity(currentCall);
+						};
+
+						if (nextCall.o) {
+							nextCall.o = $.extend({}, nextCallOptions, options);
+						} else {
+							nextCall.options = $.extend({}, nextCallOptions, options);
+						}
+					}
+				});
+
+				sequence.reverse();
+			}
+
+			Velocity(sequence[0]);
+		};
+	}((window.jQuery || window.Zepto || window), window, (window ? window.document : undefined));
+}));
+
+define('aurelia-templating-router/aurelia-templating-router',['exports', 'aurelia-router', './route-loader', './router-view', './route-href'], function (exports, _aureliaRouter, _routeLoader, _routerView, _routeHref) {
   'use strict';
 
   Object.defineProperty(exports, "__esModule", {
@@ -32865,7 +32539,7 @@ define('aurelia-templating-router/aurelia-templating-router',['exports', 'aureli
 
 
   function configure(config) {
-    config.singleton(_aureliaRouter.RouteLoader, _routeLoader.TemplatingRouteLoader).singleton(_aureliaRouter.Router, _aureliaRouter.AppRouter).globalResources(_aureliaPal.PLATFORM.moduleName('./router-view'), _aureliaPal.PLATFORM.moduleName('./route-href'));
+    config.singleton(_aureliaRouter.RouteLoader, _routeLoader.TemplatingRouteLoader).singleton(_aureliaRouter.Router, _aureliaRouter.AppRouter).globalResources('./router-view', './route-href');
 
     config.container.registerAlias(_aureliaRouter.Router, _aureliaRouter.AppRouter);
   }
@@ -32876,7 +32550,7 @@ define('aurelia-templating-router/aurelia-templating-router',['exports', 'aureli
   exports.configure = configure;
 });;define('aurelia-templating-router', ['aurelia-templating-router/aurelia-templating-router'], function (main) { return main; });
 
-define('aurelia-templating-router/route-loader',['exports', 'aurelia-dependency-injection', 'aurelia-templating', 'aurelia-router', 'aurelia-path', 'aurelia-metadata', './router-view'], function (exports, _aureliaDependencyInjection, _aureliaTemplating, _aureliaRouter, _aureliaPath, _aureliaMetadata, _routerView) {
+define('aurelia-templating-router/route-loader',['exports', 'aurelia-dependency-injection', 'aurelia-templating', 'aurelia-router', 'aurelia-path', 'aurelia-metadata'], function (exports, _aureliaDependencyInjection, _aureliaTemplating, _aureliaRouter, _aureliaPath, _aureliaMetadata) {
   'use strict';
 
   Object.defineProperty(exports, "__esModule", {
@@ -32926,17 +32600,12 @@ define('aurelia-templating-router/route-loader',['exports', 'aurelia-dependency-
 
     TemplatingRouteLoader.prototype.loadRoute = function loadRoute(router, config) {
       var childContainer = router.container.createChild();
-
-      var viewModel = /\.html/.test(config.moduleId) ? createDynamicClass(config.moduleId) : (0, _aureliaPath.relativeToFile)(config.moduleId, _aureliaMetadata.Origin.get(router.container.viewModel.constructor).moduleId);
-
       var instruction = {
-        viewModel: viewModel,
+        viewModel: (0, _aureliaPath.relativeToFile)(config.moduleId, _aureliaMetadata.Origin.get(router.container.viewModel.constructor).moduleId),
         childContainer: childContainer,
         view: config.view || config.viewStrategy,
         router: router
       };
-
-      childContainer.registerSingleton(_routerView.RouterViewLocator);
 
       childContainer.getChildRouter = function () {
         var childRouter = void 0;
@@ -32953,28 +32622,6 @@ define('aurelia-templating-router/route-loader',['exports', 'aurelia-dependency-
 
     return TemplatingRouteLoader;
   }(_aureliaRouter.RouteLoader)) || _class);
-
-
-  function createDynamicClass(moduleId) {
-    var _dec2, _dec3, _class2;
-
-    var name = /([^\/^\?]+)\.html/i.exec(moduleId)[1];
-
-    var DynamicClass = (_dec2 = (0, _aureliaTemplating.customElement)(name), _dec3 = (0, _aureliaTemplating.useView)(moduleId), _dec2(_class2 = _dec3(_class2 = function () {
-      function DynamicClass() {
-        
-      }
-
-      DynamicClass.prototype.bind = function bind(bindingContext) {
-        this.$parent = bindingContext;
-      };
-
-      return DynamicClass;
-    }()) || _class2) || _class2);
-
-
-    return DynamicClass;
-  }
 });
 define('aurelia-templating-router/router-view',['exports', 'aurelia-dependency-injection', 'aurelia-binding', 'aurelia-templating', 'aurelia-router', 'aurelia-metadata', 'aurelia-pal'], function (exports, _aureliaDependencyInjection, _aureliaBinding, _aureliaTemplating, _aureliaRouter, _aureliaMetadata, _aureliaPal) {
   'use strict';
@@ -32982,7 +32629,7 @@ define('aurelia-templating-router/router-view',['exports', 'aurelia-dependency-i
   Object.defineProperty(exports, "__esModule", {
     value: true
   });
-  exports.RouterViewLocator = exports.RouterView = undefined;
+  exports.RouterView = undefined;
 
   function _initDefineProp(target, property, descriptor, context) {
     if (!descriptor) return;
@@ -32993,8 +32640,6 @@ define('aurelia-templating-router/router-view',['exports', 'aurelia-dependency-i
       value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
     });
   }
-
-  
 
   function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
     var desc = {};
@@ -33030,6 +32675,44 @@ define('aurelia-templating-router/router-view',['exports', 'aurelia-dependency-i
   }
 
   var _dec, _dec2, _class, _desc, _value, _class2, _descriptor, _descriptor2, _descriptor3, _descriptor4;
+
+  
+
+  var SwapStrategies = function () {
+    function SwapStrategies() {
+      
+    }
+
+    SwapStrategies.prototype.before = function before(viewSlot, previousView, callback) {
+      var promise = Promise.resolve(callback());
+
+      if (previousView !== undefined) {
+        return promise.then(function () {
+          return viewSlot.remove(previousView, true);
+        });
+      }
+
+      return promise;
+    };
+
+    SwapStrategies.prototype.with = function _with(viewSlot, previousView, callback) {
+      var promise = Promise.resolve(callback());
+
+      if (previousView !== undefined) {
+        return Promise.all([viewSlot.remove(previousView, true), promise]);
+      }
+
+      return promise;
+    };
+
+    SwapStrategies.prototype.after = function after(viewSlot, previousView, callback) {
+      return Promise.resolve(viewSlot.removeAll(true)).then(callback);
+    };
+
+    return SwapStrategies;
+  }();
+
+  var swapStrategies = new SwapStrategies();
 
   var RouterView = exports.RouterView = (_dec = (0, _aureliaTemplating.customElement)('router-view'), _dec2 = (0, _aureliaDependencyInjection.inject)(_aureliaPal.DOM.Element, _aureliaDependencyInjection.Container, _aureliaTemplating.ViewSlot, _aureliaRouter.Router, _aureliaTemplating.ViewLocator, _aureliaTemplating.CompositionTransaction, _aureliaTemplating.CompositionEngine), _dec(_class = (0, _aureliaTemplating.noView)(_class = _dec2(_class = (_class2 = function () {
     function RouterView(element, container, viewSlot, router, viewLocator, compositionTransaction, compositionEngine) {
@@ -33078,8 +32761,6 @@ define('aurelia-templating-router/router-view',['exports', 'aurelia-dependency-i
       var config = component.router.currentInstruction.config;
       var viewPort = config.viewPorts ? config.viewPorts[viewPortInstruction.name] : {};
 
-      childContainer.get(RouterViewLocator)._notify(this);
-
       var layoutInstruction = {
         viewModel: viewPort.layoutViewModel || config.layoutViewModel || this.layoutViewModel,
         view: viewPort.layoutView || config.layoutView || this.layoutView,
@@ -33117,16 +32798,20 @@ define('aurelia-templating-router/router-view',['exports', 'aurelia-dependency-i
       var _this2 = this;
 
       var layoutInstruction = viewPortInstruction.layoutInstruction;
-      var previousView = this.view;
 
       var work = function work() {
-        var swapStrategy = _aureliaTemplating.SwapStrategies[_this2.swapOrder] || _aureliaTemplating.SwapStrategies.after;
+        var previousView = _this2.view;
+        var swapStrategy = void 0;
         var viewSlot = _this2.viewSlot;
 
+        swapStrategy = _this2.swapOrder in swapStrategies ? swapStrategies[_this2.swapOrder] : swapStrategies.after;
+
         swapStrategy(viewSlot, previousView, function () {
-          return Promise.resolve(viewSlot.add(_this2.view));
-        }).then(function () {
-          _this2._notify();
+          return Promise.resolve().then(function () {
+            return viewSlot.add(_this2.view);
+          }).then(function () {
+            _this2._notify();
+          });
         });
       };
 
@@ -33184,28 +32869,6 @@ define('aurelia-templating-router/router-view',['exports', 'aurelia-dependency-i
     enumerable: true,
     initializer: null
   })), _class2)) || _class) || _class) || _class);
-
-  var RouterViewLocator = exports.RouterViewLocator = function () {
-    function RouterViewLocator() {
-      var _this3 = this;
-
-      
-
-      this.promise = new Promise(function (resolve) {
-        return _this3.resolve = resolve;
-      });
-    }
-
-    RouterViewLocator.prototype.findNearest = function findNearest() {
-      return this.promise;
-    };
-
-    RouterViewLocator.prototype._notify = function _notify(routerView) {
-      this.resolve(routerView);
-    };
-
-    return RouterViewLocator;
-  }();
 });
 define('aurelia-templating-router/route-href',['exports', 'aurelia-templating', 'aurelia-dependency-injection', 'aurelia-router', 'aurelia-pal', 'aurelia-logging'], function (exports, _aureliaTemplating, _aureliaDependencyInjection, _aureliaRouter, _aureliaPal, _aureliaLogging) {
   'use strict';
@@ -33290,13 +32953,13 @@ define('aurelia-templating-router/route-href',['exports', 'aurelia-templating', 
     return RouteHref;
   }()) || _class) || _class) || _class) || _class) || _class);
 });
-define('aurelia-testing/aurelia-testing',['exports', './compile-spy', './view-spy', './component-tester', './wait'], function (exports, _compileSpy, _viewSpy, _componentTester, _wait) {
+define('aurelia-testing/aurelia-testing',['exports', './compile-spy', './view-spy', './component-tester'], function (exports, _compileSpy, _viewSpy, _componentTester) {
   'use strict';
 
   Object.defineProperty(exports, "__esModule", {
     value: true
   });
-  exports.waitForDocumentElements = exports.waitForDocumentElement = exports.waitFor = exports.configure = exports.ComponentTester = exports.StageComponent = exports.ViewSpy = exports.CompileSpy = undefined;
+  exports.configure = exports.ComponentTester = exports.StageComponent = exports.ViewSpy = exports.CompileSpy = undefined;
 
 
   function configure(config) {
@@ -33308,9 +32971,6 @@ define('aurelia-testing/aurelia-testing',['exports', './compile-spy', './view-sp
   exports.StageComponent = _componentTester.StageComponent;
   exports.ComponentTester = _componentTester.ComponentTester;
   exports.configure = configure;
-  exports.waitFor = _wait.waitFor;
-  exports.waitForDocumentElement = _wait.waitForDocumentElement;
-  exports.waitForDocumentElements = _wait.waitForDocumentElements;
 });;define('aurelia-testing', ['aurelia-testing/aurelia-testing'], function (main) { return main; });
 
 define('aurelia-testing/compile-spy',['exports', 'aurelia-templating', 'aurelia-dependency-injection', 'aurelia-logging', 'aurelia-pal'], function (exports, _aureliaTemplating, _aureliaDependencyInjection, _aureliaLogging, _aureliaPal) {
@@ -33420,7 +33080,7 @@ define('aurelia-testing/view-spy',['exports', 'aurelia-templating', 'aurelia-log
     return ViewSpy;
   }()) || _class);
 });
-define('aurelia-testing/component-tester',['exports', 'aurelia-templating', 'aurelia-framework', './wait'], function (exports, _aureliaTemplating, _aureliaFramework, _wait) {
+define('aurelia-testing/component-tester',['exports', 'aurelia-templating', 'aurelia-framework'], function (exports, _aureliaTemplating, _aureliaFramework) {
   'use strict';
 
   Object.defineProperty(exports, "__esModule", {
@@ -33430,17 +33090,11 @@ define('aurelia-testing/component-tester',['exports', 'aurelia-templating', 'aur
 
   
 
-  var StageComponent = exports.StageComponent = function () {
-    function StageComponent() {
-      
-    }
-
-    StageComponent.withResources = function withResources(resources) {
+  var StageComponent = exports.StageComponent = {
+    withResources: function withResources(resources) {
       return new ComponentTester().withResources(resources);
-    };
-
-    return StageComponent;
-  }();
+    }
+  };
 
   var ComponentTester = exports.ComponentTester = function () {
     function ComponentTester() {
@@ -33571,75 +33225,7 @@ define('aurelia-testing/component-tester',['exports', 'aurelia-templating', 'aur
       };
     };
 
-    ComponentTester.prototype.waitForElement = function waitForElement(selector, options) {
-      var _this3 = this;
-
-      return (0, _wait.waitFor)(function () {
-        return _this3.element.querySelector(selector);
-      }, options);
-    };
-
-    ComponentTester.prototype.waitForElements = function waitForElements(selector, options) {
-      var _this4 = this;
-
-      return (0, _wait.waitFor)(function () {
-        return _this4.element.querySelectorAll(selector);
-      }, options);
-    };
-
     return ComponentTester;
   }();
 });
-define('aurelia-testing/wait',['exports'], function (exports) {
-  'use strict';
-
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-  exports.waitFor = waitFor;
-  exports.waitForDocumentElement = waitForDocumentElement;
-  exports.waitForDocumentElements = waitForDocumentElements;
-  function waitFor(getter, options) {
-    var timedOut = false;
-
-    options = Object.assign({
-      present: true,
-      interval: 50,
-      timeout: 5000
-    }, options);
-
-    function wait() {
-      var element = getter();
-
-      var found = element !== null && (!(element instanceof NodeList) && !element.jquery || element.length > 0);
-
-      if (!options.present ^ found || timedOut) {
-        return Promise.resolve(element);
-      }
-
-      return new Promise(function (rs) {
-        return setTimeout(rs, options.interval);
-      }).then(wait);
-    }
-
-    return Promise.race([new Promise(function (rs, rj) {
-      return setTimeout(function () {
-        timedOut = true;
-        rj(options.present ? 'Element not found' : 'Element not removed');
-      }, options.timeout);
-    }), wait()]);
-  }
-
-  function waitForDocumentElement(selector, options) {
-    return waitFor(function () {
-      return document.querySelector(selector);
-    }, options);
-  }
-
-  function waitForDocumentElements(selector, options) {
-    return waitFor(function () {
-      return document.querySelectorAll(selector);
-    }, options);
-  }
-});
-function _aureliaConfigureModuleLoader(){requirejs.config({"baseUrl":"src/","paths":{"velocity":"../scripts/velocity-shim","aurelia-binding":"../node_modules\\aurelia-binding\\dist\\amd\\aurelia-binding","aurelia-bootstrapper":"../node_modules\\aurelia-bootstrapper\\dist\\amd\\aurelia-bootstrapper","aurelia-dependency-injection":"../node_modules\\aurelia-dependency-injection\\dist\\amd\\aurelia-dependency-injection","aurelia-framework":"../node_modules\\aurelia-framework\\dist\\amd\\aurelia-framework","aurelia-history":"../node_modules\\aurelia-history\\dist\\amd\\aurelia-history","aurelia-event-aggregator":"../node_modules\\aurelia-event-aggregator\\dist\\amd\\aurelia-event-aggregator","aurelia-loader":"../node_modules\\aurelia-loader\\dist\\amd\\aurelia-loader","aurelia-history-browser":"../node_modules\\aurelia-history-browser\\dist\\amd\\aurelia-history-browser","aurelia-loader-default":"../node_modules\\aurelia-loader-default\\dist\\amd\\aurelia-loader-default","aurelia-logging":"../node_modules\\aurelia-logging\\dist\\amd\\aurelia-logging","aurelia-logging-console":"../node_modules\\aurelia-logging-console\\dist\\amd\\aurelia-logging-console","aurelia-metadata":"../node_modules\\aurelia-metadata\\dist\\amd\\aurelia-metadata","aurelia-pal":"../node_modules\\aurelia-pal\\dist\\amd\\aurelia-pal","aurelia-pal-browser":"../node_modules\\aurelia-pal-browser\\dist\\amd\\aurelia-pal-browser","aurelia-path":"../node_modules\\aurelia-path\\dist\\amd\\aurelia-path","aurelia-polyfills":"../node_modules\\aurelia-polyfills\\dist\\amd\\aurelia-polyfills","aurelia-router":"../node_modules\\aurelia-router\\dist\\amd\\aurelia-router","aurelia-route-recognizer":"../node_modules\\aurelia-route-recognizer\\dist\\amd\\aurelia-route-recognizer","aurelia-task-queue":"../node_modules\\aurelia-task-queue\\dist\\amd\\aurelia-task-queue","aurelia-templating":"../node_modules\\aurelia-templating\\dist\\amd\\aurelia-templating","aurelia-templating-binding":"../node_modules\\aurelia-templating-binding\\dist\\amd\\aurelia-templating-binding","text":"../node_modules\\text\\text","aurelia-animator-css":"../node_modules\\aurelia-animator-css\\dist\\amd\\aurelia-animator-css","aurelia-animator-velocity":"../node_modules\\aurelia-animator-velocity\\dist\\amd\\aurelia-animator-velocity","app-bundle":"../scripts/app-bundle"},"packages":[{"name":"velocity-animate","location":"../node_modules/velocity-animate","main":"velocity"},{"name":"aurelia-templating-resources","location":"../node_modules/aurelia-templating-resources/dist/amd","main":"aurelia-templating-resources"},{"name":"aurelia-templating-router","location":"../node_modules/aurelia-templating-router/dist/amd","main":"aurelia-templating-router"},{"name":"aurelia-testing","location":"../node_modules/aurelia-testing/dist/amd","main":"aurelia-testing"}],"stubModules":["text"],"shim":{"velocity-animate":{"deps":["jquery"]}},"bundles":{"app-bundle":["baseViewModel","about","app","css-tricks","environment","home","main","resume","experiments/buttons","experiments/cards","experiments/particles","resources/index","resources/elements/componentElement","resources/elements/hub","resources/elements/testMe","components/circleButton","components/hoverButton","components/notificationButton","components/simpleCard","components/spinButton","components/zoomButton","resources/colors"]}})}
+function _aureliaConfigureModuleLoader(){requirejs.config({"baseUrl":"src/","paths":{"velocity":"../scripts/velocity-shim","aurelia-binding":"../node_modules\\aurelia-binding\\dist\\amd\\aurelia-binding","aurelia-bootstrapper":"../node_modules\\aurelia-bootstrapper\\dist\\amd\\aurelia-bootstrapper","aurelia-framework":"../node_modules\\aurelia-framework\\dist\\amd\\aurelia-framework","aurelia-dependency-injection":"../node_modules\\aurelia-dependency-injection\\dist\\amd\\aurelia-dependency-injection","aurelia-history":"../node_modules\\aurelia-history\\dist\\amd\\aurelia-history","aurelia-event-aggregator":"../node_modules\\aurelia-event-aggregator\\dist\\amd\\aurelia-event-aggregator","aurelia-loader-default":"../node_modules\\aurelia-loader-default\\dist\\amd\\aurelia-loader-default","aurelia-loader":"../node_modules\\aurelia-loader\\dist\\amd\\aurelia-loader","aurelia-history-browser":"../node_modules\\aurelia-history-browser\\dist\\amd\\aurelia-history-browser","aurelia-logging":"../node_modules\\aurelia-logging\\dist\\amd\\aurelia-logging","aurelia-logging-console":"../node_modules\\aurelia-logging-console\\dist\\amd\\aurelia-logging-console","aurelia-metadata":"../node_modules\\aurelia-metadata\\dist\\amd\\aurelia-metadata","aurelia-pal":"../node_modules\\aurelia-pal\\dist\\amd\\aurelia-pal","aurelia-pal-browser":"../node_modules\\aurelia-pal-browser\\dist\\amd\\aurelia-pal-browser","aurelia-path":"../node_modules\\aurelia-path\\dist\\amd\\aurelia-path","aurelia-polyfills":"../node_modules\\aurelia-polyfills\\dist\\amd\\aurelia-polyfills","aurelia-route-recognizer":"../node_modules\\aurelia-route-recognizer\\dist\\amd\\aurelia-route-recognizer","aurelia-router":"../node_modules\\aurelia-router\\dist\\amd\\aurelia-router","aurelia-task-queue":"../node_modules\\aurelia-task-queue\\dist\\amd\\aurelia-task-queue","aurelia-templating":"../node_modules\\aurelia-templating\\dist\\amd\\aurelia-templating","aurelia-templating-binding":"../node_modules\\aurelia-templating-binding\\dist\\amd\\aurelia-templating-binding","text":"../node_modules\\text\\text","aurelia-animator-css":"../node_modules\\aurelia-animator-css\\dist\\amd\\aurelia-animator-css","aurelia-animator-velocity":"../node_modules\\aurelia-animator-velocity\\dist\\amd\\aurelia-animator-velocity","app-bundle":"../scripts/app-bundle"},"packages":[{"name":"aurelia-templating-resources","location":"../node_modules/aurelia-templating-resources/dist/amd","main":"aurelia-templating-resources"},{"name":"velocity-animate","location":"../node_modules/velocity-animate","main":"velocity"},{"name":"aurelia-templating-router","location":"../node_modules/aurelia-templating-router/dist/amd","main":"aurelia-templating-router"},{"name":"aurelia-testing","location":"../node_modules/aurelia-testing/dist/amd","main":"aurelia-testing"}],"stubModules":["text"],"shim":{"velocity-animate":{"deps":["jquery"]}},"bundles":{"app-bundle":["baseViewModel","about","app","css-tricks","environment","home","main","resume","experiments/buttons","experiments/cards","experiments/particles","resources/index","resources/elements/componentElement","resources/elements/hub","resources/elements/testMe","components/circleButton","components/hoverButton","components/notificationButton","components/simpleCard","components/spinButton","components/zoomButton","resources/colors"]}})}
