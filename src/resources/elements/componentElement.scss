@@ -29,3 +29,20 @@
 		word-wrap:break-word;
 	}
 }
+
+.content > div { display:none; }
+input {display: none;}
+label {display: inline-block; padding: 15px 25px; font-weight: 600; text-align: center;}
+label:hover {color: #fff; cursor: pointer;}
+input:checked + label {background: #ed5a6a; color: #fff;}
+
+#tab1:checked ~ .content #content1,
+#tab2:checked ~ .content #content2{
+	display:block;
+}
+
+.show{display:none;}
+label input{display:block;}
+label input:checked ~ .show{
+	display:block;
+}

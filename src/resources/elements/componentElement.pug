@@ -6,5 +6,16 @@ template
 		.ex__output 
 			compose(view="../../components/${file}.html" containerless)
 		.ex__code
-			pre ${scss}
+			label test
+				input(type="radio")
+			.show
+				i.fa.fa-refresh
+			input#tab1(type="radio" name="tabs")
+			label(for="tab1") SCSS
+			input#tab2(type="radio" name="tabs")
+			label(for="tab2") PUG
+			.content
+				#content1
+					pre ${scss}
+				#content2
 	

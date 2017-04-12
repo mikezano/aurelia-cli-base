@@ -1,5 +1,6 @@
 define('baseViewModel',["require", "exports"], function (require, exports) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     var BaseVM = (function () {
         function BaseVM(ea) {
             this._ea = ea;
@@ -37,11 +38,16 @@ define('baseViewModel',["require", "exports"], function (require, exports) {
     exports.BaseVM = BaseVM;
 });
 
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -53,6 +59,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 define('about',["require", "exports", "aurelia-framework", "aurelia-event-aggregator", "./baseViewModel"], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1, baseViewModel_1) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     var About = (function (_super) {
         __extends(About, _super);
         function About(ea) {
@@ -78,6 +85,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 define('app',["require", "exports", "aurelia-framework", "aurelia-event-aggregator"], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     var App = (function () {
         function App(ea) {
             this.ea = ea;
@@ -122,11 +130,16 @@ define('app',["require", "exports", "aurelia-framework", "aurelia-event-aggregat
     exports.App = App;
 });
 
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -138,6 +151,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 define('css-tricks',["require", "exports", "aurelia-framework", "aurelia-event-aggregator", "./baseViewModel"], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1, baseViewModel_1) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     var CssTricks = (function (_super) {
         __extends(CssTricks, _super);
         function CssTricks(ea) {
@@ -161,11 +175,16 @@ define('environment',["require", "exports"], function (require, exports) {
     };
 });
 
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -177,6 +196,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 define('home',["require", "exports", "aurelia-framework", "aurelia-event-aggregator", "./baseViewModel"], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1, baseViewModel_1) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     var Home = (function (_super) {
         __extends(Home, _super);
         function Home(ea) {
@@ -193,6 +213,7 @@ define('home',["require", "exports", "aurelia-framework", "aurelia-event-aggrega
 
 define('main',["require", "exports", "./environment"], function (require, exports, environment_1) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     Promise.config({
         longStackTraces: environment_1.default.debug,
         warnings: {
@@ -216,11 +237,16 @@ define('main',["require", "exports", "./environment"], function (require, export
     exports.configure = configure;
 });
 
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -232,6 +258,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 define('resume',["require", "exports", "aurelia-framework", "aurelia-event-aggregator", "./baseViewModel"], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1, baseViewModel_1) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     var Resume = (function (_super) {
         __extends(Resume, _super);
         function Resume(ea) {
@@ -252,11 +279,16 @@ define('resume',["require", "exports", "aurelia-framework", "aurelia-event-aggre
     exports.Resume = Resume;
 });
 
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -268,6 +300,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 define('experiments/buttons',["require", "exports", "aurelia-framework", "aurelia-event-aggregator", "../baseViewModel"], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1, baseViewModel_1) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     var Buttons = (function (_super) {
         __extends(Buttons, _super);
         function Buttons(ea) {
@@ -282,11 +315,16 @@ define('experiments/buttons',["require", "exports", "aurelia-framework", "aureli
     exports.Buttons = Buttons;
 });
 
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -298,6 +336,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 define('experiments/cards',["require", "exports", "aurelia-framework", "aurelia-event-aggregator", "../baseViewModel"], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1, baseViewModel_1) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     var Cards = (function (_super) {
         __extends(Cards, _super);
         function Cards(ea) {
@@ -312,11 +351,16 @@ define('experiments/cards',["require", "exports", "aurelia-framework", "aurelia-
     exports.Cards = Cards;
 });
 
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -328,6 +372,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 define('experiments/particles',["require", "exports", "aurelia-framework", "aurelia-event-aggregator", "../baseViewModel"], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1, baseViewModel_1) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     var Particles = (function (_super) {
         __extends(Particles, _super);
         function Particles(ea) {
@@ -342,8 +387,45 @@ define('experiments/particles',["require", "exports", "aurelia-framework", "aure
     exports.Particles = Particles;
 });
 
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+define('experiments/tabs',["require", "exports", "aurelia-framework", "aurelia-event-aggregator", "../baseViewModel"], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1, baseViewModel_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var Tabs = (function (_super) {
+        __extends(Tabs, _super);
+        function Tabs(ea) {
+            return _super.call(this, ea) || this;
+        }
+        return Tabs;
+    }(baseViewModel_1.BaseVM));
+    Tabs = __decorate([
+        aurelia_framework_1.autoinject(),
+        __metadata("design:paramtypes", [aurelia_event_aggregator_1.EventAggregator])
+    ], Tabs);
+    exports.Tabs = Tabs;
+});
+
 define('resources/index',["require", "exports"], function (require, exports) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     function configure(config) {
     }
     exports.configure = configure;
@@ -360,6 +442,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 define('resources/elements/componentElement',["require", "exports", "aurelia-framework"], function (require, exports, aurelia_framework_1) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     var ComponentElement = (function () {
         function ComponentElement() {
         }
@@ -392,8 +475,7 @@ define('resources/elements/componentElement',["require", "exports", "aurelia-fra
         __metadata("design:type", String)
     ], ComponentElement.prototype, "file", void 0);
     ComponentElement = __decorate([
-        aurelia_framework_1.autoinject(),
-        __metadata("design:paramtypes", [])
+        aurelia_framework_1.autoinject()
     ], ComponentElement);
     exports.ComponentElement = ComponentElement;
 });
@@ -409,6 +491,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 define('resources/elements/hub',["require", "exports", "aurelia-framework", "aurelia-animator-velocity", "aurelia-router", "aurelia-event-aggregator"], function (require, exports, aurelia_framework_1, aurelia_animator_velocity_1, aurelia_router_1, aurelia_event_aggregator_1) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     var Hub = Hub_1 = (function () {
         function Hub(velocity, ea) {
             var _this = this;
@@ -507,11 +590,9 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
 define('resources/elements/testMe',["require", "exports", "aurelia-framework"], function (require, exports, aurelia_framework_1) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     var TestMe = (function () {
         function TestMe() {
         }
@@ -519,114 +600,47 @@ define('resources/elements/testMe',["require", "exports", "aurelia-framework"], 
         return TestMe;
     }());
     TestMe = __decorate([
-        aurelia_framework_1.autoinject(),
-        __metadata("design:paramtypes", [])
+        aurelia_framework_1.autoinject()
     ], TestMe);
     exports.TestMe = TestMe;
 });
 
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-define('experiments/cards.1',["require", "exports", "aurelia-framework", "aurelia-event-aggregator", "../baseViewModel"], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1, baseViewModel_1) {
-    "use strict";
-    var Cards = (function (_super) {
-        __extends(Cards, _super);
-        function Cards(ea) {
-            return _super.call(this, ea) || this;
-        }
-        return Cards;
-    }(baseViewModel_1.BaseVM));
-    Cards = __decorate([
-        aurelia_framework_1.autoinject(),
-        __metadata("design:paramtypes", [aurelia_event_aggregator_1.EventAggregator])
-    ], Cards);
-    exports.Cards = Cards;
-});
-
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-define('experiments/tabs',["require", "exports", "aurelia-framework", "aurelia-event-aggregator", "../baseViewModel"], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1, baseViewModel_1) {
-    "use strict";
-    var Tabs = (function (_super) {
-        __extends(Tabs, _super);
-        function Tabs(ea) {
-            return _super.call(this, ea) || this;
-        }
-        return Tabs;
-    }(baseViewModel_1.BaseVM));
-    Tabs = __decorate([
-        aurelia_framework_1.autoinject(),
-        __metadata("design:paramtypes", [aurelia_event_aggregator_1.EventAggregator])
-    ], Tabs);
-    exports.Tabs = Tabs;
-});
-
 define('text!about.html', ['module'], function(module) { module.exports = "<template><require from=\"./about.css\"></require><h1 class=\"header\">About</h1></template>"; });
 define('text!about.css', ['module'], function(module) { module.exports = ""; });
-define('text!app.css', ['module'], function(module) { module.exports = "body {\n  background: -webkit-linear-gradient(#303030, #444444 45%, #444444 55%, #303030);\n  background: -o-linear-gradient(#303030, #444444 45%, #444444 55%, #303030);\n  background: linear-gradient(#303030, #444444 45%, #444444 55%, #303030);\n  background-repeat: no-repeat;\n  background-attachment: fixed;\n  font-family: 'Orbitron', sans-serif; }\n\n.au-enter {\n  opacity: 0; }\n\n.au-enter-active {\n  animation: fade-in .5s linear; }\n\n@keyframes fade-in {\n  0% {\n    opacity: 0; }\n  100% {\n    opacity: 1; } }\n\n.header {\n  color: orange;\n  text-align: center; }\n"; });
 define('text!app.html', ['module'], function(module) { module.exports = "<template><require from=\"./app.css\"></require><require from=\"resources/elements/hub\"></require><hub router.bind=\"router\"></hub></template>"; });
+define('text!app.css', ['module'], function(module) { module.exports = "body {\n  background: -webkit-linear-gradient(#303030, #444444 45%, #444444 55%, #303030);\n  background: -o-linear-gradient(#303030, #444444 45%, #444444 55%, #303030);\n  background: linear-gradient(#303030, #444444 45%, #444444 55%, #303030);\n  background-repeat: no-repeat;\n  background-attachment: fixed;\n  font-family: 'Orbitron', sans-serif; }\n\n.au-enter {\n  opacity: 0; }\n\n.au-enter-active {\n  animation: fade-in .5s linear; }\n\n@keyframes fade-in {\n  0% {\n    opacity: 0; }\n  100% {\n    opacity: 1; } }\n\n.header {\n  color: orange;\n  text-align: center; }\n"; });
+define('text!css-tricks.html', ['module'], function(module) { module.exports = "<template><require from=\"./css-tricks.css\"></require><div class=\"au-animate\"><h3>Select a topic</h3><ul class=\"tricks\"><li><a href=\"#/buttons\"> <span>Buttons</span><i class=\"fa fa-angle-right\"></i></a></li><li><a href=\"#/cards\"> <span>Cards</span><i class=\"fa fa-angle-right\"></i></a></li><li><a href=\"#/tabs\"> <span>Tabs</span><i class=\"fa fa-angle-right\"></i></a></li></ul></div></template>"; });
 define('text!css-tricks.css', ['module'], function(module) { module.exports = "h3 {\n  text-align: center;\n  font-size: 30px;\n  font-weight: 100;\n  color: orange; }\n\nul.tricks {\n  text-align: left; }\n  ul.tricks li {\n    list-style-type: none;\n    margin: 20px 0; }\n    ul.tricks li a {\n      margin-left: 80px;\n      color: white;\n      display: inline-block;\n      text-decoration: none;\n      transition: .2s all ease-in-out;\n      border-bottom: 1px solid white;\n      padding: 8px 0;\n      width: 120px; }\n      ul.tricks li a span {\n        padding: 0 4px; }\n      ul.tricks li a i {\n        float: right; }\n      ul.tricks li a:hover {\n        text-shadow: 2px 2px 4px black;\n        border-bottom: 1px solid orange;\n        color: orange; }\n        ul.tricks li a:hover i {\n          animation: go-next .8s linear infinite; }\n\n@keyframes go-next {\n  0% {\n    opacity: 0;\n    transform: translateX(0); }\n  20% {\n    opacity: 1; }\n  80% {\n    opacity: 1; }\n  100% {\n    transform: translateX(50px);\n    opacity: 0; } }\n"; });
 define('text!home.css', ['module'], function(module) { module.exports = ""; });
-define('text!css-tricks.html', ['module'], function(module) { module.exports = "<template><require from=\"./css-tricks.css\"></require><div class=\"au-animate\"><h3>Select a topic</h3><ul class=\"tricks\"><li><a href=\"#/buttons\"> <span>Buttons</span><i class=\"fa fa-angle-right\"></i></a></li><li><a href=\"#/cards\"> <span>Cards</span><i class=\"fa fa-angle-right\"></i></a></li><li><a href=\"#/tabs\"> <span>Tabs</span><i class=\"fa fa-angle-right\"></i></a></li></ul></div></template>"; });
-define('text!components/circleButton.css', ['module'], function(module) { module.exports = ".circle {\n  border: none;\n  background-color: lightblue;\n  color: black;\n  width: 24px;\n  height: 24px;\n  margin: 4px;\n  font-size: 12px;\n  border-radius: 12px;\n  box-shadow: 2px 2px 4px black;\n  transition: transform .1s ease-out, box-shadow .1s ease-out; }\n  .circle:hover {\n    transform: scale(1.1);\n    box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5);\n    background-color: #c1e1ec;\n    cursor: pointer; }\n\n.circle-lg {\n  border: none;\n  background-color: pink;\n  color: black;\n  width: 48px;\n  height: 48px;\n  margin: 4px;\n  font-size: 24px;\n  border-radius: 24px;\n  box-shadow: 2px 2px 4px black;\n  transition: transform .1s ease-out, box-shadow .1s ease-out; }\n  .circle-lg:hover {\n    transform: scale(1.1);\n    box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5);\n    background-color: #ffdae0;\n    cursor: pointer; }\n"; });
 define('text!home.html', ['module'], function(module) { module.exports = "<template><h1 class=\"header\">Home</h1><p>Need a cool button?</p><p>Need to add box shadows?</p><p>How does one add curves</p><a href=\"#/css-tricks\"> <button>See how it's done</button></a></template>"; });
-define('text!components/hoverButton.css', ['module'], function(module) { module.exports = ".hover {\n  color: white;\n  background-color: green;\n  border: 1px solid #006700;\n  transition: background-color .2s ease-in-out; }\n  .hover:hover {\n    background-color: #009a00; }\n"; });
 define('text!resume.html', ['module'], function(module) { module.exports = "<template><div class=\"au-animate\"><p>My person al site always under construction</p><p>Accomplished individual who has contributed to cutting-edge groups investing in current/future web technologies looking to continue software engineer growth and become an influential member in and outside the team.</p><p>Constructed single page AngularJS/C# based web applications with SQL/MongoDB backends to enhance supply chain management. Expertise and passion in HTML5/CSS3 (SCSS) technologies looked to by peers for efficient use of, advice, and assistance with web page styling.</p></div></template>"; });
+define('text!components/circleButton.css', ['module'], function(module) { module.exports = ".circle {\n  border: none;\n  background-color: lightblue;\n  color: black;\n  width: 24px;\n  height: 24px;\n  margin: 4px;\n  font-size: 12px;\n  border-radius: 12px;\n  box-shadow: 2px 2px 4px black;\n  transition: transform .1s ease-out, box-shadow .1s ease-out; }\n  .circle:hover {\n    transform: scale(1.1);\n    box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5);\n    background-color: #c1e1ec;\n    cursor: pointer; }\n\n.circle-lg {\n  border: none;\n  background-color: pink;\n  color: black;\n  width: 48px;\n  height: 48px;\n  margin: 4px;\n  font-size: 24px;\n  border-radius: 24px;\n  box-shadow: 2px 2px 4px black;\n  transition: transform .1s ease-out, box-shadow .1s ease-out; }\n  .circle-lg:hover {\n    transform: scale(1.1);\n    box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5);\n    background-color: #ffdae0;\n    cursor: pointer; }\n"; });
 define('text!components/circleButton.html', ['module'], function(module) { module.exports = "<template><require from=\"./circleButton.css\"></require><button class=\"circle\"><i class=\"fa fa-refresh\"></i></button><button class=\"circle\"><i class=\"fa fa-bath\"></i></button><button class=\"circle\"><i class=\"fa fa-blind\"></i></button><button class=\"circle\"><i class=\"fa fa-truck\"></i></button><button class=\"circle-lg\"><i class=\"fa fa-apple\"></i></button></template>"; });
-define('text!components/notificationButton.css', ['module'], function(module) { module.exports = ".notify {\n  background-color: yellow;\n  border: 1px solid #999900;\n  position: relative;\n  padding: 5px 30px; }\n  .notify__icon {\n    border: 1px solid #999900;\n    width: 25px;\n    background-color: yellow;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    box-shadow: 1px 1px 2px black;\n    border-radius: 25px;\n    position: absolute;\n    top: -10px;\n    right: 0; }\n"; });
-define('text!components/simpleCard.css', ['module'], function(module) { module.exports = ".circle {\n  border: none;\n  background-color: lightblue;\n  color: black;\n  width: 24px;\n  height: 24px;\n  margin: 4px;\n  font-size: 12px;\n  border-radius: 12px;\n  box-shadow: 2px 2px 4px black;\n  transition: transform .1s ease-out, box-shadow .1s ease-out; }\n  .circle:hover {\n    transform: scale(1.1);\n    box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5);\n    background-color: #c1e1ec;\n    cursor: pointer; }\n\n.circle-lg {\n  border: none;\n  background-color: pink;\n  color: black;\n  width: 48px;\n  height: 48px;\n  margin: 4px;\n  font-size: 24px;\n  border-radius: 24px;\n  box-shadow: 2px 2px 4px black;\n  transition: transform .1s ease-out, box-shadow .1s ease-out; }\n  .circle-lg:hover {\n    transform: scale(1.1);\n    box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5);\n    background-color: #ffdae0;\n    cursor: pointer; }\n\n.simple-card {\n  border: 1px solid #767676;\n  transition: all .2s ease-out;\n  width: 100%;\n  margin: 10px; }\n  .simple-card:hover {\n    box-shadow: 2px 2px 4px black; }\n  .simple-card__header {\n    background-color: darkgray;\n    padding: 10px; }\n  .simple-card__content {\n    background-color: white;\n    color: black;\n    padding: 10px; }\n  .simple-card .circle {\n    border: none;\n    background-color: lightblue;\n    color: black;\n    width: 24px;\n    height: 24px;\n    margin: 4px;\n    font-size: 12px;\n    border-radius: 12px;\n    box-shadow: 2px 2px 4px black;\n    transition: transform .1s ease-out, box-shadow .1s ease-out;\n    float: right;\n    margin-top: 16px; }\n    .simple-card .circle:hover {\n      transform: scale(1.1);\n      box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5);\n      background-color: #c1e1ec;\n      cursor: pointer; }\n"; });
+define('text!components/hoverButton.css', ['module'], function(module) { module.exports = ".hover {\n  color: white;\n  background-color: green;\n  border: 1px solid #006700;\n  transition: background-color .2s ease-in-out; }\n  .hover:hover {\n    background-color: #009a00; }\n"; });
 define('text!components/hoverButton.html', ['module'], function(module) { module.exports = "<template><require from=\"./hoverButton.css\"></require><button class=\"hover\">Hover</button></template>"; });
-define('text!components/spinButton.css', ['module'], function(module) { module.exports = ".spin-btn {\n  font-size: 40px;\n  border: none;\n  background: none;\n  color: lightgreen;\n  transition: transform .5s ease-out;\n  display: flex;\n  align-items: center;\n  justify-content: center; }\n  .spin-btn:hover {\n    color: #a6f1a6;\n    transform: rotate(360deg) scale(1.2); }\n"; });
+define('text!components/notificationButton.css', ['module'], function(module) { module.exports = ".notify {\n  background-color: yellow;\n  border: 1px solid #999900;\n  position: relative;\n  padding: 5px 30px; }\n  .notify__icon {\n    border: 1px solid #999900;\n    width: 25px;\n    background-color: yellow;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    box-shadow: 1px 1px 2px black;\n    border-radius: 25px;\n    position: absolute;\n    top: -10px;\n    right: 0; }\n"; });
 define('text!components/notificationButton.html', ['module'], function(module) { module.exports = "<template><require from=\"./notificationButton.css\"></require><button class=\"notify\"><div class=\"notify__text\">State</div><div class=\"notify__icon\"> <i class=\"fa fa-trash\"></i></div></button><button class=\"notify\"><div class=\"notify__text\">Passing</div><div class=\"notify__icon\"> 10\t\t\t</div></button></template>"; });
+define('text!components/simpleCard.css', ['module'], function(module) { module.exports = ".circle {\n  border: none;\n  background-color: lightblue;\n  color: black;\n  width: 24px;\n  height: 24px;\n  margin: 4px;\n  font-size: 12px;\n  border-radius: 12px;\n  box-shadow: 2px 2px 4px black;\n  transition: transform .1s ease-out, box-shadow .1s ease-out; }\n  .circle:hover {\n    transform: scale(1.1);\n    box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5);\n    background-color: #c1e1ec;\n    cursor: pointer; }\n\n.circle-lg {\n  border: none;\n  background-color: pink;\n  color: black;\n  width: 48px;\n  height: 48px;\n  margin: 4px;\n  font-size: 24px;\n  border-radius: 24px;\n  box-shadow: 2px 2px 4px black;\n  transition: transform .1s ease-out, box-shadow .1s ease-out; }\n  .circle-lg:hover {\n    transform: scale(1.1);\n    box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5);\n    background-color: #ffdae0;\n    cursor: pointer; }\n\n.simple-card {\n  border: 1px solid #767676;\n  transition: all .2s ease-out;\n  width: 100%;\n  margin: 10px; }\n  .simple-card:hover {\n    box-shadow: 2px 2px 4px black; }\n  .simple-card__header {\n    background-color: darkgray;\n    padding: 10px; }\n  .simple-card__content {\n    background-color: white;\n    color: black;\n    padding: 10px; }\n  .simple-card .circle {\n    border: none;\n    background-color: lightblue;\n    color: black;\n    width: 24px;\n    height: 24px;\n    margin: 4px;\n    font-size: 12px;\n    border-radius: 12px;\n    box-shadow: 2px 2px 4px black;\n    transition: transform .1s ease-out, box-shadow .1s ease-out;\n    float: right;\n    margin-top: 16px; }\n    .simple-card .circle:hover {\n      transform: scale(1.1);\n      box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5);\n      background-color: #c1e1ec;\n      cursor: pointer; }\n"; });
+define('text!components/simpleTab.css', ['module'], function(module) { module.exports = ""; });
 define('text!components/simpleCard.html', ['module'], function(module) { module.exports = "<template><require from=\"./simpleCard.css\"></require><div class=\"simple-card\"><div class=\"simple-card__header\">Header<button class=\"circle\"><i class=\"fa fa-truck\"></i></button><button class=\"circle\"><i class=\"fa fa-refresh\"></i></button></div><div class=\"simple-card__content\">All your content goes here</div></div></template>"; });
-define('text!components/zoomButton.css', ['module'], function(module) { module.exports = ".zoom {\n  box-shadow: 2px 2px 4px black;\n  transition: all .2s ease-in-out; }\n  .zoom:hover {\n    transform: scale(1.1);\n    box-shadow: 4px 4px 8px #333333; }\n"; });
-define('text!experiments/buttons.css', ['module'], function(module) { module.exports = ".button-sandbox {\n  position: fixed;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  z-index: 10;\n  background: radial-gradient(#888, #777);\n  padding: 10px;\n  overflow-y: scroll; }\n"; });
+define('text!components/spinButton.css', ['module'], function(module) { module.exports = ".spin-btn {\n  font-size: 40px;\n  border: none;\n  background: none;\n  color: lightgreen;\n  transition: transform .5s ease-out;\n  display: flex;\n  align-items: center;\n  justify-content: center; }\n  .spin-btn:hover {\n    color: #a6f1a6;\n    transform: rotate(360deg) scale(1.2); }\n"; });
+define('text!components/simpleTab.html', ['module'], function(module) { module.exports = "<template><require from=\"./simpleTab.css\"></require><h1>Simple Tab</h1></template>"; });
 define('text!components/spinButton.html', ['module'], function(module) { module.exports = "<template><require from=\"./spinButton.css\"></require><button class=\"spin-btn\"><i class=\"fa fa-plus\"></i></button></template>"; });
+define('text!components/zoomButton.css', ['module'], function(module) { module.exports = ".zoom {\n  box-shadow: 2px 2px 4px black;\n  transition: all .2s ease-in-out; }\n  .zoom:hover {\n    transform: scale(1.1);\n    box-shadow: 4px 4px 8px #333333; }\n"; });
 define('text!components/zoomButton.html', ['module'], function(module) { module.exports = "<template><require from=\"./zoomButton.css\"></require><button class=\"zoom\">Zoom</button></template>"; });
-define('text!experiments/cards.css', ['module'], function(module) { module.exports = ".cards {\n  position: fixed;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  z-index: 10;\n  background: radial-gradient(#888, #777);\n  padding: 10px;\n  overflow-y: scroll; }\n"; });
+define('text!experiments/buttons.css', ['module'], function(module) { module.exports = ".button-sandbox {\n  position: fixed;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  z-index: 10;\n  background: radial-gradient(#888, #777);\n  padding: 10px;\n  overflow-y: scroll; }\n"; });
 define('text!experiments/buttons.html', ['module'], function(module) { module.exports = "<template><require from=\"./buttons.css\"></require><require from=\"../resources/elements/componentElement\"></require><div class=\"au-animate button-sandbox\"><a href=\"javascript:history.back()\">Go Back</a><component-element file.bind=\"'circleButton'\"></component-element><component-element file.bind=\"'spinButton'\"></component-element><component-element file.bind=\"'hoverButton'\"></component-element><component-element file.bind=\"'zoomButton'\"></component-element><component-element file.bind=\"'notificationButton'\"></component-element></div></template>"; });
-define('text!experiments/particles.css', ['module'], function(module) { module.exports = ".particles {\n  position: fixed;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  z-index: 10;\n  background: radial-gradient(#333, #222);\n  padding: 10px;\n  display: flex;\n  justify-content: center; }\n"; });
-define('text!resources/colors.css', ['module'], function(module) { module.exports = ""; });
+define('text!experiments/cards.css', ['module'], function(module) { module.exports = ".cards {\n  position: fixed;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  z-index: 10;\n  background: radial-gradient(#888, #777);\n  padding: 10px;\n  overflow-y: scroll; }\n"; });
 define('text!experiments/cards.html', ['module'], function(module) { module.exports = "<template><require from=\"./cards.css\"></require><require from=\"../resources/elements/componentElement\"></require><div class=\"au-animate cards\"><a href=\"javascript:history.back()\">Go Back</a><component-element file.bind=\"'simpleCard'\"></component-element><component-element file.bind=\"'simpleCard'\"></component-element></div></template>"; });
-define('text!resources/elements/componentElement.css', ['module'], function(module) { module.exports = ".ex {\n  border: 1px solid #999999;\n  margin: 10px;\n  display: grid;\n  grid-template-columns: 40% 60%;\n  width: auto; }\n  .ex__header {\n    grid-row: 1;\n    grid-column: 1/3;\n    text-align: center;\n    color: orange;\n    margin: 10px;\n    letter-spacing: 1px;\n    font-size: 20px; }\n  .ex__output {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    border-right: 1px solid #999999;\n    margin: 10px; }\n  .ex__code {\n    margin: 10px;\n    word-wrap: break-word; }\n"; });
+define('text!experiments/particles.css', ['module'], function(module) { module.exports = ".particles {\n  position: fixed;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  z-index: 10;\n  background: radial-gradient(#333, #222);\n  padding: 10px;\n  display: flex;\n  justify-content: center; }\n"; });
 define('text!experiments/particles.html', ['module'], function(module) { module.exports = "<template><require from=\"./particles.css\"></require><div class=\"au-animate particles\"><h1>Hello</h1></div></template>"; });
-define('text!resources/elements/componentElement.html', ['module'], function(module) { module.exports = "<template><require from=\"./componentElement.css\"></require><div class=\"ex\"><div class=\"ex__header\"> <div>${humanizeFile}</div></div><div class=\"ex__output\"> <compose view=\"../../components/${file}.html\" containerless=\"containerless\"></compose></div><div class=\"ex__code\"><pre>${scss}</pre></div></div></template>"; });
+define('text!experiments/tabs.css', ['module'], function(module) { module.exports = ".tabs {\n  position: fixed;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  z-index: 10;\n  background: radial-gradient(#888, #777);\n  padding: 10px;\n  overflow-y: scroll; }\n"; });
+define('text!experiments/tabs.html', ['module'], function(module) { module.exports = "<template><require from=\"./tabs.css\"></require><require from=\"../resources/elements/componentElement\"></require><div class=\"au-animate tabs\"><a href=\"javascript:history.back()\">Go Back</a><component-element file.bind=\"'simpleTab'\"></component-element></div></template>"; });
+define('text!resources/colors.css', ['module'], function(module) { module.exports = ""; });
+define('text!resources/elements/componentElement.html', ['module'], function(module) { module.exports = "<template><require from=\"./componentElement.css\"></require><div class=\"ex\"><div class=\"ex__header\"> <div>${humanizeFile}</div></div><div class=\"ex__output\"> <compose view=\"../../components/${file}.html\" containerless=\"containerless\"></compose></div><div class=\"ex__code\"><label>test<input type=\"radio\"/></label><div class=\"show\"><i class=\"fa fa-refresh\"></i></div><input id=\"tab1\" type=\"radio\" name=\"tabs\"/><label for=\"tab1\">SCSS</label><input id=\"tab2\" type=\"radio\" name=\"tabs\"/><label for=\"tab2\">PUG</label><div class=\"content\"><div id=\"content1\"><pre>${scss}</pre></div><div id=\"content2\"></div></div></div></div></template>"; });
+define('text!resources/elements/componentElement.css', ['module'], function(module) { module.exports = ".ex {\n  border: 1px solid #999999;\n  margin: 10px;\n  display: grid;\n  grid-template-columns: 40% 60%;\n  width: auto; }\n  .ex__header {\n    grid-row: 1;\n    grid-column: 1/3;\n    text-align: center;\n    color: orange;\n    margin: 10px;\n    letter-spacing: 1px;\n    font-size: 20px; }\n  .ex__output {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    border-right: 1px solid #999999;\n    margin: 10px; }\n  .ex__code {\n    margin: 10px;\n    word-wrap: break-word; }\n\n.content > div {\n  display: none; }\n\ninput {\n  display: none; }\n\nlabel {\n  display: inline-block;\n  padding: 15px 25px;\n  font-weight: 600;\n  text-align: center; }\n\nlabel:hover {\n  color: #fff;\n  cursor: pointer; }\n\ninput:checked + label {\n  background: #ed5a6a;\n  color: #fff; }\n\n#tab1:checked ~ .content #content1,\n#tab2:checked ~ .content #content2 {\n  display: block; }\n\n.show {\n  display: none; }\n\nlabel input {\n  display: block; }\n\nlabel input:checked ~ .show {\n  display: block; }\n"; });
+define('text!resources/elements/hub.html', ['module'], function(module) { module.exports = "<template><require from=\"./hub.css\"></require><div class=\"parent\"><div class=\"container-content\" ref=\"containerContent\"><div class=\"left-corner-boundary\" ref=\"leftCornerBoundary\"></div><div class=\"right-corner-boundary\" ref=\"rightCornerBoundary\"></div><router-view></router-view><div class=\"left-curtain\" ref=\"leftCurtain\"></div><div class=\"right-curtain\" ref=\"rightCurtain\"> </div><div class=\"left-corner\" ref=\"leftCorner\" click.delegate=\"activeArea($event)\"><!--http://stackoverflow.com/questions/2717480/css-selector-for-first-element-with-class/8539107#8539107--><div class=\"corner-border\"> </div><p><a class=\"nav-item\" href=\"#/home\">Home</a></p><p><a class=\"nav-item\" href=\"#/css-tricks\">CSS</a></p><p><a class=\"nav-item\" href=\"#/about\">About</a></p></div><div class=\"right-corner\" ref=\"rightCorner\"> <div class=\"corner-border\"> </div><ul> <li><a href=\"#/resume\">Concepts</a></li><li>                           <a href=\"#/css-tricks\">Components      </a></li><li>                           <a href=\"#/css-tricks\">Tricks   </a></li></ul></div></div></div></template>"; });
 define('text!resources/elements/hub.css', ['module'], function(module) { module.exports = ".parent {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  width: 100%;\n  height: 100%;\n  display: flex;\n  align-items: center;\n  justify-content: center; }\n\n.container-content, .container-curtains, .container-corners {\n  overflow: hidden;\n  width: 600px;\n  height: 400px; }\n\n.container-content {\n  background: radial-gradient(#00597f, #00354c);\n  color: white;\n  border: 1px solid #00a0e5;\n  box-shadow: 4px 4px 12px #222;\n  position: absolute; }\n  .container-content p {\n    padding: 10px;\n    font-size: 14px;\n    margin: 0; }\n  .container-content .left-corner-boundary, .container-content .right-corner-boundary {\n    width: 300px;\n    height: 300px;\n    shape-margin: 10px; }\n  .container-content .left-corner-boundary {\n    shape-outside: polygon(0 100px, 100% 100%, 0 100%);\n    clip-path: polygon(0 0, 100% 100%, 0 100%);\n    float: left;\n    margin-top: 100px; }\n  .container-content .right-corner-boundary {\n    shape-outside: polygon(0 0, 100% 0, 100% 100%);\n    clip-path: polygon(0 0, 100% 0, 100% 100%);\n    float: right; }\n  .container-content .left-corner, .container-content .right-corner {\n    width: 300px;\n    height: 300px;\n    position: absolute; }\n  .container-content .left-curtain, .container-content .right-curtain {\n    position: absolute;\n    top: 0;\n    width: 500px;\n    height: 400px; }\n  .container-content .left-curtain {\n    clip-path: polygon(0 0, 100px 0, 100% 100%, 0 100%);\n    background: linear-gradient(45deg, #001119, #007cb2 50%);\n    left: 0; }\n  .container-content .right-curtain {\n    clip-path: polygon(0 0, 100% 0, 100% 100%, 400px 100%);\n    background: linear-gradient(45deg, #007cb2 50%, #001119 100%);\n    right: 0; }\n  .container-content .left-corner {\n    shape-outside: polygon(0 100px, 100% 100%, 0 100%);\n    clip-path: polygon(0 0, 100% 100%, 0 100%);\n    background: linear-gradient(45deg, black, #00597f 49%, #007cb2 50%);\n    left: 0;\n    bottom: 0; }\n    .container-content .left-corner .corner-border {\n      width: 300px;\n      height: 300px;\n      shape-outside: polygon(0 50%, 0 100%, 50% 100%);\n      float: left; }\n    .container-content .left-corner p:first-of-type {\n      margin-top: 140px; }\n    .container-content .left-corner p a {\n      color: white;\n      text-decoration: none;\n      font-size: 26px;\n      font-weight: 100;\n      transition: all .2s ease-in-out;\n      border-bottom: 4px solid transparent; }\n      .container-content .left-corner p a:hover, .container-content .left-corner p a.active {\n        border-bottom: 4px solid #00a0e5;\n        text-shadow: 2px 2px 4px #222; }\n  .container-content .right-corner {\n    shape-outside: polygon(0 0, 100% 0, 100% 100%);\n    clip-path: polygon(0 0, 100% 0, 100% 100%);\n    background: linear-gradient(45deg, #007cb2 50%, #00597f 51%, #001119);\n    right: 0;\n    top: 0; }\n    .container-content .right-corner .corner-border {\n      width: 300px;\n      height: 300px;\n      border: 1px solid white;\n      shape-outside: polygon(0 0, 0 100%, 100% 100%);\n      float: left; }\n    .container-content .right-corner ul {\n      list-style-type: none; }\n      .container-content .right-corner ul li {\n        margin-top: 20px; }\n        .container-content .right-corner ul li a {\n          color: white;\n          text-decoration: none;\n          font-size: 16px;\n          margin-left: 20px;\n          transition: all .2s ease-in-out;\n          border-bottom: 3px solid transparent; }\n          .container-content .right-corner ul li a:hover {\n            border-bottom: 3px solid #007cb2;\n            text-shadow: 2px 2px 4px #003146; }\n\n.container-curtains {\n  position: absolute;\n  z-index: -1; }\n\n.container-corners {\n  position: absolute;\n  z-index: 10; }\n  .container-corners .left-corner, .container-corners .right-corner {\n    width: 300px;\n    height: 300px;\n    position: absolute; }\n  .container-corners .left-corner {\n    shape-outside: polygon(0 100px, 100% 100%, 0 100%);\n    clip-path: polygon(0 0, 100% 100%, 0 100%);\n    background: linear-gradient(45deg, black, #00597f 49%, #007cb2 50%);\n    left: 0;\n    top: 100px; }\n  .container-corners .right-corner {\n    shape-outside: polygon(0 0, 100% 0, 100% 100%);\n    clip-path: polygon(0 0, 100% 0, 100% 100%);\n    background: linear-gradient(45deg, #007cb2 50%, #00597f 51%, #001119);\n    right: 0;\n    top: 0; }\n"; });
 define('text!resources/elements/testMe.css', ['module'], function(module) { module.exports = ""; });
-define('text!resources/elements/hub.html', ['module'], function(module) { module.exports = "<template><require from=\"./hub.css\"></require><div class=\"parent\"><div class=\"container-content\" ref=\"containerContent\"><div class=\"left-corner-boundary\" ref=\"leftCornerBoundary\"></div><div class=\"right-corner-boundary\" ref=\"rightCornerBoundary\"></div><router-view></router-view><div class=\"left-curtain\" ref=\"leftCurtain\"></div><div class=\"right-curtain\" ref=\"rightCurtain\"> </div><div class=\"left-corner\" ref=\"leftCorner\" click.delegate=\"activeArea($event)\"><!--http://stackoverflow.com/questions/2717480/css-selector-for-first-element-with-class/8539107#8539107--><div class=\"corner-border\"> </div><p><a class=\"nav-item\" href=\"#/home\">Home</a></p><p><a class=\"nav-item\" href=\"#/css-tricks\">CSS</a></p><p><a class=\"nav-item\" href=\"#/about\">About</a></p></div><div class=\"right-corner\" ref=\"rightCorner\"> <div class=\"corner-border\"> </div><ul> <li><a href=\"#/resume\">Concepts</a></li><li>                           <a href=\"#/css-tricks\">Components      </a></li><li>                           <a href=\"#/css-tricks\">Tricks   </a></li></ul></div></div></div></template>"; });
 define('text!resources/elements/testMe.html', ['module'], function(module) { module.exports = "<template><require from=\"./TestMe\"><div class=\"test-me\"></div></require></template>"; });
-define('text!experiments/cards.1.css', ['module'], function(module) { module.exports = ".cards {\n  position: fixed;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  z-index: 10;\n  background: radial-gradient(#888, #777);\n  padding: 10px;\n  overflow-y: scroll; }\n"; });
-define('text!experiments/cards.1.html', ['module'], function(module) { module.exports = "<template><require from=\"./cards.css\"></require><require from=\"../resources/elements/componentElement\"></require><div class=\"au-animate cards\"><a href=\"javascript:history.back()\">Go Back</a><component-element file.bind=\"'simpleCard'\"></component-element><component-element file.bind=\"'simpleCard'\"></component-element></div></template>"; });
-define('text!experiments/tabs.html', ['module'], function(module) { module.exports = "<template><require from=\"./tabs.css\"></require><require from=\"../resources/elements/componentElement\"></require><div class=\"au-animate tabs\"><a href=\"javascript:history.back()\">Go Back</a><component-element file.bind=\"'simpleTab'\"></component-element></div></template>"; });
-define('text!experiments/tabs.css', ['module'], function(module) { module.exports = ".tabs {\n  position: fixed;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  z-index: 10;\n  background: radial-gradient(#888, #777);\n  padding: 10px;\n  overflow-y: scroll; }\n"; });
-define('text!components/zoomButton.1.html', ['module'], function(module) { module.exports = "<template><require from=\"./zoomButton.css\"></require><button class=\"zoom\">Zoom</button></template>"; });
-define('text!components/zoomButton.1.css', ['module'], function(module) { module.exports = ".zoom {\n  box-shadow: 2px 2px 4px black;\n  transition: all .2s ease-in-out; }\n  .zoom:hover {\n    transform: scale(1.1);\n    box-shadow: 4px 4px 8px #333333; }\n"; });
-define('text!components/simpleTabs.html', ['module'], function(module) { module.exports = "<template><require from=\"./zoomButton.css\"></require><button class=\"zoom\">Zoom</button></template>"; });
-define('text!components/simpleTabs.css', ['module'], function(module) { module.exports = ".zoom {\n  box-shadow: 2px 2px 4px black;\n  transition: all .2s ease-in-out; }\n  .zoom:hover {\n    transform: scale(1.1);\n    box-shadow: 4px 4px 8px #333333; }\n"; });
-define('text!components/simpleTab.html', ['module'], function(module) { module.exports = "<template><require from=\"./simpleTab.css\"></require><h1>Simple Tab</h1></template>"; });
-define('text!components/simpleTab.css', ['module'], function(module) { module.exports = ""; });
 //# sourceMappingURL=app-bundle.js.map
