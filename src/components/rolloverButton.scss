@@ -1,0 +1,35 @@
+.rollover{
+	$color: hsla(117, 40%, 40%, 1);
+	$size:50px;
+	width: 2 * $size;
+	height:$size;
+	border:none;
+	overflow:hidden;
+	padding:0;
+	border:1px solid darken($color, 10%);
+	color:white;
+	.rollover__container{
+		transition: all .5s ease-in-out;
+	}
+
+	&:hover{
+		.rollover__container{
+			margin-top: -1 * $size;
+			cursor:pointer;
+		}
+	}
+	&__container{
+		//background:linear-gradient(darken($color,20%), $color);
+		background-color:$color;
+	}
+	&__main{
+		height:$size;
+		line-height:$size;
+		font-size: $size/2;
+	}
+	&__sub{
+		height:$size;
+		line-height:$size;		
+		font-size: $size/3;
+	}
+}
