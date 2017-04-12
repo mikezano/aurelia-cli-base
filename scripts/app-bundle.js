@@ -1,6 +1,5 @@
 define('baseViewModel',["require", "exports"], function (require, exports) {
     "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
     var BaseVM = (function () {
         function BaseVM(ea) {
             this._ea = ea;
@@ -38,16 +37,11 @@ define('baseViewModel',["require", "exports"], function (require, exports) {
     exports.BaseVM = BaseVM;
 });
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -59,7 +53,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 define('about',["require", "exports", "aurelia-framework", "aurelia-event-aggregator", "./baseViewModel"], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1, baseViewModel_1) {
     "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
     var About = (function (_super) {
         __extends(About, _super);
         function About(ea) {
@@ -85,7 +78,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 define('app',["require", "exports", "aurelia-framework", "aurelia-event-aggregator"], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1) {
     "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
     var App = (function () {
         function App(ea) {
             this.ea = ea;
@@ -130,16 +122,11 @@ define('app',["require", "exports", "aurelia-framework", "aurelia-event-aggregat
     exports.App = App;
 });
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -151,7 +138,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 define('css-tricks',["require", "exports", "aurelia-framework", "aurelia-event-aggregator", "./baseViewModel"], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1, baseViewModel_1) {
     "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
     var CssTricks = (function (_super) {
         __extends(CssTricks, _super);
         function CssTricks(ea) {
@@ -175,16 +161,11 @@ define('environment',["require", "exports"], function (require, exports) {
     };
 });
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -196,7 +177,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 define('home',["require", "exports", "aurelia-framework", "aurelia-event-aggregator", "./baseViewModel"], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1, baseViewModel_1) {
     "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
     var Home = (function (_super) {
         __extends(Home, _super);
         function Home(ea) {
@@ -213,7 +193,6 @@ define('home',["require", "exports", "aurelia-framework", "aurelia-event-aggrega
 
 define('main',["require", "exports", "./environment"], function (require, exports, environment_1) {
     "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
     Promise.config({
         longStackTraces: environment_1.default.debug,
         warnings: {
@@ -237,16 +216,11 @@ define('main',["require", "exports", "./environment"], function (require, export
     exports.configure = configure;
 });
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -258,7 +232,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 define('resume',["require", "exports", "aurelia-framework", "aurelia-event-aggregator", "./baseViewModel"], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1, baseViewModel_1) {
     "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
     var Resume = (function (_super) {
         __extends(Resume, _super);
         function Resume(ea) {
@@ -279,16 +252,11 @@ define('resume',["require", "exports", "aurelia-framework", "aurelia-event-aggre
     exports.Resume = Resume;
 });
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -300,7 +268,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 define('experiments/buttons',["require", "exports", "aurelia-framework", "aurelia-event-aggregator", "../baseViewModel"], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1, baseViewModel_1) {
     "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
     var Buttons = (function (_super) {
         __extends(Buttons, _super);
         function Buttons(ea) {
@@ -315,16 +282,11 @@ define('experiments/buttons',["require", "exports", "aurelia-framework", "aureli
     exports.Buttons = Buttons;
 });
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -336,7 +298,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 define('experiments/cards',["require", "exports", "aurelia-framework", "aurelia-event-aggregator", "../baseViewModel"], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1, baseViewModel_1) {
     "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
     var Cards = (function (_super) {
         __extends(Cards, _super);
         function Cards(ea) {
@@ -351,16 +312,11 @@ define('experiments/cards',["require", "exports", "aurelia-framework", "aurelia-
     exports.Cards = Cards;
 });
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -372,7 +328,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 define('experiments/particles',["require", "exports", "aurelia-framework", "aurelia-event-aggregator", "../baseViewModel"], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1, baseViewModel_1) {
     "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
     var Particles = (function (_super) {
         __extends(Particles, _super);
         function Particles(ea) {
@@ -387,16 +342,11 @@ define('experiments/particles',["require", "exports", "aurelia-framework", "aure
     exports.Particles = Particles;
 });
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -408,7 +358,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 define('experiments/tabs',["require", "exports", "aurelia-framework", "aurelia-event-aggregator", "../baseViewModel"], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1, baseViewModel_1) {
     "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
     var Tabs = (function (_super) {
         __extends(Tabs, _super);
         function Tabs(ea) {
@@ -425,7 +374,6 @@ define('experiments/tabs',["require", "exports", "aurelia-framework", "aurelia-e
 
 define('resources/index',["require", "exports"], function (require, exports) {
     "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
     function configure(config) {
     }
     exports.configure = configure;
@@ -442,7 +390,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 define('resources/elements/componentElement',["require", "exports", "aurelia-framework"], function (require, exports, aurelia_framework_1) {
     "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
     var ComponentElement = (function () {
         function ComponentElement() {
         }
@@ -475,7 +422,8 @@ define('resources/elements/componentElement',["require", "exports", "aurelia-fra
         __metadata("design:type", String)
     ], ComponentElement.prototype, "file", void 0);
     ComponentElement = __decorate([
-        aurelia_framework_1.autoinject()
+        aurelia_framework_1.autoinject(),
+        __metadata("design:paramtypes", [])
     ], ComponentElement);
     exports.ComponentElement = ComponentElement;
 });
@@ -491,7 +439,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 define('resources/elements/hub',["require", "exports", "aurelia-framework", "aurelia-animator-velocity", "aurelia-router", "aurelia-event-aggregator"], function (require, exports, aurelia_framework_1, aurelia_animator_velocity_1, aurelia_router_1, aurelia_event_aggregator_1) {
     "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
     var Hub = Hub_1 = (function () {
         function Hub(velocity, ea) {
             var _this = this;
@@ -590,9 +537,11 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
 define('resources/elements/testMe',["require", "exports", "aurelia-framework"], function (require, exports, aurelia_framework_1) {
     "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
     var TestMe = (function () {
         function TestMe() {
         }
@@ -600,7 +549,8 @@ define('resources/elements/testMe',["require", "exports", "aurelia-framework"], 
         return TestMe;
     }());
     TestMe = __decorate([
-        aurelia_framework_1.autoinject()
+        aurelia_framework_1.autoinject(),
+        __metadata("design:paramtypes", [])
     ], TestMe);
     exports.TestMe = TestMe;
 });
@@ -625,22 +575,24 @@ define('text!components/simpleTab.css', ['module'], function(module) { module.ex
 define('text!components/simpleCard.html', ['module'], function(module) { module.exports = "<template><require from=\"./simpleCard.css\"></require><div class=\"simple-card\"><div class=\"simple-card__header\">Header<button class=\"circle\"><i class=\"fa fa-truck\"></i></button><button class=\"circle\"><i class=\"fa fa-refresh\"></i></button></div><div class=\"simple-card__content\">All your content goes here</div></div></template>"; });
 define('text!components/spinButton.css', ['module'], function(module) { module.exports = ".spin-btn {\n  font-size: 40px;\n  border: none;\n  background: none;\n  color: lightgreen;\n  transition: transform .5s ease-out;\n  display: flex;\n  align-items: center;\n  justify-content: center; }\n  .spin-btn:hover {\n    color: #a6f1a6;\n    transform: rotate(360deg) scale(1.2); }\n"; });
 define('text!components/simpleTab.html', ['module'], function(module) { module.exports = "<template><require from=\"./simpleTab.css\"></require><h1>Simple Tab</h1></template>"; });
-define('text!components/spinButton.html', ['module'], function(module) { module.exports = "<template><require from=\"./spinButton.css\"></require><button class=\"spin-btn\"><i class=\"fa fa-plus\"></i></button></template>"; });
 define('text!components/zoomButton.css', ['module'], function(module) { module.exports = ".zoom {\n  box-shadow: 2px 2px 4px black;\n  transition: all .2s ease-in-out; }\n  .zoom:hover {\n    transform: scale(1.1);\n    box-shadow: 4px 4px 8px #333333; }\n"; });
-define('text!components/zoomButton.html', ['module'], function(module) { module.exports = "<template><require from=\"./zoomButton.css\"></require><button class=\"zoom\">Zoom</button></template>"; });
+define('text!components/spinButton.html', ['module'], function(module) { module.exports = "<template><require from=\"./spinButton.css\"></require><button class=\"spin-btn\"><i class=\"fa fa-plus\"></i></button></template>"; });
 define('text!experiments/buttons.css', ['module'], function(module) { module.exports = ".button-sandbox {\n  position: fixed;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  z-index: 10;\n  background: radial-gradient(#888, #777);\n  padding: 10px;\n  overflow-y: scroll; }\n"; });
-define('text!experiments/buttons.html', ['module'], function(module) { module.exports = "<template><require from=\"./buttons.css\"></require><require from=\"../resources/elements/componentElement\"></require><div class=\"au-animate button-sandbox\"><a href=\"javascript:history.back()\">Go Back</a><component-element file.bind=\"'circleButton'\"></component-element><component-element file.bind=\"'spinButton'\"></component-element><component-element file.bind=\"'hoverButton'\"></component-element><component-element file.bind=\"'zoomButton'\"></component-element><component-element file.bind=\"'notificationButton'\"></component-element></div></template>"; });
+define('text!components/zoomButton.html', ['module'], function(module) { module.exports = "<template><require from=\"./zoomButton.css\"></require><button class=\"zoom\">Zoom</button></template>"; });
 define('text!experiments/cards.css', ['module'], function(module) { module.exports = ".cards {\n  position: fixed;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  z-index: 10;\n  background: radial-gradient(#888, #777);\n  padding: 10px;\n  overflow-y: scroll; }\n"; });
-define('text!experiments/cards.html', ['module'], function(module) { module.exports = "<template><require from=\"./cards.css\"></require><require from=\"../resources/elements/componentElement\"></require><div class=\"au-animate cards\"><a href=\"javascript:history.back()\">Go Back</a><component-element file.bind=\"'simpleCard'\"></component-element><component-element file.bind=\"'simpleCard'\"></component-element></div></template>"; });
+define('text!experiments/buttons.html', ['module'], function(module) { module.exports = "<template><require from=\"./buttons.css\"></require><require from=\"../resources/elements/componentElement\"></require><div class=\"au-animate button-sandbox\"><a href=\"javascript:history.back()\">Go Back</a><component-element file.bind=\"'rolloverButton'\"></component-element><component-element file.bind=\"'circleButton'\"></component-element><component-element file.bind=\"'spinButton'\"></component-element><component-element file.bind=\"'hoverButton'\"></component-element><component-element file.bind=\"'zoomButton'\"></component-element><component-element file.bind=\"'notificationButton'\"></component-element></div></template>"; });
 define('text!experiments/particles.css', ['module'], function(module) { module.exports = ".particles {\n  position: fixed;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  z-index: 10;\n  background: radial-gradient(#333, #222);\n  padding: 10px;\n  display: flex;\n  justify-content: center; }\n"; });
-define('text!experiments/particles.html', ['module'], function(module) { module.exports = "<template><require from=\"./particles.css\"></require><div class=\"au-animate particles\"><h1>Hello</h1></div></template>"; });
 define('text!experiments/tabs.css', ['module'], function(module) { module.exports = ".tabs {\n  position: fixed;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  z-index: 10;\n  background: radial-gradient(#888, #777);\n  padding: 10px;\n  overflow-y: scroll; }\n"; });
-define('text!experiments/tabs.html', ['module'], function(module) { module.exports = "<template><require from=\"./tabs.css\"></require><require from=\"../resources/elements/componentElement\"></require><div class=\"au-animate tabs\"><a href=\"javascript:history.back()\">Go Back</a><component-element file.bind=\"'simpleTab'\"></component-element></div></template>"; });
 define('text!resources/colors.css', ['module'], function(module) { module.exports = ""; });
-define('text!resources/elements/componentElement.html', ['module'], function(module) { module.exports = "<template><require from=\"./componentElement.css\"></require><div class=\"ex\"><div class=\"ex__header\"> <div>${humanizeFile}</div></div><div class=\"ex__output\"> <compose view=\"../../components/${file}.html\" containerless=\"containerless\"></compose></div><div class=\"ex__code\"><label>test<input type=\"radio\"/></label><div class=\"show\"><i class=\"fa fa-refresh\"></i></div><input id=\"tab1\" type=\"radio\" name=\"tabs\"/><label for=\"tab1\">SCSS</label><input id=\"tab2\" type=\"radio\" name=\"tabs\"/><label for=\"tab2\">PUG</label><div class=\"content\"><div id=\"content1\"><pre>${scss}</pre></div><div id=\"content2\"></div></div></div></div></template>"; });
-define('text!resources/elements/componentElement.css', ['module'], function(module) { module.exports = ".ex {\n  border: 1px solid #999999;\n  margin: 10px;\n  display: grid;\n  grid-template-columns: 40% 60%;\n  width: auto; }\n  .ex__header {\n    grid-row: 1;\n    grid-column: 1/3;\n    text-align: center;\n    color: orange;\n    margin: 10px;\n    letter-spacing: 1px;\n    font-size: 20px; }\n  .ex__output {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    border-right: 1px solid #999999;\n    margin: 10px; }\n  .ex__code {\n    margin: 10px;\n    word-wrap: break-word; }\n\n.content > div {\n  display: none; }\n\ninput {\n  display: none; }\n\nlabel {\n  display: inline-block;\n  padding: 15px 25px;\n  font-weight: 600;\n  text-align: center; }\n\nlabel:hover {\n  color: #fff;\n  cursor: pointer; }\n\ninput:checked + label {\n  background: #ed5a6a;\n  color: #fff; }\n\n#tab1:checked ~ .content #content1,\n#tab2:checked ~ .content #content2 {\n  display: block; }\n\n.show {\n  display: none; }\n\nlabel input {\n  display: block; }\n\nlabel input:checked ~ .show {\n  display: block; }\n"; });
-define('text!resources/elements/hub.html', ['module'], function(module) { module.exports = "<template><require from=\"./hub.css\"></require><div class=\"parent\"><div class=\"container-content\" ref=\"containerContent\"><div class=\"left-corner-boundary\" ref=\"leftCornerBoundary\"></div><div class=\"right-corner-boundary\" ref=\"rightCornerBoundary\"></div><router-view></router-view><div class=\"left-curtain\" ref=\"leftCurtain\"></div><div class=\"right-curtain\" ref=\"rightCurtain\"> </div><div class=\"left-corner\" ref=\"leftCorner\" click.delegate=\"activeArea($event)\"><!--http://stackoverflow.com/questions/2717480/css-selector-for-first-element-with-class/8539107#8539107--><div class=\"corner-border\"> </div><p><a class=\"nav-item\" href=\"#/home\">Home</a></p><p><a class=\"nav-item\" href=\"#/css-tricks\">CSS</a></p><p><a class=\"nav-item\" href=\"#/about\">About</a></p></div><div class=\"right-corner\" ref=\"rightCorner\"> <div class=\"corner-border\"> </div><ul> <li><a href=\"#/resume\">Concepts</a></li><li>                           <a href=\"#/css-tricks\">Components      </a></li><li>                           <a href=\"#/css-tricks\">Tricks   </a></li></ul></div></div></div></template>"; });
+define('text!experiments/cards.html', ['module'], function(module) { module.exports = "<template><require from=\"./cards.css\"></require><require from=\"../resources/elements/componentElement\"></require><div class=\"au-animate cards\"><a href=\"javascript:history.back()\">Go Back</a><component-element file.bind=\"'simpleCard'\"></component-element><component-element file.bind=\"'simpleCard'\"></component-element></div></template>"; });
+define('text!resources/elements/componentElement.css', ['module'], function(module) { module.exports = ".ex {\n  border: 1px solid #999999;\n  margin: 10px;\n  display: grid;\n  grid-template-columns: 40% 60%;\n  width: auto; }\n  .ex__header {\n    grid-row: 1;\n    grid-column: 1/3;\n    text-align: center;\n    color: orange;\n    margin: 10px;\n    letter-spacing: 1px;\n    font-size: 20px; }\n  .ex__output {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    border-right: 1px solid #999999;\n    margin: 10px; }\n  .ex__code {\n    margin: 10px;\n    word-wrap: break-word; }\n"; });
+define('text!experiments/particles.html', ['module'], function(module) { module.exports = "<template><require from=\"./particles.css\"></require><div class=\"au-animate particles\"><h1>Hello</h1></div></template>"; });
+define('text!experiments/tabs.html', ['module'], function(module) { module.exports = "<template><require from=\"./tabs.css\"></require><require from=\"../resources/elements/componentElement\"></require><div class=\"au-animate tabs\"><a href=\"javascript:history.back()\">Go Back</a><component-element file.bind=\"'simpleTab'\"></component-element></div></template>"; });
 define('text!resources/elements/hub.css', ['module'], function(module) { module.exports = ".parent {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  width: 100%;\n  height: 100%;\n  display: flex;\n  align-items: center;\n  justify-content: center; }\n\n.container-content, .container-curtains, .container-corners {\n  overflow: hidden;\n  width: 600px;\n  height: 400px; }\n\n.container-content {\n  background: radial-gradient(#00597f, #00354c);\n  color: white;\n  border: 1px solid #00a0e5;\n  box-shadow: 4px 4px 12px #222;\n  position: absolute; }\n  .container-content p {\n    padding: 10px;\n    font-size: 14px;\n    margin: 0; }\n  .container-content .left-corner-boundary, .container-content .right-corner-boundary {\n    width: 300px;\n    height: 300px;\n    shape-margin: 10px; }\n  .container-content .left-corner-boundary {\n    shape-outside: polygon(0 100px, 100% 100%, 0 100%);\n    clip-path: polygon(0 0, 100% 100%, 0 100%);\n    float: left;\n    margin-top: 100px; }\n  .container-content .right-corner-boundary {\n    shape-outside: polygon(0 0, 100% 0, 100% 100%);\n    clip-path: polygon(0 0, 100% 0, 100% 100%);\n    float: right; }\n  .container-content .left-corner, .container-content .right-corner {\n    width: 300px;\n    height: 300px;\n    position: absolute; }\n  .container-content .left-curtain, .container-content .right-curtain {\n    position: absolute;\n    top: 0;\n    width: 500px;\n    height: 400px; }\n  .container-content .left-curtain {\n    clip-path: polygon(0 0, 100px 0, 100% 100%, 0 100%);\n    background: linear-gradient(45deg, #001119, #007cb2 50%);\n    left: 0; }\n  .container-content .right-curtain {\n    clip-path: polygon(0 0, 100% 0, 100% 100%, 400px 100%);\n    background: linear-gradient(45deg, #007cb2 50%, #001119 100%);\n    right: 0; }\n  .container-content .left-corner {\n    shape-outside: polygon(0 100px, 100% 100%, 0 100%);\n    clip-path: polygon(0 0, 100% 100%, 0 100%);\n    background: linear-gradient(45deg, black, #00597f 49%, #007cb2 50%);\n    left: 0;\n    bottom: 0; }\n    .container-content .left-corner .corner-border {\n      width: 300px;\n      height: 300px;\n      shape-outside: polygon(0 50%, 0 100%, 50% 100%);\n      float: left; }\n    .container-content .left-corner p:first-of-type {\n      margin-top: 140px; }\n    .container-content .left-corner p a {\n      color: white;\n      text-decoration: none;\n      font-size: 26px;\n      font-weight: 100;\n      transition: all .2s ease-in-out;\n      border-bottom: 4px solid transparent; }\n      .container-content .left-corner p a:hover, .container-content .left-corner p a.active {\n        border-bottom: 4px solid #00a0e5;\n        text-shadow: 2px 2px 4px #222; }\n  .container-content .right-corner {\n    shape-outside: polygon(0 0, 100% 0, 100% 100%);\n    clip-path: polygon(0 0, 100% 0, 100% 100%);\n    background: linear-gradient(45deg, #007cb2 50%, #00597f 51%, #001119);\n    right: 0;\n    top: 0; }\n    .container-content .right-corner .corner-border {\n      width: 300px;\n      height: 300px;\n      border: 1px solid white;\n      shape-outside: polygon(0 0, 0 100%, 100% 100%);\n      float: left; }\n    .container-content .right-corner ul {\n      list-style-type: none; }\n      .container-content .right-corner ul li {\n        margin-top: 20px; }\n        .container-content .right-corner ul li a {\n          color: white;\n          text-decoration: none;\n          font-size: 16px;\n          margin-left: 20px;\n          transition: all .2s ease-in-out;\n          border-bottom: 3px solid transparent; }\n          .container-content .right-corner ul li a:hover {\n            border-bottom: 3px solid #007cb2;\n            text-shadow: 2px 2px 4px #003146; }\n\n.container-curtains {\n  position: absolute;\n  z-index: -1; }\n\n.container-corners {\n  position: absolute;\n  z-index: 10; }\n  .container-corners .left-corner, .container-corners .right-corner {\n    width: 300px;\n    height: 300px;\n    position: absolute; }\n  .container-corners .left-corner {\n    shape-outside: polygon(0 100px, 100% 100%, 0 100%);\n    clip-path: polygon(0 0, 100% 100%, 0 100%);\n    background: linear-gradient(45deg, black, #00597f 49%, #007cb2 50%);\n    left: 0;\n    top: 100px; }\n  .container-corners .right-corner {\n    shape-outside: polygon(0 0, 100% 0, 100% 100%);\n    clip-path: polygon(0 0, 100% 0, 100% 100%);\n    background: linear-gradient(45deg, #007cb2 50%, #00597f 51%, #001119);\n    right: 0;\n    top: 0; }\n"; });
 define('text!resources/elements/testMe.css', ['module'], function(module) { module.exports = ""; });
+define('text!resources/elements/componentElement.html', ['module'], function(module) { module.exports = "<template><require from=\"./componentElement.css\"></require><div class=\"ex\"><div class=\"ex__header\"> <div>${humanizeFile}</div></div><div class=\"ex__output\"> <compose view=\"../../components/${file}.html\" containerless=\"containerless\"></compose></div><div class=\"ex__code\"><pre>${scss}</pre></div></div></template>"; });
+define('text!resources/elements/hub.html', ['module'], function(module) { module.exports = "<template><require from=\"./hub.css\"></require><div class=\"parent\"><div class=\"container-content\" ref=\"containerContent\"><div class=\"left-corner-boundary\" ref=\"leftCornerBoundary\"></div><div class=\"right-corner-boundary\" ref=\"rightCornerBoundary\"></div><router-view></router-view><div class=\"left-curtain\" ref=\"leftCurtain\"></div><div class=\"right-curtain\" ref=\"rightCurtain\"> </div><div class=\"left-corner\" ref=\"leftCorner\" click.delegate=\"activeArea($event)\"><!--http://stackoverflow.com/questions/2717480/css-selector-for-first-element-with-class/8539107#8539107--><div class=\"corner-border\"> </div><p><a class=\"nav-item\" href=\"#/home\">Home</a></p><p><a class=\"nav-item\" href=\"#/css-tricks\">CSS</a></p><p><a class=\"nav-item\" href=\"#/about\">About</a></p></div><div class=\"right-corner\" ref=\"rightCorner\"> <div class=\"corner-border\"> </div><ul> <li><a href=\"#/resume\">Concepts</a></li><li>                           <a href=\"#/css-tricks\">Components      </a></li><li>                           <a href=\"#/css-tricks\">Tricks   </a></li></ul></div></div></div></template>"; });
 define('text!resources/elements/testMe.html', ['module'], function(module) { module.exports = "<template><require from=\"./TestMe\"><div class=\"test-me\"></div></require></template>"; });
+define('text!components/rolloverButton.html', ['module'], function(module) { module.exports = "<template><require from=\"./rolloverButton.css\"></require><button class=\"rollover\"><div class=\"rollover__container\"><div class=\"rollover__main\">OK</div><div class=\"rollover__sub\"> <i class=\"fa fa-thumbs-up\"></i></div></div></button></template>"; });
+define('text!components/rolloverButton.css', ['module'], function(module) { module.exports = ".rollover {\n  width: 100px;\n  height: 50px;\n  border: none;\n  overflow: hidden;\n  padding: 0;\n  border: 1px solid #316b2e;\n  color: white; }\n  .rollover .rollover__container {\n    transition: all .5s ease-in-out; }\n  .rollover:hover .rollover__container {\n    margin-top: -50px;\n    cursor: pointer; }\n  .rollover__container {\n    background-color: #418f3d; }\n  .rollover__main {\n    height: 50px;\n    line-height: 50px;\n    font-size: 25px; }\n  .rollover__sub {\n    height: 50px;\n    line-height: 50px;\n    font-size: 16.66667px; }\n"; });
 //# sourceMappingURL=app-bundle.js.map
