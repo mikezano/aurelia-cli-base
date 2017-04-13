@@ -27,22 +27,37 @@
 	&__code{
 		margin:10px;
 		word-wrap:break-word;
+		position:relative;
 	}
 }
 
 .content > div { display:none; }
 input {display: none;}
-label {display: inline-block; padding: 15px 25px; font-weight: 600; text-align: center;}
-label:hover {color: #fff; cursor: pointer;}
-input:checked + label {background: #ed5a6a; color: #fff;}
+label {
+	display: inline-flex; 
+	width:100px; 
 
-#tab1:checked ~ .content #content1,
-#tab2:checked ~ .content #content2{
-	display:block;
+	margin:2px;
+	padding:2px;
 }
+input:checked + label {color: #fff;}
+
 
 .show{display:none;}
-label input{display:block;}
-label input:checked ~ .show{
+label .text {height:20px; border-bottom:2px solid blue;}
+label input{display:none;}
+label:nth-child(1) input:checked{ background-color:blue; display:block;}
+label:nth-child(1) input:checked ~ .show{
 	display:block;
+	position:relative;
+	top:30px;
+	left:-70px;
+}
+
+
+label:nth-child(2) input:checked ~ .show{
+	display:block;
+	position:relative;
+	top:20px;
+	left:-170px;
 }
