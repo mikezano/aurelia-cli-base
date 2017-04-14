@@ -1,11 +1,12 @@
 .ex{
-
 	$border-color: hsla(0,0%,60%,100%);
 	border:1px solid $border-color;
 	margin:10px;
 	display:grid;
 	grid-template-columns: 40% 60%;
-	width:auto;
+	width:800px;
+	height:auto;
+	transition: all .2s ease-out;
 
 	&__header{
 		grid-row:1;
@@ -27,37 +28,27 @@
 	&__code{
 		margin:10px;
 		word-wrap:break-word;
-		position:relative;
+		transition: all .2s ease-out;
 	}
 }
+
 
 .content > div { display:none; }
 input {display: none;}
 label {
-	display: inline-flex; 
-	width:100px; 
-
-	margin:2px;
-	padding:2px;
+	display: inline-block; 
+	padding: 10px 20px; 
+	font-weight: 600; 
+	text-align: center;
+	margin:0 2px;
+	border-bottom: 4px solid transparent;
+	transition: all .2s ease-out;
 }
-input:checked + label {color: #fff;}
-
-
-.show{display:none;}
-label .text {height:20px; border-bottom:2px solid blue;}
-label input{display:none;}
-label:nth-child(1) input:checked{ background-color:blue; display:block;}
-label:nth-child(1) input:checked ~ .show{
-	display:block;
-	position:relative;
-	top:30px;
-	left:-70px;
+label:hover {
+	color: #fff; 
+	cursor: pointer;
+	border-bottom: 4px solid white;
 }
-
-
-label:nth-child(2) input:checked ~ .show{
-	display:block;
-	position:relative;
-	top:20px;
-	left:-170px;
+input:checked + label {
+	border-bottom: 4px solid orange;
 }

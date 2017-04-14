@@ -6,29 +6,20 @@ template
 		.ex__output 
 			compose(view="../../components/${file}.html" containerless)
 		.ex__code
-			label 
-				.text SCSS
-				input(type="radio" name="testTab")
-				.show
-					i.fa.fa-refresh
-					i.fa.fa-refresh
-					i.fa.fa-refresh
-					i.fa.fa-refresh
-					i.fa.fa-refresh
-					p the lazy brown fox jumped over the dog
-					pre ${scss}
-			label 
-				.text PUG
-				input(type="radio" name="testTab")
-				.show
-					pre ${scss}
 
-			//- input#tab1(type="radio" name="tabs")
-			//- label(for="tab1") SCSS
-			//- input#tab2(type="radio" name="tabs")
-			//- label(for="tab2") PUG
-			//- .content
-			//- 	#content1
-			//- 		pre ${scss}
-			//- 	#content2
+
+			input(id="${scssId}" type="radio" name="${nameId}" checked)
+			label(for="${scssId}") SCSS
+			input(id="${pugId}" type="radio" name="${nameId}")
+			label(for="${pugId}") PUG
+			.content
+				.content1
+					pre ${scss}
+				.content2
+					pre ${pug}
 	
+	style(type='text/css').
+		#${scssId}:checked ~ .content .content1,
+		#${pugId}:checked ~ .content .content2{
+			display:block;
+		}
