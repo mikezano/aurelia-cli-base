@@ -7,16 +7,17 @@ template
 			compose(view="../../components/${file}.html" containerless)
 		.ex__code
 
-
 			input(id="${scssId}" type="radio" name="${nameId}" checked)
 			label(for="${scssId}") SCSS
 			input(id="${pugId}" type="radio" name="${nameId}")
 			label(for="${pugId}") PUG
 			.content
 				.content1
-					pre ${scss}
+					pre(class="language-css" )
+						code(ref="scssElement") ${scss}
 				.content2
-					pre ${pug}
+					pre(class="language-jade") 
+						code(ref="pugElement") ${pug}
 	
 	style(type='text/css').
 		#${scssId}:checked ~ .content .content1,

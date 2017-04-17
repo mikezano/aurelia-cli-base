@@ -149,6 +149,12 @@
             "path": "../node_modules/aurelia-testing/dist/amd",
             "main": "aurelia-testing",
             "env": "dev"
+          },
+          {
+            "name" : "prismjs",
+            "path" : "../node_modules/prismjs/",
+            "main" : "prism.js",
+            "resources" : ["themes/*.css"]
           }
         ]
       }

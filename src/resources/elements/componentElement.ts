@@ -1,4 +1,5 @@
 import {bindable, autoinject} from 'aurelia-framework';
+import * as Prism from 'prismjs'
 
 @autoinject()
 export class ComponentElement {
@@ -9,14 +10,25 @@ export class ComponentElement {
 	public scssId:string = this.randomString(16);
 	public pugId:string =  this.randomString(16);
 	public nameId:string =  this.randomString(16);
+	public scssElement: HTMLElement;
+	public pugElement: HTMLElement;
+
+
 
 	public attached(){
 		this.humanize();
 		this.getFile("GET", `src/components/${this.file}.scss`, (result)=>{
 			this.scss = result;
+			setTimeout(()=>{
+				Prism.highlightElement(this.scssElement, false);
+			}, 10);
+
 		});
 		this.getFile("GET", `src/components/${this.file}.pug`, (result)=>{
 			this.pug = result;
+			setTimeout(()=>{
+				Prism.highlightElement(this.pugElement, false);
+			}, 10);			
 		})		
 	}
 

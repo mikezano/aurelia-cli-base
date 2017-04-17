@@ -8,6 +8,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@types/prismjs": "^1.6.1",
     "aurelia-animator-css": "^1.0.1",
     "aurelia-animator-velocity": "^1.0.1",
     "aurelia-bootstrapper": "^1.0.0",
