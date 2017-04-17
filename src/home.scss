@@ -1,0 +1,23 @@
+.container-home{
+    text-align:center;
+    
+    p{
+        font-size:18px;
+        color: white !important;
+    }
+
+    button{
+        margin-top:20px;
+        border:none;
+        background:none;
+        border-bottom:4px solid white;
+        color:white;
+        font-size:20px;
+        cursor:pointer;
+        transition: border-bottom .2s ease-out;
+        &:hover{
+            color:orange;
+            border-bottom:4px solid orange;
+        }
+    }
+}
