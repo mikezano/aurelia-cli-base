@@ -27,7 +27,6 @@ export class App {
 
     config.title="Zano";
     config.map([
-      { route: ['', 'resume'], name: 'Resume',      moduleId: 'resume', nav: true, title: 'Resume' },
       { route: ['', 'home'], name: 'Home',      moduleId: 'home', nav: true, title: 'Home' },
       { route: ['css-tricks'], name: 'css-tricks',      moduleId: 'css-tricks', nav: true, title: 'CSS tricks' },
       { route: ['about'], name: 'about',      moduleId: 'about', nav: true, title: 'About' },
